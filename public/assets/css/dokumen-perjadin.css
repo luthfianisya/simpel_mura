@@ -1,0 +1,209 @@
+.dokumen-preview {
+    background: #fff;
+    border: 1px solid #dbdade;
+    border-radius: 0.5rem;
+    padding: 1.75rem;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: #2b2b2b;
+    min-height: 460px;
+}
+
+/* Ukuran kertas A4 (210mm x 297mm) untuk semua dokumen. */
+.dokumen-preview.dokumen-a4 {
+    width: 210mm;
+    min-height: 297mm;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Saat print/export PDF, @page dipasang tanpa margin (lihat exportAsPdf) supaya
+   ukuran halaman fisik (210x297mm) sama persis dengan lebar div ini — kalau beda,
+   sisa kontennya (terutama teks rata-kanan) kepotong di tepi halaman. Padding di
+   sini yang jadi "margin" visualnya. */
+@media print {
+    .dokumen-preview.dokumen-a4 {
+        width: 210mm;
+        height: 297mm;
+        min-height: 0;
+        padding: 15mm;
+    }
+}
+
+.dokumen-preview .kop-title {
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: 0.5px;
+    text-align: center;
+}
+
+.dokumen-preview .kop-subtitle {
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-align: center;
+}
+
+.dokumen-preview .kop-address {
+    font-size: 0.72rem;
+    text-align: center;
+}
+
+.dokumen-preview .kop-line-thick {
+    border-top: 3px solid #000;
+    margin: 0.35rem 0 0.15rem;
+}
+
+.dokumen-preview .kop-line-thin {
+    border-top: 1px solid #000;
+    margin-bottom: 1rem;
+}
+
+.dokumen-preview .dokumen-boxed {
+    border: 1px solid #000;
+    padding: 0.75rem 1rem 1rem;
+    margin-bottom: 1rem;
+}
+
+.dokumen-preview .dokumen-boxed table.dokumen-table {
+    margin-bottom: 0.75rem;
+}
+
+.dokumen-preview .dokumen-boxed > :last-child {
+    margin-bottom: 0;
+}
+
+.dokumen-preview .dokumen-title {
+    text-align: center;
+    font-weight: 700;
+    text-decoration: underline;
+    margin-bottom: 0.15rem;
+    letter-spacing: 0.5px;
+}
+
+.dokumen-preview .dokumen-nomor {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.dokumen-preview table.dokumen-table {
+    width: 100%;
+    margin-bottom: 1rem;
+    border-collapse: collapse;
+}
+
+.dokumen-preview table.dokumen-table td {
+    vertical-align: top;
+    padding: 0.1rem 0.25rem;
+}
+
+.dokumen-preview table.dokumen-rincian td,
+.dokumen-preview table.dokumen-rincian th {
+    border: 1px solid #999;
+    padding: 0.35rem 0.5rem;
+}
+
+.dokumen-preview p {
+    margin-bottom: 0.65rem;
+    text-align: justify;
+}
+
+.dokumen-preview .ttd-block {
+    text-align: right;
+    margin-top: 1.75rem;
+}
+
+/* Laporan Perjalanan Dinas: setiap .dokumen-page-break mulai di halaman baru saat
+   print/export (mis. halaman 2 = penutup+ttd, halaman 3 = Dokumentasi). */
+.dokumen-preview .dokumen-page-break {
+    page-break-before: always;
+    break-before: page;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px dashed #ccc;
+}
+
+.dokumen-preview .dokumen-page-num {
+    text-align: center;
+    font-size: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.dokumen-preview table.dokumentasi-grid {
+    margin-top: 1rem;
+}
+
+.dokumen-preview table.dokumen-table td.dokumentasi-cell {
+    border: 1px solid #000;
+    padding: 0.35rem;
+    text-align: center;
+}
+
+.dokumen-preview .dokumentasi-cell img {
+    width: 100%;
+    height: 65mm;
+    object-fit: contain;
+    display: block;
+}
+
+.dokumen-preview .dokumentasi-file {
+    height: 65mm;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    color: #6c757d;
+    word-break: break-all;
+    padding: 0 0.5rem;
+}
+
+@media print {
+    .dokumen-preview .dokumen-page-break {
+        margin-top: 0;
+        padding-top: 0;
+        border-top: none;
+    }
+}
+
+/* Utility class dipakai render function (dokumen-perjadin.js). Di-scope di sini karena
+   jendela export PDF/Word tidak memuat Bootstrap, cuma file CSS ini. */
+.dokumen-preview .text-center { text-align: center; }
+.dokumen-preview .text-end { text-align: right; }
+.dokumen-preview .text-muted { color: #6c757d; }
+.dokumen-preview .fw-bold { font-weight: 700; }
+.dokumen-preview .fst-italic { font-style: italic; }
+.dokumen-preview .text-decoration-underline { text-decoration: underline; }
+.dokumen-preview .d-flex { display: flex; }
+.dokumen-preview .align-items-start { align-items: flex-start; }
+.dokumen-preview .justify-content-between { justify-content: space-between; }
+.dokumen-preview .ms-auto { margin-left: auto; }
+.dokumen-preview .pe-2 { padding-right: 0.5rem; }
+.dokumen-preview .mb-1 { margin-bottom: 0.25rem; }
+.dokumen-preview .mb-3 { margin-bottom: 1rem; }
+.dokumen-preview .mt-1 { margin-top: 0.25rem; }
+.dokumen-preview .mt-3 { margin-top: 1rem; }
+.dokumen-preview .mt-4 { margin-top: 1.5rem; }
+.dokumen-preview .mt-5 { margin-top: 3rem; }
+
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    .dokumen-preview,
+    .dokumen-preview * {
+        visibility: visible;
+    }
+
+    .dokumen-preview {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        border: none;
+        min-height: 0;
+    }
+}

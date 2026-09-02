@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\PegawaiMitra;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -35,6 +36,34 @@ class ProfileController extends Controller
         $request->user()->save();
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
+    }
+
+    /**
+     * Update (or create and link) the user's linked pegawai data.
+     */
+    public function updatePegawai(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'nip' => 'nullable|string|max:255',
+            'nama' => 'required|string|max:255',
+            'jabatan' => 'nullable|string|max:255',
+            'pangkat' => 'nullable|string|max:255',
+            'golongan' => 'nullable|string|max:255',
+        ]);
+
+        $user = $request->user();
+
+        if ($user->pegawaiMitra) {
+            $user->pegawaiMitra->update($validated);
+        } else {
+            $pegawai = PegawaiMitra::create(array_merge($validated, [
+                'status_kepegawaian' => 'pegawai',
+            ]));
+            $user->id_pegawai_mitra = $pegawai->id_pegawai_mitra;
+            $user->save();
+        }
+
+        return Redirect::route('profile.edit')->with('status', 'pegawai-updated');
     }
 
     /**
