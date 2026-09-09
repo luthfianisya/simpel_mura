@@ -9,7 +9,7 @@ class RincianBiaya extends Model
     protected $table = 'rincian_biaya';
     protected $primaryKey = 'id_rincian';
 
-    protected $fillable = ['id_perjalanan_dinas', 'jenis_komponen', 'nominal'];
+    protected $fillable = ['id_perjalanan_dinas', 'jenis_komponen', 'jumlah_hari', 'nominal'];
 
     public function perjalananDinas()
     {

@@ -52,7 +52,7 @@
             <div class="flex-grow-1">
                 <h4 class="mb-1">{{ $user->name }}</h4>
                 <p class="text-muted mb-2">
-                    {{ $user->email }}
+                    <code>{{ $user->username }}</code>
                     @if ($user->pegawaiMitra?->nip)
                         &middot; NIP. {{ $user->pegawaiMitra->nip }}
                     @endif

@@ -95,6 +95,25 @@ class PerjalananDinas extends Model
     }
 
     /**
+     * Perjalanan dinas ini milik pegawai tersebut (sebagai pemohon), terlepas dari
+     * status_draft-nya — dipakai untuk hak-hak yang tidak bergantung status, mis.
+     * tombol "Buka Kembali untuk Diedit" saat status sudah "selesai".
+     */
+    public function dimilikiOleh(?int $idPegawaiMitra): bool
+    {
+        return $idPegawaiMitra !== null && (int) $this->id_pemohon === $idPegawaiMitra;
+    }
+
+    /**
+     * Perjalanan dinas cuma boleh diubah/dihapus oleh pemohonnya sendiri, dan hanya
+     * selama statusnya masih draft (belum "selesai" alias sudah final/terkunci).
+     */
+    public function bisaDiubahOleh(?int $idPegawaiMitra): bool
+    {
+        return $this->dimilikiOleh($idPegawaiMitra) && $this->status_draft !== 'selesai';
+    }
+
+    /**
      * Bentuk data nested untuk modul render dokumen (window.DokumenPerjadin di dokumen-perjadin.js).
      * Dipakai oleh modal "Lihat/Export" di dashboard.
      */
@@ -134,7 +153,7 @@ class PerjalananDinas extends Model
      */
     public function toFormPrefill(): array
     {
-        return array_merge([
+        $data = array_merge([
             'no_surat_tugas' => $this->no_surat_tugas,
             'tanggal_surat_tugas' => optional($this->tanggal_surat_tugas)->format('Y-m-d'),
             'id_jenis_kegiatan' => $this->id_jenis_kegiatan,
@@ -158,6 +177,24 @@ class PerjalananDinas extends Model
             'kesimpulan_hasil_kegiatan' => optional($this->laporan)->kesimpulan_hasil_kegiatan,
             'tindak_lanjut' => optional($this->laporan)->tindak_lanjut,
         ], $this->relatedArraysData());
+
+        // Form wizard: 3 field nominal + 3 field jumlah_hari tetap (rincian[uang_harian],
+        // rincian_hari[uang_harian], dst), bukan array berulang seperti
+        // relatedArraysData()->rincian (dipakai renderRincianBiaya JS).
+        $data['rincian'] = $this->rincianBiaya->pluck('nominal', 'jenis_komponen')->all();
+        $data['rincian_hari'] = $this->rincianBiaya->pluck('jumlah_hari', 'jenis_komponen')->all();
+
+        // Form wizard: checkbox tetap (pernyataan[tidak_pakai_kendaraan_dinas], dst),
+        // bukan array berulang seperti relatedArraysData()->pernyataan.
+        $pernyataanByJenis = $this->suratPernyataan->keyBy('jenis_kondisi');
+        $data['pernyataan'] = [
+            'tidak_pakai_kendaraan_dinas' => $pernyataanByJenis->has('tidak_pakai_kendaraan_dinas'),
+            'tidak_menginap_hotel' => $pernyataanByJenis->has('tidak_menginap_hotel'),
+            'keterlambatan' => $pernyataanByJenis->has('keterlambatan'),
+        ];
+        $data['pernyataan_keterlambatan_keterangan'] = optional($pernyataanByJenis->get('keterlambatan'))->keterangan;
+
+        return $data;
     }
 
     private function relatedArraysData(): array
@@ -165,6 +202,7 @@ class PerjalananDinas extends Model
         return [
             'rincian' => $this->rincianBiaya->map(fn ($r) => [
                 'jenis_komponen' => $r->jenis_komponen,
+                'jumlah_hari' => $r->jumlah_hari,
                 'nominal' => $r->nominal,
             ])->values()->all(),
             'pengeluaran' => $this->pengeluaranRiil->map(fn ($p) => [

@@ -6,30 +6,155 @@
     font-family: 'Times New Roman', Times, serif;
     font-size: 0.82rem;
     line-height: 1.5;
-    color: #2b2b2b;
+    color: #000;
     min-height: 460px;
 }
 
-/* Ukuran kertas A4 (210mm x 297mm) untuk semua dokumen. */
+/* Ukuran kertas A4 (210mm x 297mm) untuk semua dokumen. min-height di sini cuma
+   fallback kasar (mis. sebelum JS sempat jalan) — tinggi proporsional yang akurat
+   terhadap lebar kolom yang sebenarnya di-set lewat JS (lihat
+   DokumenPerjadin.applyPageMinHeights, dipanggil tiap kali preview di-render ulang).
+   Sengaja BUKAN aspect-ratio: aspect-ratio+height:auto pada block biasa tidak ikut
+   memanjang kalau konten lebih tinggi dari rasionya — kontennya malah overflow
+   kelihatan "keluar" dari kartu putihnya alih-alih bikin kartunya ikut memanjang. */
 .dokumen-preview.dokumen-a4 {
     width: 210mm;
-    min-height: 297mm;
     max-width: 100%;
+    min-height: 297mm;
+    box-sizing: border-box;
+    margin-left: auto;
+    margin-right: auto;
+    /* Margin ala Word (preset "Normal"): 2,54 cm rata di keempat sisi. */
+    padding: 2.54cm;
+}
+
+/* Perincian Perhitungan Biaya Perjalanan Dinas: khusus dokumen ini marginnya lebih
+   sempit (ala Word preset "Narrow": 1,27 cm), bukan 2,54 cm seperti dokumen A4 lain —
+   tabelnya lebih lebar & padat jadi butuh ruang ekstra. */
+.dokumen-preview.dokumen-a4.dokumen-rincian-biaya {
+    padding: 1.27cm;
+}
+
+/* Ukuran kertas F4/Folio (215mm x 330mm) khusus Surat Tugas & SPD. */
+.dokumen-preview.dokumen-f4 {
+    width: 215mm;
+    max-width: 100%;
+    min-height: 330mm;
     box-sizing: border-box;
     margin-left: auto;
     margin-right: auto;
 }
 
-/* Saat print/export PDF, @page dipasang tanpa margin (lihat exportAsPdf) supaya
-   ukuran halaman fisik (210x297mm) sama persis dengan lebar div ini — kalau beda,
-   sisa kontennya (terutama teks rata-kanan) kepotong di tepi halaman. Padding di
-   sini yang jadi "margin" visualnya. */
+/* Watermark "PRATINJAU - TIDAK UNTUK DIUNDUH" — CUMA muncul di preview layar (wizard,
+   modal Lihat Dokumen), sengaja disembunyikan lagi di @media print di bawah supaya
+   TIDAK ikut ke dokumen yang di-print/export (baik lewat dialog print maupun PDF HD
+   server) — sama-sama pakai print media, jadi cukup 1 aturan display:none ini buat
+   nutup dua-duanya sekaligus. */
+.dokumen-preview.dokumen-watermark-pratinjau {
+    position: relative;
+}
+
+/* Teks watermark digambar sebagai SVG (bukan ::before biasa) supaya bisa diulang
+   (tile) ke seluruh halaman lewat background-repeat — abu-abu transparan, tulisan
+   miring, berulang mengisi seluruh kertas. */
+.dokumen-preview.dokumen-watermark-pratinjau::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzNjAiIGhlaWdodD0iMTgwIj48dGV4dCB4PSIxODAiIHk9IjEwMCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE1IiBmb250LXdlaWdodD0iNzAwIiBmaWxsPSJyZ2JhKDAsMCwwLDAuMTIpIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiB0cmFuc2Zvcm09InJvdGF0ZSgtMzAgMTgwIDEwMCkiPlBSQVRJTkpBVSAtIFRJREFLIFVOVFVLIERJVU5EVUg8L3RleHQ+PC9zdmc+");
+    background-repeat: repeat;
+    pointer-events: none;
+    z-index: 10;
+}
+
 @media print {
+    .dokumen-preview.dokumen-watermark-pratinjau::before {
+        display: none;
+    }
+}
+
+/* Wadah preview di layar (wizard & modal Lihat/Export) — diisi lewat JS
+   (DokumenPerjadin.renderPaginated) dengan 1 atau lebih .dokumen-preview.dokumen-a4/f4
+   sebagai "lembar kertas" terpisah, mirip tampilan print preview. Latar abu jadi
+   "meja" di belakang lembar putihnya, dan tiap lembar dikasih shadow biar kelihatan
+   seperti kertas yang ditumpuk, bukan 1 blok konten yang nyambung terus. */
+.dokumen-preview-pages {
+    background: #f1f0f2;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+}
+
+.dokumen-preview-pages .dokumen-preview {
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.08);
+}
+
+.dokumen-preview-pages .dokumen-preview + .dokumen-preview {
+    margin-top: 2rem;
+}
+
+/* Saat print/export PDF, @page dipasang TANPA margin (margin:0, lihat exportAsPdf) —
+   browser (dialog print asli) ternyata tidak bisa diandalkan untuk menghormati
+   @page{margin:...} custom (kadang malah dipaksa balik ke margin default browser,
+   jadi lebih lebar dari yang diminta). Makanya margin visualnya balik dibikin dari
+   padding div ini sendiri (persis ukuran fisik kertas: 210x297mm / 215x330mm), yang
+   SELALU dihormati karena itu CSS box model biasa, bukan fitur @page yang setengah
+   didukung. Konsekuensinya: kalau kontennya meluber otomatis (browser auto-split)
+   ke lebih dari 1 halaman fisik TANPA .dokumen-page-break eksplisit, halaman ke-2
+   dst dari 1 div yang sama tidak akan punya padding atas/bawah — tapi ini kasus
+   langka (tabel dalam 1 dokumen jarang sepanjang itu), sedangkan dokumen yang
+   memang sengaja multi-halaman (mis. Laporan) selalu pakai .dokumen-page-break jadi
+   tiap "halaman logis"-nya adalah div terpisah dengan padding sendiri-sendiri. */
+@media print {
+    .dokumen-preview.dokumen-a4,
+    .dokumen-preview.dokumen-f4 {
+        max-width: none;
+        min-height: 0;
+        /* Border/radius/shadow di .dokumen-preview cuma dekorasi biar preview di layar
+           kelihatan seperti kartu terpisah — bukan bagian dokumen aslinya, jangan ikut kecetak. */
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
     .dokumen-preview.dokumen-a4 {
         width: 210mm;
         height: 297mm;
-        min-height: 0;
+        padding: 2.54cm;
+    }
+
+    .dokumen-preview.dokumen-a4.dokumen-rincian-biaya {
+        padding: 1.27cm;
+    }
+
+    .dokumen-preview.dokumen-f4 {
+        width: 215mm;
+        height: 330mm;
         padding: 15mm;
+    }
+
+    /* Dokumen multi-halaman-logis (mis. Laporan) di-export sebagai beberapa div
+       .dokumen-preview terpisah (lihat exportAsPdf & renderPaginated) — tiap div baru
+       harus mulai di halaman fisik baru juga, supaya tidak menyambung ke sisa halaman
+       sebelumnya. */
+    .dokumen-preview + .dokumen-preview {
+        page-break-before: always;
+        break-before: page;
+    }
+
+    /* Baris tabel jangan sampai kepotong di tengah pas pindah halaman — kalau 1 baris
+       tidak muat di sisa halaman ini, dorong utuh ke halaman berikutnya. */
+    .dokumen-preview table.dokumen-table tr,
+    .dokumen-preview table.dokumen-rincian tr {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
+    /* Tabel yang barisnya bisa lebih dari 1 halaman (mis. Rincian Biaya, daftar
+       Pengeluaran Riil): header kolom (thead) diulang otomatis di tiap halaman baru,
+       supaya baris data di halaman ke-2 dst tetap punya konteks judul kolomnya. */
+    .dokumen-preview table.dokumen-table thead,
+    .dokumen-preview table.dokumen-rincian thead {
+        display: table-header-group;
     }
 }
 
@@ -101,8 +226,18 @@
 
 .dokumen-preview table.dokumen-rincian td,
 .dokumen-preview table.dokumen-rincian th {
-    border: 1px solid #999;
+    border: 1px solid #000;
     padding: 0.35rem 0.5rem;
+}
+
+/* Kolom ":" (pemisah label/nilai) di tabel rincian: border kiri-kanannya disembunyikan
+   biar label, titik dua, dan nilai kelihatan menyatu, bukan 3 kolom terpisah. */
+.dokumen-preview table.dokumen-rincian td.bd-r-none {
+    border-right: none;
+}
+
+.dokumen-preview table.dokumen-rincian td.bd-l-none {
+    border-left: none;
 }
 
 .dokumen-preview p {
@@ -110,9 +245,27 @@
     text-align: justify;
 }
 
+.dokumen-preview .dokumen-list {
+    margin: 0;
+    padding-left: 1.4rem;
+}
+
+.dokumen-preview .dokumen-list li {
+    margin-bottom: 0.35rem;
+    text-align: justify;
+}
+
+.dokumen-preview .dokumen-list li:last-child {
+    margin-bottom: 0;
+}
+
 .dokumen-preview .ttd-block {
-    text-align: right;
-    margin-top: 1.75rem;
+    margin-top: 2.25rem;
+    margin-left: auto;
+    width: 50%;
+    text-align: center;
+    page-break-inside: avoid;
+    break-inside: avoid;
 }
 
 /* Laporan Perjalanan Dinas: setiap .dokumen-page-break mulai di halaman baru saat
@@ -155,7 +308,7 @@
     align-items: center;
     justify-content: center;
     font-size: 0.75rem;
-    color: #6c757d;
+    color: #000;
     word-break: break-all;
     padding: 0 0.5rem;
 }
@@ -172,7 +325,7 @@
    jendela export PDF/Word tidak memuat Bootstrap, cuma file CSS ini. */
 .dokumen-preview .text-center { text-align: center; }
 .dokumen-preview .text-end { text-align: right; }
-.dokumen-preview .text-muted { color: #6c757d; }
+.dokumen-preview .text-muted { color: #000; }
 .dokumen-preview .fw-bold { font-weight: 700; }
 .dokumen-preview .fst-italic { font-style: italic; }
 .dokumen-preview .text-decoration-underline { text-decoration: underline; }
@@ -185,25 +338,5 @@
 .dokumen-preview .mb-3 { margin-bottom: 1rem; }
 .dokumen-preview .mt-1 { margin-top: 0.25rem; }
 .dokumen-preview .mt-3 { margin-top: 1rem; }
-.dokumen-preview .mt-4 { margin-top: 1.5rem; }
-.dokumen-preview .mt-5 { margin-top: 3rem; }
-
-@media print {
-    body * {
-        visibility: hidden;
-    }
-
-    .dokumen-preview,
-    .dokumen-preview * {
-        visibility: visible;
-    }
-
-    .dokumen-preview {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        border: none;
-        min-height: 0;
-    }
-}
+.dokumen-preview .mt-4 { margin-top: 2rem; }
+.dokumen-preview .mt-5 { margin-top: 3.75rem; }

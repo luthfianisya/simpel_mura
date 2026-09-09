@@ -2,7 +2,7 @@
 @push('page-css')
     <link rel="stylesheet" href="{{ asset('assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/vendor/libs/datatables-fixedcolumns-bs5/fixedcolumns.bootstrap5.css') }}" />
-    <link rel="stylesheet" href="{{ asset('assets/css/dokumen-perjadin.css') }}" />
+    <link rel="stylesheet" href="{{ asset('assets/css/dokumen-perjadin.css') }}?v={{ filemtime(public_path('assets/css/dokumen-perjadin.css')) }}" />
     <style>
         #table-rekap-perjadin_wrapper .dataTables_filter input {
             min-width: 220px;
@@ -12,9 +12,42 @@
             margin-bottom: 0.75rem;
         }
 
-        #table-rekap-perjadin td:nth-child(5),
-        #table-rekap-perjadin th:nth-child(5) {
+        #table-rekap-perjadin td:nth-child(6),
+        #table-rekap-perjadin th:nth-child(6) {
             min-width: 350px;
+        }
+
+        #table-rekap-perjadin thead th {
+            text-transform: uppercase;
+            font-size: 0.72rem;
+            letter-spacing: 0.4px;
+            color: #566a7f;
+            background-color: #eef0f7;
+            border-bottom: 2px solid #dfe3f0;
+            white-space: nowrap;
+        }
+
+        #table-rekap-perjadin tbody tr:nth-child(even) {
+            background-color: #f8f7fc;
+        }
+
+        #table-rekap-perjadin tbody tr:hover {
+            background-color: #eef0fb;
+        }
+
+        #table-rekap-perjadin td {
+            vertical-align: middle;
+        }
+
+        #table-rekap-perjadin .rekap-nomor {
+            font-family: 'SFMono-Regular', Consolas, monospace;
+            font-size: 0.8rem;
+        }
+
+        #table-rekap-perjadin .rekap-orang {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
     </style>
 @endpush
@@ -22,13 +55,55 @@
 <div class="card">
     <div class="card-header d-flex align-items-center justify-content-between">
         <h5 class="mb-0"><i class="ti ti-table me-1"></i> {{ $cardTitle ?? 'Rekap Perjalanan Dinas' }}</h5>
-        <div id="rekap-perjadin-export"></div>
+        {{-- <div id="rekap-perjadin-export"></div> --}}
+        <div class="d-flex gap-2">
+            <div class="dropdown">
+                <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="ti ti-plus ti-sm me-1"></i> Buat Dokumen
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item" href="{{ route('perjalanan-dinas.create', ['jenis' => 'biasa']) }}">
+                            Perjalanan Dinas Biasa
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ route('perjalanan-dinas.create', ['jenis' => 'dalam_kota_kurang_8_jam']) }}">
+                            Dalam Kota ≤ 8 Jam
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ route('perjalanan-dinas.create', ['jenis' => 'dalam_kota_lebih_8_jam']) }}">
+                            Dalam Kota &gt; 8 Jam
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <div class="dropdown">
+                <button class="btn btn-label-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="ti ti-file-spreadsheet ti-sm me-1"></i> Import Excel
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item" href="{{ route('perjalanan-dinas.import-template') }}">
+                            <i class="ti ti-download me-1"></i> Unduh Template
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#modal-import-perjalanan-dinas">
+                            <i class="ti ti-upload me-1"></i> Import Data
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
     </div>
     <div class="card-datatable pt-0">
         <table class="table" id="table-rekap-perjadin">
             <thead>
                 <tr>
                     <th>No</th>
+                    <th>Status</th>
                     <th>Nama Pemohon</th>
                     <th>Tanggal Permohonan</th>
                     <th>Nama</th>
@@ -46,27 +121,54 @@
             <tbody>
                 @foreach ($daftarPerjalananDinas as $item)
                     <tr>
-                        <td>{{ $item->id_perjalanan_dinas }}</td>
-                        <td>{{ $item->pemohon->nama ?? '-' }}</td>
+                        <td class="rekap-nomor">{{ $item->id_perjalanan_dinas }}</td>
+                        <td>
+                            @if ($item->status_draft === 'selesai')
+                                <span class="badge rounded-pill bg-label-success"><i class="ti ti-circle-check ti-xs me-1"></i>Selesai</span>
+                            @else
+                                <span class="badge rounded-pill bg-label-warning"><i class="ti ti-pencil ti-xs me-1"></i>Draft</span>
+                            @endif
+                        </td>
+                        <td>
+                            <div class="rekap-orang">
+                                {{-- <span class="avatar avatar-sm"><span class="avatar-initial rounded-circle bg-label-{{ ['primary', 'success', 'info', 'warning', 'danger'][crc32($item->pemohon->nama ?? '?') % 5] }}">{{ strtoupper(substr($item->pemohon->nama ?? '-', 0, 1)) }}</span></span> --}}
+                                <span>{{ $item->pemohon->nama ?? '-' }}</span>
+                            </div>
+                        </td>
                         <td>{{ $item->created_at->format('d/m/Y') }}</td>
-                        <td>{{ $item->pelaksana->nama ?? '-' }}</td>
+                        <td>
+                            <div class="rekap-orang">
+                                {{-- <span class="avatar avatar-sm"><span class="avatar-initial rounded-circle bg-label-{{ ['primary', 'success', 'info', 'warning', 'danger'][crc32($item->pelaksana->nama ?? '?') % 5] }}">{{ strtoupper(substr($item->pelaksana->nama ?? '-', 0, 1)) }}</span></span> --}}
+                                <span>{{ $item->pelaksana->nama ?? '-' }}</span>
+                            </div>
+                        </td>
                         <td>{{ $item->perihal }}</td>
-                        <td>{{ $item->desa_asal }}, {{ $item->kabupaten_asal }}</td>
-                        <td>{{ $item->desa_tujuan }}, {{ $item->kabupaten_tujuan }}</td>
+                        <td>{{ $item->desa_asal }}{{ $item->kabupaten_asal !== $item->kabupaten_tujuan ? ', ' . $item->kabupaten_asal : '' }}</td>
+                        <td>{{ $item->desa_tujuan }}{{ $item->kabupaten_asal !== $item->kabupaten_tujuan ? ', ' . $item->kabupaten_tujuan : '' }}</td>
                         <td>{{ $item->angkutan ?? '-' }}</td>
                         <td>
-                            {{ $item->tanggal_mulai->format('d/m/Y') }}
-                            @if ($item->tanggal_mulai->ne($item->tanggal_selesai))
-                                s.d. {{ $item->tanggal_selesai->format('d/m/Y') }}
+                            @if ($item->tanggal_mulai)
+                                {{ $item->tanggal_mulai->format('d/m/Y') }}
+                                @if ($item->tanggal_selesai && $item->tanggal_mulai->ne($item->tanggal_selesai))
+                                    s.d. {{ $item->tanggal_selesai->format('d/m/Y') }}
+                                @endif
+                            @else
+                                <span class="text-muted">-</span>
                             @endif
                         </td>
                         <td>{{ $item->pembebanan }}</td>
-                        <td>{{ $item->no_surat_tugas }}</td>
-                        <td>{{ $item->no_spd ?? '-' }}</td>
+                        <td><span class="badge bg-label-secondary rekap-nomor">{{ $item->no_surat_tugas }}</span></td>
+                        <td>
+                            @if ($item->no_spd)
+                                <span class="badge bg-label-secondary rekap-nomor">{{ $item->no_spd }}</span>
+                            @else
+                                <span class="text-muted">-</span>
+                            @endif
+                        </td>
                         <td class="text-nowrap">
-                            <button type="button" class="btn btn-icon btn-sm btn-text-primary rounded-pill" title="Lihat" onclick="openDokumenModal({{ $item->id_perjalanan_dinas }})">
+                            <a href="{{ route('perjalanan-dinas.show', $item) }}" class="btn btn-icon btn-sm btn-text-primary rounded-pill" title="Lihat">
                                 <i class="ti ti-eye ti-sm"></i>
-                            </button>
+                            </a>
                             <a href="{{ route('perjalanan-dinas.create', ['jenis' => $item->jenis_perjadin, 'from' => $item->id_perjalanan_dinas]) }}"
                                 class="btn btn-icon btn-sm btn-text-secondary rounded-pill" title="Copy jadi draft baru">
                                 <i class="ti ti-copy ti-sm"></i>
@@ -74,6 +176,28 @@
                             <button type="button" class="btn btn-icon btn-sm btn-text-success rounded-pill" title="Export" onclick="openDokumenModal({{ $item->id_perjalanan_dinas }})">
                                 <i class="ti ti-download ti-sm"></i>
                             </button>
+                            @if ($item->bisaDiubahOleh(auth()->user()->id_pegawai_mitra ?? null))
+                                <a href="{{ route('perjalanan-dinas.edit', $item) }}" class="btn btn-icon btn-sm btn-text-warning rounded-pill" title="Edit">
+                                    <i class="ti ti-edit ti-sm"></i>
+                                </a>
+                                <form action="{{ route('perjalanan-dinas.destroy', $item) }}" method="POST" class="d-inline"
+                                    onsubmit="return confirm('Hapus draft perjalanan dinas ini? Tindakan ini tidak bisa dibatalkan.');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-icon btn-sm btn-text-danger rounded-pill" title="Hapus">
+                                        <i class="ti ti-trash ti-sm"></i>
+                                    </button>
+                                </form>
+                            @elseif ($item->status_draft === 'selesai' && $item->dimilikiOleh(auth()->user()->id_pegawai_mitra ?? null))
+                                <form action="{{ route('perjalanan-dinas.buka-kembali', $item) }}" method="POST" class="d-inline"
+                                    onsubmit="return confirm('Buka kembali perjalanan dinas ini untuk diedit? Status akan kembali jadi draft.');">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="btn btn-icon btn-sm btn-text-warning rounded-pill" title="Buka Kembali untuk Diedit">
+                                        <i class="ti ti-lock-open ti-sm"></i>
+                                    </button>
+                                </form>
+                            @endif
                         </td>
                     </tr>
                 @endforeach
@@ -88,22 +212,56 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title mb-0" id="modal-dokumen-title">Dokumen Perjalanan Dinas</h5>
-                <div class="dropdown ms-auto me-2">
-                    <button class="btn btn-sm btn-label-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="ti ti-download me-1"></i> Export
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="#" id="btn-export-word"><i class="ti ti-file-type-doc me-1"></i> Word (.doc)</a></li>
-                        <li><a class="dropdown-item" href="#" id="btn-export-excel"><i class="ti ti-file-type-xls me-1"></i> Excel (.xls)</a></li>
-                        <li><a class="dropdown-item" href="#" id="btn-export-pdf"><i class="ti ti-file-type-pdf me-1"></i> PDF (Print)</a></li>
-                    </ul>
-                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <ul class="nav nav-pills mb-3" id="dokumen-tabs" role="tablist"></ul>
+                <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                    <div class="d-flex align-items-center flex-wrap gap-2">
+                        <ul class="nav nav-pills mb-0" id="dokumen-tabs" role="tablist"></ul>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-label-primary" id="btn-export-pdf-satu">
+                                <i class="ti ti-file-type-pdf me-1"></i> Export
+                            </button>
+                            <button type="button" class="btn btn-sm btn-primary" id="btn-export-pdf-semua">
+                                <i class="ti ti-files me-1"></i> Export All
+                            </button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="btn-preview-semua">
+                        <i class="ti ti-stack-2 me-1"></i> Preview All
+                    </button>
+                </div>
                 <div id="dokumen-tab-content"></div>
+                <div id="dokumen-preview-all" class="dokumen-preview-pages d-none"></div>
             </div>
+        </div>
+    </div>
+</div>
+
+{{-- Modal Import banyak Perjalanan Dinas sekaligus dari Excel --}}
+<div class="modal fade" id="modal-import-perjalanan-dinas" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form action="{{ route('perjalanan-dinas.import') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title">Import Data Perjalanan Dinas</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small">
+                        Belum punya filenya? <a href="{{ route('perjalanan-dinas.import-template') }}">Unduh template Excel</a> terlebih dahulu, isi datanya (1 baris = 1 perjalanan dinas), baru unggah di sini. Dokumentasi (foto/file) tidak ikut diimpor — lengkapi satu per satu lewat menu Edit setelah data masuk.
+                    </p>
+                    <div class="mb-0">
+                        <label class="form-label">File Excel (.xlsx)</label>
+                        <input type="file" name="file" class="form-control" accept=".xlsx,.xls" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary"><i class="ti ti-upload ti-sm me-1"></i> Import</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -119,7 +277,7 @@
     <script src="{{ asset('assets/vendor/libs/datatables-buttons/buttons.print.js') }}"></script>
     <script src="{{ asset('assets/vendor/libs/datatables-fixedcolumns/datatables.fixedcolumns.js') }}"></script>
     <script src="{{ asset('assets/vendor/libs/datatables-fixedcolumns-bs5/fixedcolumns.bootstrap5.js') }}"></script>
-    <script src="{{ asset('assets/js/dokumen-perjadin.js') }}"></script>
+    <script src="{{ asset('assets/js/dokumen-perjadin.js') }}?v={{ filemtime(public_path('assets/js/dokumen-perjadin.js')) }}"></script>
 
     <script>
         window.dokumenDataByRow = @json($dokumenDataById);
@@ -133,7 +291,7 @@
                 },
                 columnDefs: [
                     { orderable: false, targets: -1 },
-                    { width: '350px', targets: 4 },
+                    { width: '350px', targets: 5 },
                 ],
                 language: {
                     search: '',
@@ -207,12 +365,78 @@
             const dokumenModal = new bootstrap.Modal(modalEl);
             const tabsEl = document.getElementById('dokumen-tabs');
             const contentEl = document.getElementById('dokumen-tab-content');
+            const previewAllEl = document.getElementById('dokumen-preview-all');
+            const btnPreviewSemua = document.getElementById('btn-preview-semua');
+            const btnExportPdfSatu = document.getElementById('btn-export-pdf-satu');
             let currentDocs = {};
             let currentActiveKey = null;
+            let currentData = null;
+
+            // Nama file export: "{nomor surat tugas}-{nama pelaksana}-{nama dokumen}",
+            // mis. "1122-Luthfiani Nur Aisyah, S.Tr.Stat.-Kuitansi". Nomornya diambil
+            // angkanya saja dari format "B-{angka}/62130/KU.340/{tahun}" biar ringkas.
+            function sanitasiNamaFile(teks) {
+                return (teks || '').replace(/[\\/:*?"<>|]/g, '-').trim();
+            }
+
+            function namaFileDokumen(labelDokumen) {
+                const noSuratTugas = (currentData && currentData.no_surat_tugas) || '';
+                const angkaMatch = noSuratTugas.match(/^B-(\d+)/);
+                const nomor = angkaMatch ? angkaMatch[1] : (sanitasiNamaFile(noSuratTugas) || 'TanpaNomor');
+                const namaPelaksana = (currentData && currentData.pelaksana && currentData.pelaksana.nama) || 'TanpaNama';
+                return sanitasiNamaFile(nomor + '-' + namaPelaksana + '-' + labelDokumen);
+            }
+
+            function paperClassFor(key) {
+                if (key === 'surat-tugas') return 'dokumen-f4 dokumen-watermark-pratinjau';
+                if (key === 'spd') return 'dokumen-f4';
+                return 'dokumen-a4' + (key === 'rincian' ? ' dokumen-rincian-biaya' : '');
+            }
+
+            function paperSizeFor(key) {
+                return (key === 'surat-tugas' || key === 'spd') ? 'f4' : 'a4';
+            }
+
+            // Kelas tambahan yang cuma dipakai buat nentuin margin dokumen tertentu (lihat
+            // dokumen-perjadin.css) — Perincian Biaya khusus 1,27cm, dokumen A4 lain 2,54cm.
+            function extraClassFor(key) {
+                if (key === 'rincian') return 'dokumen-rincian-biaya';
+                if (key === 'surat-tugas') return 'dokumen-watermark-pratinjau';
+                return '';
+            }
+
+            function tampilkanTabDokumen(key) {
+                tabsEl.querySelectorAll('.nav-link').forEach(function (b) { b.classList.toggle('active', b.dataset.key === key); });
+                btnPreviewSemua.classList.remove('active');
+                previewAllEl.classList.add('d-none');
+                contentEl.classList.remove('d-none');
+                contentEl.querySelectorAll('.dokumen-preview-pages').forEach(function (p) { p.classList.add('d-none'); });
+                const pane = contentEl.querySelector('[data-key="' + key + '"]');
+                if (pane) {
+                    pane.classList.remove('d-none');
+                    DokumenPerjadin.applyPageMinHeights(pane);
+                }
+                currentActiveKey = key;
+                btnExportPdfSatu.disabled = false;
+            }
+
+            function tampilkanPreviewSemua() {
+                previewAllEl.innerHTML = Object.keys(currentDocs).map(function (key) {
+                    return DokumenPerjadin.renderPaginated(currentDocs[key].html, paperClassFor(key));
+                }).join('<div class="mb-4"></div>');
+                tabsEl.querySelectorAll('.nav-link').forEach(function (b) { b.classList.remove('active'); });
+                btnPreviewSemua.classList.add('active');
+                contentEl.classList.add('d-none');
+                previewAllEl.classList.remove('d-none');
+                DokumenPerjadin.applyPageMinHeights(previewAllEl);
+                currentActiveKey = null;
+                btnExportPdfSatu.disabled = true;
+            }
 
             window.openDokumenModal = function (id) {
                 const data = window.dokumenDataByRow[id];
                 if (!data) return;
+                currentData = data;
 
                 const butuhSpd = data.jenis_perjadin === 'biasa' || data.jenis_perjadin === 'dalam_kota_lebih_8_jam';
 
@@ -228,6 +452,9 @@
 
                 tabsEl.innerHTML = '';
                 contentEl.innerHTML = '';
+                previewAllEl.innerHTML = '';
+                previewAllEl.classList.add('d-none');
+                contentEl.classList.remove('d-none');
 
                 let first = true;
                 Object.keys(currentDocs).forEach(function (key) {
@@ -241,50 +468,96 @@
                     btn.dataset.key = key;
                     btn.textContent = doc.label;
                     btn.addEventListener('click', function () {
-                        tabsEl.querySelectorAll('.nav-link').forEach(function (b) { b.classList.remove('active'); });
-                        btn.classList.add('active');
-                        contentEl.querySelectorAll('.dokumen-preview').forEach(function (p) { p.classList.add('d-none'); });
-                        const pane = contentEl.querySelector('[data-key="' + key + '"]');
-                        if (pane) pane.classList.remove('d-none');
-                        currentActiveKey = key;
+                        tampilkanTabDokumen(key);
                     });
                     li.appendChild(btn);
                     tabsEl.appendChild(li);
 
                     const pane = document.createElement('div');
-                    pane.className = 'dokumen-preview dokumen-a4' + (first ? '' : ' d-none');
+                    pane.className = 'dokumen-preview-pages' + (first ? '' : ' d-none');
                     pane.dataset.key = key;
-                    pane.innerHTML = doc.html;
+                    pane.innerHTML = DokumenPerjadin.renderPaginated(doc.html, paperClassFor(key));
                     contentEl.appendChild(pane);
 
                     first = false;
                 });
 
                 currentActiveKey = Object.keys(currentDocs)[0];
+                btnExportPdfSatu.disabled = false;
                 document.getElementById('modal-dokumen-title').textContent = 'Dokumen — ' + (data.no_surat_tugas || data.perihal || '-');
 
                 dokumenModal.show();
+                modalEl.addEventListener('shown.bs.modal', function onShown() {
+                    modalEl.removeEventListener('shown.bs.modal', onShown);
+                    const activePane = contentEl.querySelector('[data-key="' + currentActiveKey + '"]');
+                    if (activePane) DokumenPerjadin.applyPageMinHeights(activePane);
+                });
             };
 
-            function activeDokumen() {
-                const doc = currentDocs[currentActiveKey];
-                return doc || { html: '', label: 'Dokumen' };
+            btnPreviewSemua.addEventListener('click', function () {
+                if (btnPreviewSemua.classList.contains('active')) {
+                    tampilkanTabDokumen(Object.keys(currentDocs)[0]);
+                } else {
+                    tampilkanPreviewSemua();
+                }
+            });
+
+            const btnExportPdfSemua = document.getElementById('btn-export-pdf-semua');
+            const cssUrlDokumen = '{{ asset("assets/css/dokumen-perjadin.css") }}?v={{ filemtime(public_path("assets/css/dokumen-perjadin.css")) }}';
+            const exportPdfUrl = '{{ route("dokumen.export-pdf") }}';
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            // Kunci kedua tombol Export + kasih spinner selagi PDF-nya digenerate di
+            // server (Chrome headless butuh beberapa detik per dokumen), supaya tidak
+            // diklik dobel dan user tahu prosesnya lagi jalan.
+            function kunciTombolExport(tombolAktif) {
+                [btnExportPdfSatu, btnExportPdfSemua].forEach(function (b) { b.disabled = true; });
+                const labelAsli = tombolAktif.innerHTML;
+                tombolAktif.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengekspor...';
+                return function selesai() {
+                    [btnExportPdfSatu, btnExportPdfSemua].forEach(function (b) { b.disabled = false; });
+                    tombolAktif.innerHTML = labelAsli;
+                };
             }
 
-            document.getElementById('btn-export-word').addEventListener('click', function (e) {
-                e.preventDefault();
-                const doc = activeDokumen();
-                DokumenPerjadin.exportAsWord(doc.html, doc.label.replace(/\s+/g, '_'));
+            async function eksporSatuDokumen(key) {
+                const doc = currentDocs[key];
+                if (!doc) return;
+                await DokumenPerjadin.exportAsPdfHd(
+                    doc.html, namaFileDokumen(doc.label), cssUrlDokumen,
+                    paperSizeFor(key), extraClassFor(key), exportPdfUrl, csrfToken
+                );
+            }
+
+            // "Export" — PDF dokumen di tab yang lagi aktif saja (nonaktif saat mode
+            // Preview All, karena tidak ada 1 dokumen tunggal yang aktif). HD (dibikin
+            // Chrome headless di server, bukan capture), langsung ke-download tanpa
+            // dialog print.
+            btnExportPdfSatu.addEventListener('click', async function () {
+                const selesai = kunciTombolExport(btnExportPdfSatu);
+                try {
+                    await eksporSatuDokumen(currentActiveKey);
+                } catch (e) {
+                    alert('Gagal export PDF: ' + e.message);
+                } finally {
+                    selesai();
+                }
             });
-            document.getElementById('btn-export-excel').addEventListener('click', function (e) {
-                e.preventDefault();
-                const doc = activeDokumen();
-                DokumenPerjadin.exportAsExcel(doc.html, doc.label.replace(/\s+/g, '_'));
-            });
-            document.getElementById('btn-export-pdf').addEventListener('click', function (e) {
-                e.preventDefault();
-                const doc = activeDokumen();
-                DokumenPerjadin.exportAsPdf(doc.html, doc.label, '{{ asset("assets/css/dokumen-perjadin.css") }}', 'A4');
+
+            // "Export All" — tiap dokumen di-export satu-satu (berurutan, bukan
+            // paralel, biar server headless-nya tidak kebanjiran) lalu langsung
+            // ke-download sebagai PDF terpisah, TANPA dibundel jadi zip.
+            btnExportPdfSemua.addEventListener('click', async function () {
+                const selesai = kunciTombolExport(btnExportPdfSemua);
+                try {
+                    for (const key of Object.keys(currentDocs)) {
+                        await eksporSatuDokumen(key);
+                    }
+                } catch (e) {
+                    alert('Gagal export PDF: ' + e.message);
+                } finally {
+                    selesai();
+                }
             });
         });
     </script>
