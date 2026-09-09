@@ -535,7 +535,7 @@
         const tahun = (data.tanggal_mulai || '').slice(0, 4) || '.....';
         return `
             <div style="font-family:Arial, sans-serif;">
-            <table class="ms-auto" style="width:auto; font-size:0.75rem; margin-bottom:1rem;">
+            <table class="ms-auto" style="width:auto; max-width:65%; word-wrap:break-word; font-size:0.75rem; margin-bottom:1rem;">
                 <tr><td class="pe-2">Tahun Anggaran</td><td>: ${tahun}</td></tr>
                 <tr><td class="pe-2">Nomor Bukti</td><td>:</td></tr>
                 <tr><td class="pe-2">Akun</td><td>: ${esc(data.pembebanan) || '...........................'}</td></tr>
@@ -1142,14 +1142,21 @@
     // lewat splitOverflowingTable/renderPaginated) — dipakai baik oleh exportAsPdf
     // (dialog print, lihat window.print()) maupun exportAsPdfHd (dikirim ke server
     // buat dikonversi Chrome headless), supaya keduanya persis sama hasilnya.
-    function buildDokumenHtmlDocument(html, title, cssUrl, paperSize, extraClass, skipLinkTag) {
+    function buildDokumenHtmlDocument(html, title, cssUrl, paperSize, extraClass, skipLinkTag, cssOverride) {
         // @page margin di-nol-kan: browser tidak bisa diandalkan menghormati
         // @page{margin:custom} di dialog print asli (lihat komentar @media print di
         // dokumen-perjadin.css) — margin visualnya dibikin dari padding div
         // .dokumen-a4/.dokumen-f4 sendiri, yang selalu dihormati.
         const paper = paperSize ? resolvePaperSize(paperSize) : null;
         const pageStyle = paper ? '<style>@page{size:' + paper.pageCss + ';margin:0;}</style>' : '';
-        const css = getDokumenCss();
+        // cssOverride (dari fetch mentah, lihat exportAsPdfHd) dipakai kalau ada —
+        // getDokumenCss() baca ulang CSS lewat cssRules[].cssText milik BROWSER, dan
+        // browser DIAM-DIAM membuang properti lawas "page-break-before: always;" saat
+        // serialize ulang (cuma nyisain versi modernnya "break-before: page;") karena
+        // dianggap alias. dompdf TIDAK paham "break-before" (cuma paham sintaks CSS2.1
+        // "page-break-before"), jadi kalau lewat cssRules, .dokumen-page-break (dipakai
+        // Laporan buat mecah halaman Dokumentasi) di server diam-diam tidak ke-apply.
+        const css = cssOverride || getDokumenCss();
         // Dokumen yang punya lebih dari 1 "halaman logis" (ditandai .dokumen-page-break,
         // mis. Laporan) HARUS dipecah jadi beberapa div .dokumen-preview terpisah lewat
         // renderPaginated (sama seperti preview di layar) — bukan 1 div gede berisi semua
@@ -1165,13 +1172,12 @@
         const splitHtml = paper ? splitOverflowingTable(html, paperClass) : html;
         const bodyHtml = paper ? renderPaginated(splitHtml, paperClass) : ('<div class="dokumen-preview">' + html + '</div>');
         // <style> di atas sudah berisi salinan LENGKAP dokumen-perjadin.css (lihat
-        // getDokumenCss) — <link> di sini cuma cadangan buat jendela print (kalau ada
-        // CSS yang entah kenapa gagal ke-serialize ulang lewat cssRules). Untuk export
-        // ke server (exportAsPdfHd, skipLinkTag=true) sengaja DIHILANGKAN: Chrome
-        // headless di server jadi tidak perlu fetch balik ke server Laravel yang sama
-        // buat ambil file CSS ini — kalau server dev-nya single-threaded (mis. `php
-        // artisan serve`), fetch balik itu bakal DEADLOCK (request PDF masih nunggu
-        // Chrome, Chrome nunggu server yang lagi sibuk nungguin dia).
+        // getDokumenCss/cssOverride) — <link> di sini cuma cadangan buat jendela print
+        // (kalau ada CSS yang entah kenapa gagal ke-serialize ulang lewat cssRules).
+        // Untuk export ke server (exportAsPdfHd, skipLinkTag=true) sengaja DIHILANGKAN
+        // — dompdf sudah dikonfigurasi isRemoteEnabled:false (lihat
+        // DokumenExportController), jadi <link> ke situ tidak akan pernah ke-fetch,
+        // percuma disertakan.
         const linkTag = skipLinkTag ? '' : '<link rel="stylesheet" href="' + cssUrl + '">';
         return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title>'
             + linkTag + '<style>' + css + '</style>' + pageStyle + '</head>'
@@ -1197,15 +1203,28 @@
 
     // Export PDF langsung ke-download, HD (bukan capture/screenshot): HTML dokumen
     // yang sama seperti buat print (lihat buildDokumenHtmlDocument) dikirim ke server
-    // lewat exportUrl, dikonversi jadi PDF sungguhan oleh Chrome headless (Browsershot)
-    // — teksnya tetap vector/tajam persis seperti hasil "Save as PDF" manual, cuma
-    // tanpa dialog print & tanpa perlu klik "Simpan" manual. Foto Dokumentasi (<img
+    // lewat exportUrl, dikonversi jadi PDF sungguhan oleh dompdf (renderer PHP murni,
+    // lihat DokumenExportController) — teksnya tetap vector/tajam, cuma tanpa dialog
+    // print & tanpa perlu klik "Simpan" manual. Foto Dokumentasi (<img
     // src="{APP_URL}/storage/...">) sengaja TIDAK di-inline base64 di sini — itu perlu
     // fetch dari BROWSER USER ke APP_URL, yang gagal kena CORS kalau APP_URL beda dari
     // domain yang dipakai user buka aplikasinya. Server (DokumenExportController) yang
     // inline foto-foto itu langsung dari disk, tanpa fetch HTTP sama sekali.
     async function exportAsPdfHd(html, title, cssUrl, paperSize, extraClass, exportUrl, csrfToken) {
-        const fullHtml = buildDokumenHtmlDocument(html, title, cssUrl, paperSize, extraClass, true);
+        // CSS diambil MENTAH lewat fetch (bukan getDokumenCss/cssRules) khusus buat jalur
+        // export ini — lihat komentar di buildDokumenHtmlDocument kenapa itu penting
+        // (browser diam-diam membuang "page-break-before: always;" saat serialize ulang
+        // cssRules, padahal dompdf di server cuma paham sintaks lawas itu, bukan
+        // "break-before" versi modern).
+        let cssOverride = null;
+        try {
+            const cssRes = await fetch(cssUrl);
+            if (cssRes.ok) cssOverride = await cssRes.text();
+        } catch (e) {
+            // Gagal fetch (mis. offline) — fallback ke getDokumenCss() di dalam
+            // buildDokumenHtmlDocument seperti biasa.
+        }
+        const fullHtml = buildDokumenHtmlDocument(html, title, cssUrl, paperSize, extraClass, true, cssOverride);
         const response = await fetch(exportUrl, {
             method: 'POST',
             headers: {

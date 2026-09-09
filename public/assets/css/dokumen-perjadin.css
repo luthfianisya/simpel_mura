@@ -107,6 +107,13 @@
 @media print {
     .dokumen-preview.dokumen-a4,
     .dokumen-preview.dokumen-f4 {
+        /* width/height eksplisit dari aturan mode-layar (dokumen-a4/f4 di luar
+           @media print, mis. width:210mm) HARUS di-override di sini secara EKSPLISIT
+           (bukan cuma "tidak diset ulang") — CSS cascade jalan per-properti: kalau
+           propertinya tidak disebut ulang di rule yang lebih belakangan, nilai dari
+           rule sebelumnya (mode layar) tetap kepakai. auto di sini yang benar-benar
+           menetralkan width:210mm/215mm bawaan mode layar. */
+        width: auto;
         max-width: none;
         min-height: 0;
         /* Border/radius/shadow di .dokumen-preview cuma dekorasi biar preview di layar
@@ -116,9 +123,19 @@
         box-shadow: none;
     }
 
+    /* width & height (juga min-height) SENGAJA tidak diset ke ukuran fisik kertas
+       persis (210x297mm / 215x330mm) di sini — dompdf (renderer PDF di server, lihat
+       DokumenExportController) punya bug box-model: width/height PERSIS sama dengan
+       ukuran kertas + box-sizing:border-box + padding dihitung SEBELUM padding
+       dikurangi, bukan sesudah (padahal border-box seharusnya begitu) — akibatnya
+       box jadi lebih besar dari kertas fisik: vertikal nge-trigger halaman ke-2
+       KOSONG, horizontal bikin teks di kolom kanan kepotong nyampe ke tepi kertas
+       (padding kanannya seolah tidak dihitung). @page{size} (lihat exportAsPdfHd)
+       sudah cukup menentukan ukuran fisik kertasnya; tanpa width/height eksplisit,
+       div ini otomatis selebar/setinggi area konten @page (dikurangi padding-nya
+       sendiri dengan benar) — dokumen yang lebih pendek dari 1 halaman cukup
+       menyisakan putih di bawah (wajar, border/shadow-nya juga sudah none). */
     .dokumen-preview.dokumen-a4 {
-        width: 210mm;
-        height: 297mm;
         padding: 2.54cm;
     }
 
@@ -127,8 +144,6 @@
     }
 
     .dokumen-preview.dokumen-f4 {
-        width: 215mm;
-        height: 330mm;
         padding: 15mm;
     }
 
@@ -215,6 +230,11 @@
 
 .dokumen-preview table.dokumen-table {
     width: 100%;
+    /* table-layout:fixed — dompdf (PHP, lihat DokumenExportController) tanpa ini
+       kadang MELUBER ke kanan: kolom yang isinya baris teks panjang tanpa titik
+       potong jelas (mis. alamat satker) dihitung selebar teksnya sendiri alih-alih
+       dipaksa wrap dalam lebar tabel 100% yang sudah ditentukan. */
+    table-layout: fixed;
     margin-bottom: 1rem;
     border-collapse: collapse;
 }
@@ -222,6 +242,8 @@
 .dokumen-preview table.dokumen-table td {
     vertical-align: top;
     padding: 0.1rem 0.25rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .dokumen-preview table.dokumen-rincian td,

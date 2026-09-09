@@ -2,21 +2,24 @@
 
 namespace App\Http\Controllers;
 
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Spatie\Browsershot\Browsershot;
 use Throwable;
 
 class DokumenExportController extends Controller
 {
     // Konversi HTML dokumen (Surat Tugas, SPD, dst — sudah lengkap dengan CSS &
     // @page dari sisi client, lihat exportAsPdfHd di dokumen-perjadin.js) jadi PDF
-    // sungguhan lewat Chrome headless di server (Browsershot) — BUKAN screenshot,
-    // jadi teksnya tetap vector/HD persis seperti hasil "Save as PDF" di browser,
-    // tapi langsung ke-download tanpa dialog print.
+    // pakai dompdf (renderer PHP murni, TANPA Node/Chrome) — dipilih supaya aplikasi
+    // ini bisa jalan di hosting mana saja (termasuk shared hosting gratisan), tidak
+    // seperti Browsershot yang wajib bisa exec proses Chrome headless di server.
+    // Ukuran kertas (A4/F4) & page-break antar dokumen sudah diatur lewat CSS
+    // @page + page-break-before di dalam $validated['html'] itu sendiri — dompdf
+    // membacanya otomatis, tidak perlu di-set manual di sini.
     public function pdf(Request $request): Response|JsonResponse
     {
         $validated = $request->validate([
@@ -25,14 +28,19 @@ class DokumenExportController extends Controller
         ]);
 
         try {
-            $pdf = Browsershot::html($this->inlineLocalImages($validated['html']))
-                ->setOption('preferCSSPageSize', true)
-                ->showBackground()
-                ->waitUntilNetworkIdle()
-                // Timeout digenerosin — dokumen dengan beberapa foto Dokumentasi butuh
-                // waktu lebih buat Chrome decode & layout-nya.
-                ->timeout(120)
-                ->pdf();
+            $pdf = Pdf::loadHTML($this->inlineLocalImages($validated['html']))
+                ->setOptions([
+                    'isHtml5ParserEnabled' => true,
+                    'isRemoteEnabled' => false,
+                    'defaultFont' => 'DejaVu Sans',
+                    'dpi' => 96,
+                    // dompdf defaultnya media type "screen" — tanpa ini, semua aturan
+                    // @media print di dokumen-perjadin.css (yang me-reset min-height
+                    // preview-layar 297mm/330mm supaya dokumennya tidak nge-generate
+                    // halaman ke-2 kosong) TIDAK PERNAH kepakai sama sekali.
+                    'defaultMediaType' => 'print',
+                ])
+                ->output();
         } catch (Throwable $e) {
             Log::error('Gagal generate PDF dokumen: ' . $e->getMessage());
 
@@ -49,14 +57,11 @@ class DokumenExportController extends Controller
 
     // Ganti <img src="{...}/storage/{path}"> (foto Dokumentasi) ATAU
     // <img src="{...}/assets/{path}"> (mis. logo BPS di Surat Tugas/SPD) jadi data:
-    // URI base64 dengan baca filenya LANGSUNG dari disk — bukan fetch HTTP. Ini
-    // sengaja dilakukan di SERVER (bukan browser user) karena dua alasan: (1) supaya
-    // tidak bergantung sama origin/APP_URL — kalau beda dari domain yang dipakai user
-    // buka aplikasinya, fetch dari BROWSER bisa kena CORS; (2) fetch balik ke server
-    // Laravel yang SAMA dari dalam request yang lagi diproses server itu sendiri bisa
-    // DEADLOCK kalau server dev-nya single-threaded (mis. `php artisan serve`) — request
-    // PDF ini nunggu Chrome, Chrome nunggu server yang lagi sibuk nungguin dia sendiri.
-    // Baca langsung dari disk sama sekali tidak butuh HTTP, jadi tidak kena dua-duanya.
+    // URI base64 dengan baca filenya LANGSUNG dari disk — bukan fetch HTTP. Sengaja
+    // dilakukan di SERVER (bukan browser user) supaya tidak bergantung sama
+    // origin/APP_URL — kalau beda dari domain yang dipakai user buka aplikasinya,
+    // fetch dari BROWSER bisa kena CORS. Baca langsung dari disk juga selaras dengan
+    // dompdf yang di-set isRemoteEnabled:false (tidak fetch HTTP apa pun).
     private function inlineLocalImages(string $html): string
     {
         return preg_replace_callback(
