@@ -12,8 +12,8 @@
             margin-bottom: 0.75rem;
         }
 
-        #table-rekap-perjadin td:nth-child(6),
-        #table-rekap-perjadin th:nth-child(6) {
+        #table-rekap-perjadin td:nth-child(7),
+        #table-rekap-perjadin th:nth-child(7) {
             min-width: 350px;
         }
 
@@ -57,6 +57,12 @@
         <h5 class="mb-0"><i class="ti ti-table me-1"></i> {{ $cardTitle ?? 'Rekap Perjalanan Dinas' }}</h5>
         {{-- <div id="rekap-perjadin-export"></div> --}}
         <div class="d-flex gap-2">
+            <select id="filter-jenis-perjadin" class="form-select" style="width: auto;">
+                <option value="">Semua Jenis Perjadin</option>
+                <option value="Biasa">Biasa</option>
+                <option value="Dalam Kota ≤8 Jam">Dalam Kota ≤8 Jam</option>
+                <option value="Dalam Kota >8 Jam">Dalam Kota &gt;8 Jam</option>
+            </select>
             <div class="dropdown">
                 <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="ti ti-plus ti-sm me-1"></i> Buat Dokumen
@@ -104,6 +110,7 @@
                 <tr>
                     <th>No</th>
                     <th>Status</th>
+                    <th>Jenis Perjadin</th>
                     <th>Nama Pemohon</th>
                     <th>Tanggal Permohonan</th>
                     <th>Nama</th>
@@ -128,6 +135,11 @@
                             @else
                                 <span class="badge rounded-pill bg-label-warning"><i class="ti ti-pencil ti-xs me-1"></i>Draft</span>
                             @endif
+                        </td>
+                        <td>
+                            <span class="badge rounded-pill bg-label-{{ ['biasa' => 'info', 'dalam_kota_kurang_8_jam' => 'secondary', 'dalam_kota_lebih_8_jam' => 'primary'][$item->jenis_perjadin] ?? 'secondary' }}">
+                                {{ $item->jenis_perjadin_label }}
+                            </span>
                         </td>
                         <td>
                             <div class="rekap-orang">
@@ -283,7 +295,7 @@
         window.dokumenDataByRow = @json($dokumenDataById);
 
         document.addEventListener('DOMContentLoaded', function () {
-            $('#table-rekap-perjadin').DataTable({
+            const tabelRekap = $('#table-rekap-perjadin').DataTable({
                 scrollX: true,
                 autoWidth: false,
                 fixedColumns: {
@@ -291,7 +303,7 @@
                 },
                 columnDefs: [
                     { orderable: false, targets: -1 },
-                    { width: '350px', targets: 5 },
+                    { width: '350px', targets: 6 },
                 ],
                 language: {
                     search: '',
@@ -358,6 +370,15 @@
                 initComplete: function () {
                     this.api().buttons().container().appendTo('#rekap-perjadin-export');
                 },
+            });
+
+            // ----- Filter kolom "Jenis Perjadin" — substring biasa (bukan regex exact
+            // match) supaya tidak keganggu spasi/baris baru di sekitar teks badge;
+            // aman dipakai karena ketiga labelnya cukup beda tidak saling tumpang
+            // tindih ("Biasa" vs "Dalam Kota ≤8 Jam" vs "Dalam Kota >8 Jam"). Kolom
+            // index 2 sesuai urutan header (No, Status, Jenis Perjadin, ...). -----
+            document.getElementById('filter-jenis-perjadin').addEventListener('change', function () {
+                tabelRekap.column(2).search(this.value, false, false).draw();
             });
 
             // ----- Modal Lihat/Export dokumen -----

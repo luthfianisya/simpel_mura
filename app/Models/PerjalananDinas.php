@@ -17,6 +17,19 @@ class PerjalananDinas extends Model
     protected $table = 'perjalanan_dinas';
     protected $primaryKey = 'id_perjalanan_dinas';
 
+    // Label jenis perjalanan dinas yang ramah dibaca — dipakai di tabel rekap
+    // (kolom & filter "Jenis Perjadin") dan di mana pun butuh tampilan yang sama.
+    public const JENIS_PERJADIN_LABELS = [
+        'biasa' => 'Biasa',
+        'dalam_kota_kurang_8_jam' => 'Dalam Kota ≤8 Jam',
+        'dalam_kota_lebih_8_jam' => 'Dalam Kota >8 Jam',
+    ];
+
+    public function getJenisPerjadinLabelAttribute(): string
+    {
+        return self::JENIS_PERJADIN_LABELS[$this->jenis_perjadin] ?? $this->jenis_perjadin;
+    }
+
     protected $fillable = [
         'id_pemohon', 'id_pegawai_mitra_pelaksana', 'id_grup',
         'no_surat_tugas', 'tanggal_surat_tugas', 'perihal', 'uraian_tugas',
