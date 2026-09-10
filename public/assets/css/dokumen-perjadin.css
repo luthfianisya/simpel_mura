@@ -317,10 +317,17 @@
 }
 
 .dokumen-preview .dokumentasi-cell img {
-    width: 100%;
-    height: 65mm;
-    object-fit: contain;
+    /* object-fit TIDAK didukung dompdf (renderer PDF di server, lihat
+       DokumenExportController) — kalau diabaikan, width:100%+height:65mm polos
+       bikin gambar dipaksa pas ukuran itu tanpa peduli rasio asli (gepeng).
+       max-width/max-height + width/height:auto sama-sama menjaga rasio TANPA
+       butuh object-fit, jadi konsisten di preview browser maupun hasil PDF. */
+    max-width: 100%;
+    max-height: 65mm;
+    width: auto;
+    height: auto;
     display: block;
+    margin: 0 auto;
 }
 
 .dokumen-preview .dokumentasi-file {

@@ -40,7 +40,13 @@ return [
 
         'public' => [
             'driver' => 'local',
-            'root' => storage_path('app/public'),
+            // PUBLIC_DISK_ROOT dipakai khusus di shared hosting tanpa akses
+            // symlink/SSH (mis. InfinityFree) — foto Dokumentasi disimpan LANGSUNG
+            // di folder htdocs (lewat env ini) alih-alih lewat symlink
+            // public/storage -> storage/app/public yang butuh php artisan
+            // storage:link (fungsi symlink() sering dimatikan di shared hosting).
+            // Kosongkan env ini di hosting yang support symlink (VPS/Render/lokal).
+            'root' => env('PUBLIC_DISK_ROOT', storage_path('app/public')),
             'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
             'visibility' => 'public',
             'throw' => false,
