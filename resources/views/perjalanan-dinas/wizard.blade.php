@@ -1789,21 +1789,31 @@
             const dokumentasiDestroyUrlTemplate = @json($perjalananDinas
                 ? route('perjalanan-dinas.dokumentasi.destroy', [$perjalananDinas, '__ID__'])
                 : null);
+            const dokumentasiCaptionUrlTemplate = @json($perjalananDinas
+                ? route('perjalanan-dinas.dokumentasi.caption', [$perjalananDinas, '__ID__'])
+                : null);
 
             // File yang sudah tersimpan di server (mode edit) — dihapus lewat tombol "x"
-            // langsung AJAX (permanen seketika, tidak menunggu form disubmit).
+            // langsung AJAX (permanen seketika, tidak menunggu form disubmit). Caption-nya
+            // juga diedit langsung AJAX (endpoint terpisah, lihat updateCaptionDokumentasi)
+            // karena update() form utama sengaja tidak pernah mengubah baris Dokumentasi
+            // yang sudah ada.
             let existingDokumentasi = @json($existingDokumentasi ?? []);
             // File baru yang baru dipilih user tapi belum disubmit. FileList bawaan
             // <input type="file"> read-only (tidak bisa dihapus satu-satu), jadi daftar
             // sebenarnya disimpan manual di sini — tiap berubah, disinkronkan ulang ke
             // dokumentasiInput.files lewat DataTransfer supaya yang benar-benar ikut
-            // terkirim saat submit cuma yang tersisa (belum dihapus).
+            // terkirim saat submit cuma yang tersisa (belum dihapus). pendingCaptions
+            // sejajar index-nya dengan pendingFiles, dikirim sebagai input hidden
+            // "dokumentasi_caption[]" terpisah (lihat rebuildDokumentasiCaptionInputs)
+            // supaya di server tetap bisa dipasangkan ke file "dokumentasi[]" yang sesuai.
             let pendingFiles = [];
             let pendingPreviewUrls = [];
+            let pendingCaptions = [];
 
             function dokumentasiGabungan() {
-                return existingDokumentasi.map(function (d) { return { nama_file: d.nama_file, url: d.url }; })
-                    .concat(pendingFiles.map(function (file, i) { return { nama_file: file.name, url: pendingPreviewUrls[i] || '' }; }));
+                return existingDokumentasi.map(function (d) { return { nama_file: d.nama_file, url: d.url, caption: d.caption }; })
+                    .concat(pendingFiles.map(function (file, i) { return { nama_file: file.name, url: pendingPreviewUrls[i] || '', caption: pendingCaptions[i] }; }));
             }
 
             function rebuildDokumentasiInputFiles() {
@@ -1812,10 +1822,25 @@
                 dokumentasiInput.files = dt.files;
             }
 
-            function boksDokumentasi(namaFile, url) {
+            // Caption file yang belum diupload dikirim sebagai input hidden terpisah
+            // (bukan lewat FormData bawaan <input type="file">, yang tidak bisa
+            // dititipi field lain per-file) — dibangun ulang tiap pendingCaptions
+            // berubah supaya urutannya selalu sejajar sama dokumentasiInput.files.
+            function rebuildDokumentasiCaptionInputs() {
+                form.querySelectorAll('input[name="dokumentasi_caption[]"]').forEach(function (el) { el.remove(); });
+                pendingCaptions.forEach(function (caption) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'dokumentasi_caption[]';
+                    input.value = caption || '';
+                    form.appendChild(input);
+                });
+            }
+
+            function boksDokumentasi(namaFile, url, caption, onCaptionChange) {
                 const box = document.createElement('div');
                 box.className = 'border rounded p-2 text-center position-relative dokumentasi-thumb';
-                box.style.width = '90px';
+                box.style.width = '110px';
                 if (url && /\.(jpe?g|png|gif|webp)$/i.test(namaFile || '')) {
                     const img = document.createElement('img');
                     img.src = url;
@@ -1831,6 +1856,16 @@
                 label.className = 'small text-truncate mt-1';
                 label.textContent = namaFile || '';
                 box.appendChild(label);
+
+                const captionInput = document.createElement('input');
+                captionInput.type = 'text';
+                captionInput.className = 'form-control form-control-sm mt-1';
+                captionInput.placeholder = 'Caption foto';
+                captionInput.value = caption || '';
+                captionInput.addEventListener('click', function (e) { e.stopPropagation(); });
+                captionInput.addEventListener('change', function () { onCaptionChange(captionInput.value); });
+                box.appendChild(captionInput);
+
                 return box;
             }
 
@@ -1848,7 +1883,19 @@
                 dokumentasiList.innerHTML = '';
 
                 existingDokumentasi.forEach(function (d) {
-                    const box = boksDokumentasi(d.nama_file, d.url);
+                    const box = boksDokumentasi(d.nama_file, d.url, d.caption, function (caption) {
+                        fetch(dokumentasiCaptionUrlTemplate.replace('__ID__', d.id), {
+                            method: 'PATCH',
+                            headers: { 'X-CSRF-TOKEN': dokumentasiCsrfToken, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ caption: caption }),
+                        }).then(function (res) {
+                            if (!res.ok) throw new Error('gagal simpan caption');
+                            d.caption = caption;
+                            renderAllPreviews();
+                        }).catch(function () {
+                            alert('Gagal menyimpan caption. Coba lagi.');
+                        });
+                    });
                     box.appendChild(tombolHapusDokumentasi(function () {
                         if (!confirm('Hapus file "' + (d.nama_file || '') + '"? File yang sudah tersimpan akan langsung dihapus permanen.')) return;
                         fetch(dokumentasiDestroyUrlTemplate.replace('__ID__', d.id), {
@@ -1868,7 +1915,11 @@
                 });
 
                 pendingFiles.forEach(function (file, index) {
-                    const box = boksDokumentasi(file.name, pendingPreviewUrls[index] || '');
+                    const box = boksDokumentasi(file.name, pendingPreviewUrls[index] || '', pendingCaptions[index], function (caption) {
+                        pendingCaptions[index] = caption;
+                        rebuildDokumentasiCaptionInputs();
+                        renderAllPreviews();
+                    });
                     if (file.type.startsWith('image/') && !pendingPreviewUrls[index]) {
                         const reader = new FileReader();
                         reader.onload = function (e) {
@@ -1881,7 +1932,9 @@
                     box.appendChild(tombolHapusDokumentasi(function () {
                         pendingFiles.splice(index, 1);
                         pendingPreviewUrls.splice(index, 1);
+                        pendingCaptions.splice(index, 1);
                         rebuildDokumentasiInputFiles();
+                        rebuildDokumentasiCaptionInputs();
                         touched['laporan-dokumentasi'] = true;
                         renderDokumentasiList();
                         renderAllPreviews();
@@ -1897,7 +1950,9 @@
             dokumentasiInput.addEventListener('change', function () {
                 pendingFiles = pendingFiles.concat(Array.from(dokumentasiInput.files));
                 pendingPreviewUrls = pendingFiles.map(function (_, i) { return pendingPreviewUrls[i]; });
+                pendingCaptions = pendingFiles.map(function (_, i) { return pendingCaptions[i]; });
                 rebuildDokumentasiInputFiles();
+                rebuildDokumentasiCaptionInputs();
                 touched['laporan-dokumentasi'] = true;
                 renderDokumentasiList();
                 renderAllPreviews();

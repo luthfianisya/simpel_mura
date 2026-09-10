@@ -216,6 +216,7 @@ class PerjalananDinas extends Model
             ])->values()->all(),
             'dokumentasi' => $this->dokumentasi->map(fn ($d) => [
                 'nama_file' => $d->nama_file,
+                'caption' => $d->caption,
                 'url' => Storage::disk('public')->url($d->path_file),
             ])->values()->all(),
         ];

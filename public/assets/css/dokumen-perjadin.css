@@ -314,6 +314,10 @@
     border: 1px solid #000;
     padding: 0.35rem;
     text-align: center;
+    /* vertical-align:middle (bukan flexbox — dompdf cuma dukung sepenuhnya
+       properti table dasar) supaya foto tetap rata tengah vertikal walau
+       tinggi foto di sel sebelahnya (1 baris = 2 sel) beda. */
+    vertical-align: middle;
 }
 
 .dokumen-preview .dokumentasi-cell img {
@@ -328,6 +332,12 @@
     height: auto;
     display: block;
     margin: 0 auto;
+}
+
+.dokumen-preview .dokumentasi-caption {
+    text-align: center;
+    font-size: 0.75rem;
+    margin-top: 0.35rem;
 }
 
 .dokumen-preview .dokumentasi-file {

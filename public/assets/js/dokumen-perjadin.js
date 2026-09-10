@@ -764,7 +764,8 @@
                 const inner = (!isPdf && d.url)
                     ? '<img src="' + esc(d.url) + '" alt="' + esc(d.nama_file) + '">'
                     : '<div class="dokumentasi-file"><i class="ti ti-file-text ti-lg"></i><br>' + esc(d.nama_file) + '</div>';
-                return '<td class="dokumentasi-cell">' + inner + '</td>';
+                const caption = d.caption ? '<div class="dokumentasi-caption">' + esc(d.caption) + '</div>' : '';
+                return '<td class="dokumentasi-cell">' + inner + caption + '</td>';
             }
             let bodyRows = '';
             for (let i = 0; i < rows.length; i += 2) {

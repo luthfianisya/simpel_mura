@@ -34,6 +34,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/perjalanan-dinas/{perjalananDinas}/buka-kembali', [PerjalananDinasController::class, 'bukaKembali'])->name('perjalanan-dinas.buka-kembali');
     Route::delete('/perjalanan-dinas/{perjalananDinas}', [PerjalananDinasController::class, 'destroy'])->name('perjalanan-dinas.destroy');
     Route::delete('/perjalanan-dinas/{perjalananDinas}/dokumentasi/{dokumentasi}', [PerjalananDinasController::class, 'hapusDokumentasi'])->name('perjalanan-dinas.dokumentasi.destroy');
+    Route::patch('/perjalanan-dinas/{perjalananDinas}/dokumentasi/{dokumentasi}/caption', [PerjalananDinasController::class, 'updateCaptionDokumentasi'])->name('perjalanan-dinas.dokumentasi.caption');
     Route::get('/perjalanan-dinas/{perjalananDinas}', [PerjalananDinasController::class, 'show'])->name('perjalanan-dinas.show');
     Route::get('/rincian-biaya', [RincianBiayaController::class, 'index'])->name('rincian-biaya.index');
     Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');

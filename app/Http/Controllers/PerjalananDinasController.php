@@ -197,6 +197,7 @@ class PerjalananDinasController extends Controller
             ? $perjalananDinas->dokumentasi->map(fn ($d) => [
                 'id' => $d->id_dokumentasi,
                 'nama_file' => $d->nama_file,
+                'caption' => $d->caption,
                 'url' => Storage::disk('public')->url($d->path_file),
             ])->values()->all()
             : [];
@@ -419,6 +420,10 @@ class PerjalananDinasController extends Controller
 
             'dokumentasi' => 'nullable|array',
             'dokumentasi.*' => 'file|max:10240|mimes:jpg,jpeg,png,pdf',
+            // Dikirim array terpisah (bukan digabung 1 field per file) supaya tetap sinkron
+            // dengan index array file "dokumentasi.*" di atas — lihat simpanDataTerkait().
+            'dokumentasi_caption' => 'nullable|array',
+            'dokumentasi_caption.*' => 'nullable|string|max:255',
         ];
     }
 
@@ -513,11 +518,13 @@ class PerjalananDinasController extends Controller
             LaporanPerjadin::where('id_perjalanan_dinas', $perjalananDinas->id_perjalanan_dinas)->delete();
         }
 
-        foreach ($request->file('dokumentasi', []) as $file) {
+        $dokumentasiCaptions = $request->input('dokumentasi_caption', []);
+        foreach ($request->file('dokumentasi', []) as $index => $file) {
             $path = Storage::disk('public')->putFile('dokumentasi', $file);
             Dokumentasi::create([
                 'id_perjalanan_dinas' => $perjalananDinas->id_perjalanan_dinas,
                 'nama_file' => $file->getClientOriginalName(),
+                'caption' => $dokumentasiCaptions[$index] ?? null,
                 'path_file' => $path,
                 'uploaded_at' => now(),
             ]);
@@ -619,6 +626,25 @@ class PerjalananDinasController extends Controller
 
         Storage::disk('public')->delete($dokumentasi->path_file);
         $dokumentasi->delete();
+
+        return response()->noContent();
+    }
+
+    /**
+     * Ubah caption foto Dokumentasi yang SUDAH tersimpan — endpoint terpisah (bukan
+     * lewat update() form utama) karena update() sengaja tidak pernah mengubah baris
+     * Dokumentasi yang sudah ada, lihat komentar di simpanDataTerkait().
+     */
+    public function updateCaptionDokumentasi(Request $request, PerjalananDinas $perjalananDinas, Dokumentasi $dokumentasi)
+    {
+        abort_unless($perjalananDinas->bisaDiubahOleh($request->user()->id_pegawai_mitra), 403);
+        abort_unless($dokumentasi->id_perjalanan_dinas === $perjalananDinas->id_perjalanan_dinas, 404);
+
+        $validated = $request->validate([
+            'caption' => 'nullable|string|max:255',
+        ]);
+
+        $dokumentasi->update(['caption' => $validated['caption'] ?? null]);
 
         return response()->noContent();
     }

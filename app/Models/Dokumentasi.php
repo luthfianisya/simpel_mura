@@ -9,7 +9,7 @@ class Dokumentasi extends Model
     protected $table = 'dokumentasi';
     protected $primaryKey = 'id_dokumentasi';
 
-    protected $fillable = ['id_perjalanan_dinas', 'nama_file', 'path_file', 'uploaded_at'];
+    protected $fillable = ['id_perjalanan_dinas', 'nama_file', 'caption', 'path_file', 'uploaded_at'];
 
     protected $casts = ['uploaded_at' => 'datetime'];
 
