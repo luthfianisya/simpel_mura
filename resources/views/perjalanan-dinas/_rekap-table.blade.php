@@ -301,6 +301,12 @@
                 fixedColumns: {
                     rightColumns: 1,
                 },
+                // Data dari server sudah diurutkan terbaru duluan (lihat ->latest() di
+                // controller), tapi DataTables tetap butuh "order" eksplisit — tanpa ini
+                // dia default sort kolom pertama (No) menaik, jadi yang PALING LAMA malah
+                // tampil di atas. Kolom 0 ("No" = id_perjalanan_dinas) descending ekuivalen
+                // dengan terbaru di atas karena ID auto-increment.
+                order: [[0, 'desc']],
                 columnDefs: [
                     { orderable: false, targets: -1 },
                     { width: '350px', targets: 6 },
