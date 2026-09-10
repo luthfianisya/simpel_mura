@@ -230,11 +230,13 @@
 
 .dokumen-preview table.dokumen-table {
     width: 100%;
-    /* table-layout:fixed — dompdf (PHP, lihat DokumenExportController) tanpa ini
-       kadang MELUBER ke kanan: kolom yang isinya baris teks panjang tanpa titik
-       potong jelas (mis. alamat satker) dihitung selebar teksnya sendiri alih-alih
-       dipaksa wrap dalam lebar tabel 100% yang sudah ditentukan. */
-    table-layout: fixed;
+    /* table-layout:fixed SENGAJA TIDAK dipakai — kelihatannya membantu cegah teks
+       panjang meluber, tapi ternyata TIDAK diperlukan (perbaikan aslinya sudah
+       cukup lewat width:auto di .dokumen-preview.dokumen-a4/f4, lihat komentar di
+       situ) dan malah merusak kesejajaran kolom pada tabel dengan colspan berbeda
+       antar baris (mis. Rincian Biaya: header pakai colspan=3, sebagian baris body
+       pakai 3 kolom terpisah) — table-layout:fixed menghitung lebar kolom cuma dari
+       baris pertama, jadi baris lain dengan struktur kolom berbeda jadi tidak pas. */
     margin-bottom: 1rem;
     border-collapse: collapse;
 }
