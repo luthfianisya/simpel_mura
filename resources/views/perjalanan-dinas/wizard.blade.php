@@ -235,32 +235,12 @@
                     </div>
                     <div class="line"></div>
                 @endif
-                <div class="step" data-target="#step-rincian">
+                <div class="step" data-target="#step-laporan">
                     <button type="button" class="step-trigger" role="tab">
                         <span class="bs-stepper-circle">{{ ++$stepNo }}</span>
                         <span class="bs-stepper-label">
-                            <span class="bs-stepper-title">Rincian Biaya</span>
-                            <span class="bs-stepper-subtitle">Rencana biaya</span>
-                        </span>
-                    </button>
-                </div>
-                <div class="line"></div>
-                <div class="step" data-target="#step-pengeluaran">
-                    <button type="button" class="step-trigger" role="tab">
-                        <span class="bs-stepper-circle">{{ ++$stepNo }}</span>
-                        <span class="bs-stepper-label">
-                            <span class="bs-stepper-title">Pengeluaran Riil</span>
-                            <span class="bs-stepper-subtitle">Realisasi biaya</span>
-                        </span>
-                    </button>
-                </div>
-                <div class="line"></div>
-                <div class="step" data-target="#step-kuitansi">
-                    <button type="button" class="step-trigger" role="tab">
-                        <span class="bs-stepper-circle">{{ ++$stepNo }}</span>
-                        <span class="bs-stepper-label">
-                            <span class="bs-stepper-title">Kuitansi</span>
-                            <span class="bs-stepper-subtitle">Pembayaran</span>
+                            <span class="bs-stepper-title">Laporan</span>
+                            <span class="bs-stepper-subtitle">&amp; Dokumentasi</span>
                         </span>
                     </button>
                 </div>
@@ -275,12 +255,32 @@
                     </button>
                 </div>
                 <div class="line"></div>
-                <div class="step" data-target="#step-laporan">
+                <div class="step" data-target="#step-pengeluaran">
                     <button type="button" class="step-trigger" role="tab">
                         <span class="bs-stepper-circle">{{ ++$stepNo }}</span>
                         <span class="bs-stepper-label">
-                            <span class="bs-stepper-title">Laporan</span>
-                            <span class="bs-stepper-subtitle">&amp; Dokumentasi</span>
+                            <span class="bs-stepper-title">Pengeluaran Riil</span>
+                            <span class="bs-stepper-subtitle">Realisasi biaya</span>
+                        </span>
+                    </button>
+                </div>
+                <div class="line"></div>
+                <div class="step" data-target="#step-rincian">
+                    <button type="button" class="step-trigger" role="tab">
+                        <span class="bs-stepper-circle">{{ ++$stepNo }}</span>
+                        <span class="bs-stepper-label">
+                            <span class="bs-stepper-title">Rincian Biaya</span>
+                            <span class="bs-stepper-subtitle">Rencana biaya</span>
+                        </span>
+                    </button>
+                </div>
+                <div class="line"></div>
+                <div class="step" data-target="#step-kuitansi">
+                    <button type="button" class="step-trigger" role="tab">
+                        <span class="bs-stepper-circle">{{ ++$stepNo }}</span>
+                        <span class="bs-stepper-label">
+                            <span class="bs-stepper-title">Kuitansi</span>
+                            <span class="bs-stepper-subtitle">Pembayaran</span>
                         </span>
                     </button>
                 </div>
@@ -615,43 +615,29 @@
                     </div>
                 @endif
 
-                {{-- STEP: RINCIAN BIAYA --}}
-                <div id="step-rincian" class="content">
+                {{-- STEP: LAPORAN & DOKUMENTASI --}}
+                <div id="step-laporan" class="content">
                     <div class="row g-4">
                         <div class="col-lg-6">
                             <div class="card wizard-form-card">
                                 <div class="card-body">
-                                    <h6 class="mb-3">Rincian Biaya (Rencana)</h6>
-                                    <div class="row g-2 align-items-center mb-1">
-                                        <div class="col-4"></div>
-                                        <div class="col-3"><label class="form-label mb-0 small text-muted" for="input-rincian_hari-uang_harian">Jumlah Hari</label></div>
-                                        <div class="col-5"><label class="form-label mb-0 small text-muted" for="input-rincian-uang_harian">Rate per Hari/Malam (Rp)</label></div>
+                                    <h6 class="mb-3">Laporan Perjalanan Dinas</h6>
+                                    <div class="row g-3 mb-4">
+                                        <div class="col-md-12">
+                                            <label class="form-label">Kesimpulan Hasil Kegiatan<span class="required-mark">*</span></label>
+                                            <textarea id="input-kesimpulan" name="kesimpulan_hasil_kegiatan" class="form-control" rows="3">{{ old('kesimpulan_hasil_kegiatan') }}</textarea>
+                                            <div class="field-error" id="err-input-kesimpulan">Kesimpulan hasil kegiatan wajib diisi.</div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label class="form-label">Tindak Lanjut<span class="required-mark">*</span></label>
+                                            <textarea id="input-tindak_lanjut" name="tindak_lanjut" class="form-control" rows="2">{{ old('tindak_lanjut') }}</textarea>
+                                            <div class="field-error" id="err-input-tindak_lanjut">Tindak lanjut wajib diisi.</div>
+                                        </div>
                                     </div>
-                                    <div class="row g-2 align-items-center mb-1">
-                                        <div class="col-4"><label class="form-label mb-0" for="input-rincian-uang_harian">Uang Harian<span class="required-mark">*</span></label></div>
-                                        <div class="col-3"><input type="number" min="0" step="1" id="input-rincian_hari-uang_harian" name="rincian_hari[uang_harian]" class="form-control rincian-input" value="{{ old('rincian_hari.uang_harian', '') }}"></div>
-                                        <div class="col-5"><input type="number" min="0" step="1000" id="input-rincian-uang_harian" name="rincian[uang_harian]" class="form-control rincian-input" value="{{ old('rincian.uang_harian', 0) }}"></div>
-                                    </div>
-                                    <div class="row g-2 mb-2">
-                                        <div class="col-4"></div>
-                                        <div class="col-8"><div id="hint-rekomendasi-uang-harian" class="form-text mb-0"></div></div>
-                                    </div>
-                                    <div class="row g-2 align-items-center mb-2">
-                                        <div class="col-4"><label class="form-label mb-0" for="input-rincian-transport">Transport</label></div>
-                                        <div class="col-3"><input type="number" min="0" step="1" id="input-rincian_hari-transport" name="rincian_hari[transport]" class="form-control rincian-input" value="{{ old('rincian_hari.transport', '') }}"></div>
-                                        <div class="col-5"><input type="number" min="0" step="1000" id="input-rincian-transport" name="rincian[transport]" class="form-control rincian-input" value="{{ old('rincian.transport', 0) }}"></div>
-                                    </div>
-                                    <div class="row g-2 align-items-center mb-0">
-                                        <div class="col-4"><label class="form-label mb-0" for="input-rincian-penginapan">Penginapan</label></div>
-                                        <div class="col-3"><input type="number" min="0" step="1" id="input-rincian_hari-penginapan" name="rincian_hari[penginapan]" class="form-control rincian-input" value="{{ old('rincian_hari.penginapan', '') }}"></div>
-                                        <div class="col-5"><input type="number" min="0" step="1000" id="input-rincian-penginapan" name="rincian[penginapan]" class="form-control rincian-input" value="{{ old('rincian.penginapan', 0) }}"></div>
-                                    </div>
-                                    <div class="row g-2">
-                                        <div class="col-4"></div>
-                                        <div class="col-8"><div id="hint-rekomendasi-akomodasi" class="form-text mb-0"></div></div>
-                                    </div>
-                                    <div class="form-text">Isi rate per hari/malam (bukan total) — totalnya dihitung otomatis (rate &times; jumlah hari/malam) dan langsung kelihatan di preview dokumen. Jumlah hari/malam bisa berbeda-beda per komponen (mis. penginapan cuma 3 malam meski perjalanan 5 hari) — kosongkan kalau ikut lama perjalanan dinas.</div>
-                                    <div class="field-error" id="err-rincian-total">Uang Harian wajib diisi (lebih dari 0).</div>
+                                    <h6 class="mb-3">Dokumentasi<span class="required-mark">*</span></h6>
+                                    <input type="file" id="input-dokumentasi" name="dokumentasi[]" class="form-control" multiple accept="image/*,.pdf">
+                                    <div id="dokumentasi-preview-list" class="d-flex flex-wrap gap-2 mt-3"></div>
+                                    <div class="field-error" id="err-laporan-dokumentasi">Minimal 1 file dokumentasi wajib diunggah.</div>
                                 </div>
                             </div>
                             <div class="d-flex justify-content-between mt-4">
@@ -664,64 +650,7 @@
                                 {{-- <div class="alert alert-warning py-2 px-3 small mb-2">
                                     <i class="ti ti-info-circle me-1"></i> Preview masih draft awal, format resmi menyusul.
                                 </div> --}}
-                                <div id="preview-rincian-biaya" class="dokumen-preview-pages"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- STEP: PENGELUARAN RIIL --}}
-                <div id="step-pengeluaran" class="content">
-                    <div class="row g-4">
-                        <div class="col-lg-6">
-                            <div class="card wizard-form-card">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center justify-content-between mb-3">
-                                        <h6 class="mb-0">Pengeluaran Riil</h6>
-                                        <button type="button" id="btn-add-pengeluaran" class="btn btn-sm btn-label-primary"><i class="ti ti-plus ti-sm"></i> Tambah</button>
-                                    </div>
-                                    <div id="pengeluaran-rows"></div>
-                                    <div id="pengeluaran-empty" class="text-muted small">Belum ada pengeluaran riil. Boleh diisi belakangan setelah perjalanan selesai.</div>
-                                    <div id="warning-transport-agregat" class="alert alert-warning d-flex align-items-center gap-2 py-2 px-3 mt-2 mb-0 d-none">
-                                        <i class="ti ti-alert-triangle ti-sm"></i>
-                                        <div class="small"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="d-flex justify-content-between mt-4">
-                                <button type="button" class="btn btn-label-secondary btn-wizard-prev"><i class="ti ti-arrow-left ti-sm me-1"></i> Kembali</button>
-                                <button type="button" class="btn btn-primary btn-wizard-next">Lanjut <i class="ti ti-arrow-right ti-sm ms-1"></i></button>
-                            </div>
-                        </div>
-                        <div class="col-lg-6">
-                            <div class="preview-sticky">
-                                {{-- <div class="alert alert-warning py-2 px-3 small mb-2">
-                                    <i class="ti ti-info-circle me-1"></i> Preview masih draft awal, format resmi menyusul.
-                                </div> --}}
-                                <div id="preview-pengeluaran-riil" class="dokumen-preview-pages"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- STEP: KUITANSI --}}
-                <div id="step-kuitansi" class="content">
-                    <div class="row g-4">
-                        <div class="col-lg-6">
-                            <div class="alert alert-info py-2 px-3 small mb-0">
-                                <i class="ti ti-info-circle me-1"></i> Tanggal Kuitansi diisi di step Data Umum, di samping Tanggal Mulai &ndash; Selesai.
-                            </div>
-                            <div class="d-flex justify-content-between mt-4">
-                                <button type="button" class="btn btn-label-secondary btn-wizard-prev"><i class="ti ti-arrow-left ti-sm me-1"></i> Kembali</button>
-                                <button type="button" class="btn btn-primary btn-wizard-next">Lanjut <i class="ti ti-arrow-right ti-sm ms-1"></i></button>
-                            </div>
-                        </div>
-                        <div class="col-lg-6">
-                            <div class="preview-sticky">
-                                {{-- <div class="alert alert-warning py-2 px-3 small mb-2">
-                                    <i class="ti ti-info-circle me-1"></i> Preview masih draft awal, format resmi menyusul.
-                                </div> --}}
-                                <div id="preview-kuitansi" class="dokumen-preview-pages"></div>
+                                <div id="preview-laporan" class="dokumen-preview-pages"></div>
                             </div>
                         </div>
                     </div>
@@ -779,30 +708,101 @@
                     </div>
                 </div>
 
-                {{-- STEP: LAPORAN & DOKUMENTASI --}}
-                <div id="step-laporan" class="content">
+                {{-- STEP: PENGELUARAN RIIL --}}
+                <div id="step-pengeluaran" class="content">
                     <div class="row g-4">
                         <div class="col-lg-6">
                             <div class="card wizard-form-card">
                                 <div class="card-body">
-                                    <h6 class="mb-3">Laporan Perjalanan Dinas</h6>
-                                    <div class="row g-3 mb-4">
-                                        <div class="col-md-12">
-                                            <label class="form-label">Kesimpulan Hasil Kegiatan<span class="required-mark">*</span></label>
-                                            <textarea id="input-kesimpulan" name="kesimpulan_hasil_kegiatan" class="form-control" rows="3">{{ old('kesimpulan_hasil_kegiatan') }}</textarea>
-                                            <div class="field-error" id="err-input-kesimpulan">Kesimpulan hasil kegiatan wajib diisi.</div>
-                                        </div>
-                                        <div class="col-md-12">
-                                            <label class="form-label">Tindak Lanjut<span class="required-mark">*</span></label>
-                                            <textarea id="input-tindak_lanjut" name="tindak_lanjut" class="form-control" rows="2">{{ old('tindak_lanjut') }}</textarea>
-                                            <div class="field-error" id="err-input-tindak_lanjut">Tindak lanjut wajib diisi.</div>
-                                        </div>
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <h6 class="mb-0">Pengeluaran Riil</h6>
+                                        <button type="button" id="btn-add-pengeluaran" class="btn btn-sm btn-label-primary"><i class="ti ti-plus ti-sm"></i> Tambah</button>
                                     </div>
-                                    <h6 class="mb-3">Dokumentasi<span class="required-mark">*</span></h6>
-                                    <input type="file" id="input-dokumentasi" name="dokumentasi[]" class="form-control" multiple accept="image/*,.pdf">
-                                    <div id="dokumentasi-preview-list" class="d-flex flex-wrap gap-2 mt-3"></div>
-                                    <div class="field-error" id="err-laporan-dokumentasi">Minimal 1 file dokumentasi wajib diunggah.</div>
+                                    <div id="pengeluaran-rows"></div>
+                                    <div id="pengeluaran-empty" class="text-muted small">Belum ada pengeluaran riil. Boleh diisi belakangan setelah perjalanan selesai.</div>
+                                    <div id="warning-transport-agregat" class="alert alert-warning d-flex align-items-center gap-2 py-2 px-3 mt-2 mb-0 d-none">
+                                        <i class="ti ti-alert-triangle ti-sm"></i>
+                                        <div class="small"></div>
+                                    </div>
                                 </div>
+                            </div>
+                            <div class="d-flex justify-content-between mt-4">
+                                <button type="button" class="btn btn-label-secondary btn-wizard-prev"><i class="ti ti-arrow-left ti-sm me-1"></i> Kembali</button>
+                                <button type="button" class="btn btn-primary btn-wizard-next">Lanjut <i class="ti ti-arrow-right ti-sm ms-1"></i></button>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="preview-sticky">
+                                {{-- <div class="alert alert-warning py-2 px-3 small mb-2">
+                                    <i class="ti ti-info-circle me-1"></i> Preview masih draft awal, format resmi menyusul.
+                                </div> --}}
+                                <div id="preview-pengeluaran-riil" class="dokumen-preview-pages"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- STEP: RINCIAN BIAYA --}}
+                <div id="step-rincian" class="content">
+                    <div class="row g-4">
+                        <div class="col-lg-6">
+                            <div class="card wizard-form-card">
+                                <div class="card-body">
+                                    <h6 class="mb-3">Rincian Biaya (Rencana)</h6>
+                                    <div class="row g-2 align-items-center mb-1">
+                                        <div class="col-4"></div>
+                                        <div class="col-3"><label class="form-label mb-0 small text-muted" for="input-rincian_hari-uang_harian">Jumlah Hari</label></div>
+                                        <div class="col-5"><label class="form-label mb-0 small text-muted" for="input-rincian-uang_harian">Rate per Hari/Malam (Rp)</label></div>
+                                    </div>
+                                    <div class="row g-2 align-items-center mb-1">
+                                        <div class="col-4"><label class="form-label mb-0" for="input-rincian-uang_harian">Uang Harian<span class="required-mark">*</span></label></div>
+                                        <div class="col-3"><input type="number" min="0" step="1" id="input-rincian_hari-uang_harian" name="rincian_hari[uang_harian]" class="form-control rincian-input" value="{{ old('rincian_hari.uang_harian', '') }}"></div>
+                                        <div class="col-5"><input type="number" min="0" step="1000" id="input-rincian-uang_harian" name="rincian[uang_harian]" class="form-control rincian-input" value="{{ old('rincian.uang_harian', 0) }}"></div>
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-4"></div>
+                                        <div class="col-8"><div id="hint-rekomendasi-uang-harian" class="form-text mb-0"></div></div>
+                                    </div>
+                                    <div class="row g-2 align-items-center mb-2">
+                                        <div class="col-4"><label class="form-label mb-0" for="input-rincian-transport">Transport</label></div>
+                                        <div class="col-3"><input type="number" min="0" step="1" id="input-rincian_hari-transport" name="rincian_hari[transport]" class="form-control rincian-input" value="{{ old('rincian_hari.transport', '') }}"></div>
+                                        <div class="col-5"><input type="number" min="0" step="1000" id="input-rincian-transport" name="rincian[transport]" class="form-control rincian-input" value="{{ old('rincian.transport', 0) }}"></div>
+                                    </div>
+                                    <div class="row g-2 align-items-center mb-0">
+                                        <div class="col-4"><label class="form-label mb-0" for="input-rincian-penginapan">Penginapan</label></div>
+                                        <div class="col-3"><input type="number" min="0" step="1" id="input-rincian_hari-penginapan" name="rincian_hari[penginapan]" class="form-control rincian-input" value="{{ old('rincian_hari.penginapan', '') }}"></div>
+                                        <div class="col-5"><input type="number" min="0" step="1000" id="input-rincian-penginapan" name="rincian[penginapan]" class="form-control rincian-input" value="{{ old('rincian.penginapan', 0) }}"></div>
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-4"></div>
+                                        <div class="col-8"><div id="hint-rekomendasi-akomodasi" class="form-text mb-0"></div></div>
+                                    </div>
+                                    <div class="form-text">Isi rate per hari/malam (bukan total) — totalnya dihitung otomatis (rate &times; jumlah hari/malam) dan langsung kelihatan di preview dokumen. Jumlah hari/malam bisa berbeda-beda per komponen (mis. penginapan cuma 3 malam meski perjalanan 5 hari) — kosongkan kalau ikut lama perjalanan dinas.</div>
+                                    <div class="field-error" id="err-rincian-total">Uang Harian wajib diisi (lebih dari 0).</div>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between mt-4">
+                                <button type="button" class="btn btn-label-secondary btn-wizard-prev"><i class="ti ti-arrow-left ti-sm me-1"></i> Kembali</button>
+                                <button type="button" class="btn btn-primary btn-wizard-next">Lanjut <i class="ti ti-arrow-right ti-sm ms-1"></i></button>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="preview-sticky">
+                                {{-- <div class="alert alert-warning py-2 px-3 small mb-2">
+                                    <i class="ti ti-info-circle me-1"></i> Preview masih draft awal, format resmi menyusul.
+                                </div> --}}
+                                <div id="preview-rincian-biaya" class="dokumen-preview-pages"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- STEP: KUITANSI --}}
+                <div id="step-kuitansi" class="content">
+                    <div class="row g-4">
+                        <div class="col-lg-6">
+                            <div class="alert alert-info py-2 px-3 small mb-0">
+                                <i class="ti ti-info-circle me-1"></i> Tanggal Kuitansi diisi di step Data Umum, di samping Tanggal Mulai &ndash; Selesai.
                             </div>
                             <div class="d-flex justify-content-between mt-4">
                                 <button type="button" class="btn btn-label-secondary btn-wizard-prev"><i class="ti ti-arrow-left ti-sm me-1"></i> Kembali</button>
@@ -813,7 +813,7 @@
                                 {{-- <div class="alert alert-warning py-2 px-3 small mb-2">
                                     <i class="ti ti-info-circle me-1"></i> Preview masih draft awal, format resmi menyusul.
                                 </div> --}}
-                                <div id="preview-laporan" class="dokumen-preview-pages"></div>
+                                <div id="preview-kuitansi" class="dokumen-preview-pages"></div>
                             </div>
                         </div>
                     </div>
