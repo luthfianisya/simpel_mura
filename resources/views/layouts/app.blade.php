@@ -34,6 +34,7 @@
   <link rel="stylesheet" href="{{ asset('assets/vendor/libs/typeahead-js/typeahead.css') }}" />
   <link rel="stylesheet" href="{{ asset('assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css') }}" />
   <link rel="stylesheet" href="{{ asset('assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css') }}" />
+  <link rel="stylesheet" href="{{ asset('assets/vendor/libs/sweetalert2/sweetalert2.css') }}" />
 
   @stack('page-css')
 
@@ -66,6 +67,8 @@
   <script src="{{ asset('assets/vendor/libs/node-waves/node-waves.js') }}"></script>
   <script src="{{ asset('assets/vendor/libs/hammer/hammer.js') }}"></script>
   <script src="{{ asset('assets/vendor/libs/typeahead-js/typeahead.js') }}"></script>
+  <script src="{{ asset('assets/vendor/libs/sweetalert2/sweetalert2.js') }}"></script>
+  <script src="{{ asset('assets/js/sweetalert-helpers.js') }}"></script>
   <script src="{{ asset('assets/vendor/js/menu.js') }}"></script>
   <script src="{{ asset('assets/js/main.js') }}"></script>
 

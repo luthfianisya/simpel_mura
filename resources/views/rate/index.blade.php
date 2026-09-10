@@ -81,7 +81,7 @@
                                         onclick='bukaModalEditAkomodasi({{ json_encode($item) }})'>
                                         <i class="ti ti-edit ti-sm"></i>
                                     </button>
-                                    <form action="{{ route('rate.akomodasi.destroy', $item->id_rate_akomodasi) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus rate akomodasi {{ $item->nama_kecamatan }}?');">
+                                    <form action="{{ route('rate.akomodasi.destroy', $item->id_rate_akomodasi) }}" method="POST" class="d-inline" onsubmit="return confirmSubmit(this, 'Hapus rate akomodasi {{ $item->nama_kecamatan }}?');">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-icon btn-sm btn-text-danger rounded-pill" title="Hapus">
@@ -149,7 +149,7 @@
                                                 onclick='bukaModalEditTransport({{ json_encode($item) }})'>
                                                 <i class="ti ti-edit ti-sm"></i>
                                             </button>
-                                            <form action="{{ route('rate.transport.destroy', $item->id_rate_transport) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus rate transport {{ $item->nama_wilayah }}?');">
+                                            <form action="{{ route('rate.transport.destroy', $item->id_rate_transport) }}" method="POST" class="d-inline" onsubmit="return confirmSubmit(this, 'Hapus rate transport {{ $item->nama_wilayah }}?');">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-icon btn-sm btn-text-danger rounded-pill" title="Hapus">
@@ -200,7 +200,7 @@
                                                         onclick='bukaModalEditTransport({{ json_encode($item) }})'>
                                                         <i class="ti ti-edit ti-sm"></i>
                                                     </button>
-                                                    <form action="{{ route('rate.transport.destroy', $item->id_rate_transport) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus rate transport {{ $item->nama_wilayah }}?');">
+                                                    <form action="{{ route('rate.transport.destroy', $item->id_rate_transport) }}" method="POST" class="d-inline" onsubmit="return confirmSubmit(this, 'Hapus rate transport {{ $item->nama_wilayah }}?');">
                                                         @csrf
                                                         @method('DELETE')
                                                         <button type="submit" class="btn btn-icon btn-sm btn-text-danger rounded-pill" title="Hapus">

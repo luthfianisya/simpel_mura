@@ -81,7 +81,7 @@
                                                 onclick='bukaModalEditKabKota({{ json_encode(["id" => $item->id, "nama" => $item->nama, "provinsi" => $item->provinsi]) }})'>
                                                 <i class="ti ti-edit ti-sm"></i>
                                             </button>
-                                            <form action="{{ route('wilayah.kabupaten-kota.destroy', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus {{ $item->nama }}?');">
+                                            <form action="{{ route('wilayah.kabupaten-kota.destroy', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirmSubmit(this, 'Hapus {{ $item->nama }}?');">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-icon btn-sm btn-text-danger rounded-pill" title="Hapus">
@@ -138,7 +138,7 @@
                                                 onclick='bukaModalEditDesa({{ json_encode(["id" => $item->id, "kecamatan" => $item->kecamatan, "jenis" => $item->jenis, "nama" => $item->nama]) }})'>
                                                 <i class="ti ti-edit ti-sm"></i>
                                             </button>
-                                            <form action="{{ route('wilayah.desa.destroy', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus {{ $item->nama }}?');">
+                                            <form action="{{ route('wilayah.desa.destroy', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirmSubmit(this, 'Hapus {{ $item->nama }}?');">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-icon btn-sm btn-text-danger rounded-pill" title="Hapus">

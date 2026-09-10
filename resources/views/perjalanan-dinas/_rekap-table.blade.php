@@ -193,7 +193,7 @@
                                     <i class="ti ti-edit ti-sm"></i>
                                 </a>
                                 <form action="{{ route('perjalanan-dinas.destroy', $item) }}" method="POST" class="d-inline"
-                                    onsubmit="return confirm('Hapus draft perjalanan dinas ini? Tindakan ini tidak bisa dibatalkan.');">
+                                    onsubmit="return confirmSubmit(this, 'Hapus draft perjalanan dinas ini? Tindakan ini tidak bisa dibatalkan.');">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-icon btn-sm btn-text-danger rounded-pill" title="Hapus">
@@ -202,7 +202,7 @@
                                 </form>
                             @elseif ($item->status_draft === 'selesai' && $item->dimilikiOleh(auth()->user()->id_pegawai_mitra ?? null))
                                 <form action="{{ route('perjalanan-dinas.buka-kembali', $item) }}" method="POST" class="d-inline"
-                                    onsubmit="return confirm('Buka kembali perjalanan dinas ini untuk diedit? Status akan kembali jadi draft.');">
+                                    onsubmit="return confirmSubmit(this, 'Buka kembali perjalanan dinas ini untuk diedit? Status akan kembali jadi draft.', { icon: 'question', confirmButtonColor: '#696cff' });">
                                     @csrf
                                     @method('PATCH')
                                     <button type="submit" class="btn btn-icon btn-sm btn-text-warning rounded-pill" title="Buka Kembali untuk Diedit">
@@ -565,7 +565,7 @@
                 try {
                     await eksporSatuDokumen(currentActiveKey);
                 } catch (e) {
-                    alert('Gagal export PDF: ' + e.message);
+                    swalError('Gagal export PDF: ' + e.message);
                 } finally {
                     selesai();
                 }
@@ -581,7 +581,7 @@
                         await eksporSatuDokumen(key);
                     }
                 } catch (e) {
-                    alert('Gagal export PDF: ' + e.message);
+                    swalError('Gagal export PDF: ' + e.message);
                 } finally {
                     selesai();
                 }

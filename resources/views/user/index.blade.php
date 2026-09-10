@@ -106,14 +106,14 @@
                                     onclick='bukaModalReset({{ $resetPayload }})'>
                                     <i class="ti ti-key ti-sm"></i>
                                 </button>
-                                <form action="{{ route('user.toggle-aktif', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ $item->is_active ? 'Nonaktifkan' : 'Aktifkan' }} akun {{ $item->name }}?');">
+                                <form action="{{ route('user.toggle-aktif', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirmSubmit(this, '{{ $item->is_active ? 'Nonaktifkan' : 'Aktifkan' }} akun {{ $item->name }}?', { icon: 'question', confirmButtonColor: '#696cff' });">
                                     @csrf
                                     @method('PATCH')
                                     <button type="submit" class="btn btn-icon btn-sm {{ $item->is_active ? 'btn-text-secondary' : 'btn-text-success' }} rounded-pill" title="{{ $item->is_active ? 'Nonaktifkan' : 'Aktifkan' }}">
                                         <i class="ti {{ $item->is_active ? 'ti-lock' : 'ti-lock-open' }} ti-sm"></i>
                                     </button>
                                 </form>
-                                <form action="{{ route('user.destroy', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus akun {{ $item->name }}? Data pegawai tidak ikut terhapus.');">
+                                <form action="{{ route('user.destroy', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirmSubmit(this, 'Hapus akun {{ $item->name }}? Data pegawai tidak ikut terhapus.');">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-icon btn-sm btn-text-danger rounded-pill" title="Hapus">

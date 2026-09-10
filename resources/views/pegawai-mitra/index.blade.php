@@ -104,7 +104,7 @@
                                     onclick='bukaModalEdit(@json($item))'>
                                     <i class="ti ti-edit ti-sm"></i>
                                 </button>
-                                <form action="{{ route('pegawai-mitra.destroy', $item->id_pegawai_mitra) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus {{ $item->nama }}? Data yang masih dipakai di perjalanan dinas tidak bisa dihapus.');">
+                                <form action="{{ route('pegawai-mitra.destroy', $item->id_pegawai_mitra) }}" method="POST" class="d-inline" onsubmit="return confirmSubmit(this, 'Hapus {{ $item->nama }}? Data yang masih dipakai di perjalanan dinas tidak bisa dihapus.');">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-icon btn-sm btn-text-danger rounded-pill" title="Hapus">

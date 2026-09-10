@@ -167,7 +167,7 @@
                 <button type="button" id="btn-selesai" class="btn btn-primary"><i class="ti ti-circle-check ti-sm me-1"></i> Selesai</button>
             @endif
             @if ($mode === 'view' && $perjalananDinas && $perjalananDinas->status_draft === 'selesai' && $perjalananDinas->dimilikiOleh(auth()->user()->id_pegawai_mitra))
-                <form action="{{ route('perjalanan-dinas.buka-kembali', $perjalananDinas) }}" method="POST" onsubmit="return confirm('Buka kembali perjalanan dinas ini untuk diedit? Status akan kembali jadi draft.');">
+                <form action="{{ route('perjalanan-dinas.buka-kembali', $perjalananDinas) }}" method="POST" onsubmit="return confirmSubmit(this, 'Buka kembali perjalanan dinas ini untuk diedit? Status akan kembali jadi draft.', { icon: 'question', confirmButtonColor: '#696cff' });">
                     @csrf
                     @method('PATCH')
                     <button type="submit" class="btn btn-warning"><i class="ti ti-lock-open ti-sm me-1"></i> Buka Kembali untuk Diedit</button>
@@ -1691,7 +1691,7 @@
                             inputLainnya.value = '';
                         })
                         .catch(function () {
-                            alert('Gagal menyimpan jenis kegiatan baru. Coba lagi.');
+                            swalError('Gagal menyimpan jenis kegiatan baru. Coba lagi.');
                         })
                         .finally(function () {
                             btnTambah.disabled = false;
@@ -1885,11 +1885,12 @@
                             d.caption = caption;
                             renderAllPreviews();
                         }).catch(function () {
-                            alert('Gagal menyimpan caption. Coba lagi.');
+                            swalError('Gagal menyimpan caption. Coba lagi.');
                         });
                     });
-                    box.appendChild(tombolHapusDokumentasi(function () {
-                        if (!confirm('Hapus file "' + (d.nama_file || '') + '"? File yang sudah tersimpan akan langsung dihapus permanen.')) return;
+                    box.appendChild(tombolHapusDokumentasi(async function () {
+                        const ok = await swalConfirm('Hapus file "' + (d.nama_file || '') + '"? File yang sudah tersimpan akan langsung dihapus permanen.');
+                        if (!ok) return;
                         fetch(dokumentasiDestroyUrlTemplate.replace('__ID__', d.id), {
                             method: 'DELETE',
                             headers: { 'X-CSRF-TOKEN': dokumentasiCsrfToken, 'Accept': 'application/json' },
@@ -1900,7 +1901,7 @@
                             renderDokumentasiList();
                             renderAllPreviews();
                         }).catch(function () {
-                            alert('Gagal menghapus file dokumentasi. Coba lagi.');
+                            swalError('Gagal menghapus file dokumentasi. Coba lagi.');
                         });
                     }));
                     dokumentasiList.appendChild(box);
@@ -2189,7 +2190,7 @@
                 try {
                     await eksporSatuDokumenReview(reviewActiveKey);
                 } catch (e) {
-                    alert('Gagal export PDF: ' + e.message);
+                    swalError('Gagal export PDF: ' + e.message);
                 } finally {
                     selesai();
                 }
@@ -2202,7 +2203,7 @@
                         await eksporSatuDokumenReview(key);
                     }
                 } catch (e) {
-                    alert('Gagal export PDF: ' + e.message);
+                    swalError('Gagal export PDF: ' + e.message);
                 } finally {
                     selesai();
                 }
