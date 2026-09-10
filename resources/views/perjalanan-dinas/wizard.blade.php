@@ -1616,29 +1616,21 @@
                     if (!opt) return;
                     const uraianTugas = document.getElementById('input-uraian_tugas');
                     const perihal = document.getElementById('input-perihal');
-                    const pembebanan = document.getElementById('input-pembebanan');
                     const kesimpulan = document.getElementById('input-kesimpulan');
                     if (uraianTugas && !uraianTugas.value && opt.dataset.uraianTugas) {
                         uraianTugas.value = opt.dataset.uraianTugas;
                     }
                     if (perihal && !perihal.value && opt.dataset.perihal) {
-                        // Sama seperti pembebanan: cuma saran awal, isi "[]"-nya (nama
-                        // survei) masih perlu disunting sendiri oleh user — jangan
-                        // dihitung "terisi" buat penanda hijau di stepper sebelum itu.
+                        // Sama seperti pembebanan (skrng tidak diisi otomatis lagi): cuma
+                        // saran awal, isi "[]"-nya (nama survei) masih perlu disunting
+                        // sendiri oleh user — jangan dihitung "terisi" buat penanda hijau
+                        // di stepper sebelum itu.
                         perihal.value = opt.dataset.perihal;
                         perihal.dataset.autofilled = '1';
                         perihal.dispatchEvent(new Event('input', { bubbles: true }));
                     }
-                    if (pembebanan && !pembebanan.value && opt.dataset.mak) {
-                        pembebanan.value = opt.dataset.mak;
-                        // Ditandai "belum dikonfirmasi user" — sekadar saran awal dari
-                        // Jenis Kegiatan, bukan berarti sudah benar buat perjalanan dinas
-                        // ini. Ditandai green di stepper baru kalau user sudah benar-benar
-                        // mengetik/menyunting sendiri (lihat listener 'input' pembebanan
-                        // di updateStepperStatus).
-                        pembebanan.dataset.autofilled = '1';
-                        pembebanan.dispatchEvent(new Event('input', { bubbles: true }));
-                    }
+                    // Pembebanan (Akun/MAK) SENGAJA tidak diisi otomatis dari Jenis
+                    // Kegiatan — dikosongkan dulu, user isi manual sendiri.
                     if (kesimpulan && !kesimpulan.value && opt.dataset.uraianLaporan) {
                         kesimpulan.value = opt.dataset.uraianLaporan;
                     }
