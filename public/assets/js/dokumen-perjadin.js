@@ -249,7 +249,7 @@
                             <li>Keputusan Presiden RI No. 72 Tahun 2004 tentang Pedoman Pelaksanaan APBN;</li>
                             <li>Keputusan Presiden Nomor 1 Tahun 2025 tentang Badan Pusat Statistik;</li>
                             <li>Keputusan Presiden RI No. 103 Tahun 2001 tentang Kedudukan, Tugas, Fungsi, Kewenangan, Susunan Organisasi dan Tata Cara Kerja Pemerintah Non Departemen;</li>
-                            <li>Peraturan Menteri Keuangan No. 113/PMK.05/2012 tentang Perjalanan Dinas Dalam Negeri Bagi Pejabat Negara, Pegawai Negeri, dan Pegawai Tidak Tetap (Berita Negara Republik Indonesia Tahun 2011 Nomor 678);</li>
+                            <li>Peraturan Menteri Keuangan No. 2110/PMK.05/2022 tentang Perjalanan Dinas Dalam Negeri Bagi Pejabat Negara, Pegawai Negeri, dan Pegawai Tidak Tetap (Berita Negara Republik Indonesia Tahun 2011 Nomor 678);</li>
                             <li>Peraturan Kepala Badan Pusat Statistik No. 103 tahun 2014 tentang pelaksanaan Perjalanan dinas jabatan di lingkungan Badan Pusat Statistik;</li>
                             <li>Semua biaya yang timbul dengan diterbitkannya Surat Tugas ini dibebankan kepada DIPA BPS Kabupaten Murung Raya TA ${tahun}.</li>
                         </ol>

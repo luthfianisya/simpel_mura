@@ -174,7 +174,7 @@
     </div>
 
     {{-- FAQ --}}
-    <div class="card">
+    {{-- <div class="card">
         <div class="card-header">
             <h5 class="mb-0">Pertanyaan yang Sering Ditanyakan</h5>
         </div>
@@ -262,5 +262,5 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> --}}
 @endsection
