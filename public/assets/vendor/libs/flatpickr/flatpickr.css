@@ -631,7 +631,7 @@ html:not([dir=rtl]) .flatpickr-weekwrapper .flatpickr-weeks .flatpickr-weeks {
   font-weight: 600;
   font-size: 0.8125rem;
   background: #fff;
-  color: #5d596c;
+  color: #3a3645;
 }
 .light-style .flatpickr-day {
   color: #6f6b7d;

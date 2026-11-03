@@ -6,6 +6,7 @@
     $peranLabel = [
         'kepala_satker' => 'Kepala Satker',
         'ppk' => 'PPK',
+        'ppspm' => 'PPSPM',
         'bendahara' => 'Bendahara',
     ];
 @endphp
@@ -15,10 +16,10 @@
         <div>
             <h4 class="fw-bold mb-1">{{ $judul }}</h4>
             <p class="text-muted mb-0">
-                {{ $statusKepegawaian === 'pegawai' ? 'Kelola data pegawai BPS Kabupaten Murung Raya.' : 'Kelola data mitra statistik.' }}
+                {{ $statusKepegawaian === 'pegawai' ? 'Kelola data pegawai BPS Kabupaten Murung Raya.' : 'Kelola data mitra statistik (mitra pendataan maupun pendataan & pengolahan).' }}
             </p>
         </div>
-        <a href="{{ route('dashboard') }}" class="btn btn-label-secondary d-inline-flex align-items-center gap-1">
+        <a href="{{ route('dashboard') }}" class="btn btn-outline-primary d-inline-flex align-items-center gap-1">
             <i class="ti ti-arrow-left ti-sm"></i> Kembali
         </a>
     </div>
@@ -51,7 +52,7 @@
     <div class="card">
         <div class="card-header d-flex align-items-center justify-content-between">
             <h5 class="mb-0">Daftar {{ $statusKepegawaian === 'pegawai' ? 'Pegawai' : 'Mitra' }}</h5>
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 flex-wrap">
                 <div class="dropdown">
                     <button class="btn btn-label-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="ti ti-file-spreadsheet ti-sm me-1"></i> Excel
@@ -74,30 +75,67 @@
                 </button>
             </div>
         </div>
+        {{-- Bar aksi massal: tampil hanya saat ada baris dicentang, dipindah ke atas header tabel oleh pilih-massal.js --}}
+        <div class="bulk-bar d-none" data-bulk-bar data-tampil-jika-terpilih>
+            <span class="bulk-bar-info"><i class="ti ti-checks me-1"></i><span data-jumlah-terpilih>0</span> {{ $statusKepegawaian === 'pegawai' ? 'pegawai' : 'mitra' }} dipilih</span>
+            <div class="d-flex gap-2 flex-wrap ms-2">
+                <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modal-massal-pegawai-mitra">
+                    <i class="ti ti-edit me-1"></i> Edit Terpilih
+                </button>
+                <form action="{{ route('pegawai-mitra.bulk-destroy') }}" method="POST" class="d-inline" data-isi-id-terpilih
+                    onsubmit="return confirmSubmit(this, 'Hapus ' + this.querySelectorAll('input[name=&quot;ids[]&quot;]').length + ' data terpilih? Data yang masih dipakai di perjalanan dinas tidak akan terhapus.');">
+                    @csrf
+                    @method('DELETE')
+                    <input type="hidden" name="status_kepegawaian" value="{{ $statusKepegawaian }}">
+                    <button type="submit" class="btn btn-sm btn-danger">
+                        <i class="ti ti-trash me-1"></i> Hapus Terpilih
+                    </button>
+                </form>
+                <button type="button" class="btn btn-sm btn-label-secondary" data-batal-pilih>
+                    <i class="ti ti-x me-1"></i> Batal Pilih
+                </button>
+            </div>
+        </div>
         <div class="table-responsive">
-            <table class="table">
+            <table class="table" data-pilih-massal data-datatable data-kosong="Belum ada data {{ $statusKepegawaian === 'pegawai' ? 'pegawai' : 'mitra' }}.">
                 <thead>
                     <tr>
+                        <th style="width: 1%;" data-orderable="false"><input type="checkbox" class="form-check-input cek-semua" title="Pilih semua"></th>
                         <th>No</th>
-                        <th>NIP</th>
-                        <th>Nama</th>
-                        <th>Jabatan</th>
-                        <th>Pangkat</th>
-                        <th>Golongan</th>
-                        <th>Peran Pejabat</th>
-                        <th>Aksi</th>
+                        @if ($statusKepegawaian === 'mitra')
+                            <th>Sobat ID</th>
+                            <th>Nama</th>
+                            <th>Alamat</th>
+                            <th>Sebagai</th>
+                        @else
+                            <th>NIP</th>
+                            <th>Nama</th>
+                            <th>Jabatan</th>
+                            <th>Pangkat</th>
+                            <th>Golongan</th>
+                            <th>Peran Pejabat</th>
+                        @endif
+                        <th data-orderable="false">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($daftar as $item)
+                    @foreach ($daftar as $item)
                         <tr>
+                            <td><input type="checkbox" class="form-check-input cek-baris" value="{{ $item->id_pegawai_mitra }}"></td>
                             <td>{{ $loop->iteration }}</td>
-                            <td>{{ $item->nip ?? '-' }}</td>
-                            <td>{{ $item->nama }}</td>
-                            <td>{{ $item->jabatan ?? '-' }}</td>
-                            <td>{{ $item->pangkat ?? '-' }}</td>
-                            <td>{{ $item->golongan ?? '-' }}</td>
-                            <td>{{ $item->peran_pejabat ? $peranLabel[$item->peran_pejabat] : '-' }}</td>
+                            @if ($statusKepegawaian === 'mitra')
+                                <td>{{ $item->sobat_id ?? '-' }}</td>
+                                <td>{{ $item->nama }}</td>
+                                <td>{{ $item->alamat ?? '-' }}</td>
+                                <td>{{ $item->jenis_mitra_label ?? '-' }}</td>
+                            @else
+                                <td>{{ $item->nip ?? '-' }}</td>
+                                <td>{{ $item->nama }}</td>
+                                <td>{{ $item->jabatan ?? '-' }}</td>
+                                <td>{{ $item->pangkat ?? '-' }}</td>
+                                <td>{{ $item->golongan ?? '-' }}</td>
+                                <td>{{ $item->peran_pejabat ? $peranLabel[$item->peran_pejabat] : '-' }}</td>
+                            @endif
                             <td class="text-nowrap">
                                 <button type="button" class="btn btn-icon btn-sm btn-text-primary rounded-pill" title="Edit"
                                     data-bs-toggle="modal" data-bs-target="#modal-pegawai-mitra"
@@ -113,13 +151,7 @@
                                 </form>
                             </td>
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="8" class="text-center text-muted py-4">
-                                Belum ada data {{ $statusKepegawaian === 'pegawai' ? 'pegawai' : 'mitra' }}.
-                            </td>
-                        </tr>
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
         </div>
@@ -143,9 +175,28 @@
                                 <label class="form-label">Nama</label>
                                 <input type="text" id="input-pm-nama" name="nama" class="form-control" required>
                             </div>
+                            @if ($statusKepegawaian === 'mitra')
+                            <div class="col-md-12">
+                                <label class="form-label">Sobat ID</label>
+                                <input type="text" id="input-pm-sobat_id" name="sobat_id" class="form-control" required>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Alamat</label>
+                                <textarea id="input-pm-alamat" name="alamat" class="form-control" rows="2" required></textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Sebagai</label>
+                                <select id="input-pm-jenis_mitra" name="jenis_mitra" class="form-select" required>
+                                    <option value="">Pilih peran mitra</option>
+                                    @foreach (\App\Models\PegawaiMitra::JENIS_MITRA as $nilai => $label)
+                                        <option value="{{ $nilai }}">{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            @else
                             <div class="col-md-6">
                                 <label class="form-label">NIP</label>
-                                <input type="text" id="input-pm-nip" name="nip" class="form-control" placeholder="mis. 19990307 202104 1 001">
+                                <input type="text" id="input-pm-nip" name="nip" class="form-control" placeholder="19990307 202104 1 001">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Jabatan</label>
@@ -165,14 +216,83 @@
                                     <option value="">-</option>
                                     <option value="kepala_satker">Kepala Satker</option>
                                     <option value="ppk">PPK</option>
+                                    <option value="ppspm">PPSPM</option>
                                     <option value="bendahara">Bendahara</option>
                                 </select>
                             </div>
+                            @endif
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Batal</button>
                         <button type="submit" class="btn btn-primary">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal Edit Terpilih (massal) --}}
+    <div class="modal fade" id="modal-massal-pegawai-mitra" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form action="{{ route('pegawai-mitra.bulk-update') }}" method="POST" data-isi-id-terpilih>
+                    @csrf
+                    @method('PATCH')
+                    <input type="hidden" name="status_kepegawaian" value="{{ $statusKepegawaian }}">
+                    <div class="modal-header">
+                        <div>
+                            <h5 class="modal-title mb-0">Edit <span data-jumlah-terpilih>0</span> {{ $statusKepegawaian === 'pegawai' ? 'Pegawai' : 'Mitra' }} Sekaligus</h5>
+                            <div class="text-muted small">Hanya isian yang diisi yang akan diterapkan. Isian kosong atau bernilai "Tetap" tidak mengalami perubahan.</div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            @if ($statusKepegawaian === 'mitra')
+                                <div class="col-md-12">
+                                    <label class="form-label">Sebagai</label>
+                                    <select name="jenis_mitra" class="form-select">
+                                        <option value="">Tetap</option>
+                                        @foreach (\App\Models\PegawaiMitra::JENIS_MITRA as $nilai => $label)
+                                            <option value="{{ $nilai }}">{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label">Alamat</label>
+                                    <textarea name="alamat" class="form-control" rows="2"></textarea>
+                                </div>
+                            @else
+                                <div class="col-md-12">
+                                    <label class="form-label">Jabatan</label>
+                                    <input type="text" name="jabatan" class="form-control">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Pangkat</label>
+                                    <input type="text" name="pangkat" class="form-control">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Golongan</label>
+                                    <input type="text" name="golongan" class="form-control">
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label">Peran Pejabat</label>
+                                    <select name="peran_pejabat" class="form-select">
+                                        <option value="">Tetap</option>
+                                        <option value="-">Tidak ada (kosongkan)</option>
+                                        <option value="kepala_satker">Kepala Satker</option>
+                                        <option value="ppk">PPK</option>
+                                        <option value="ppspm">PPSPM</option>
+                                        <option value="bendahara">Bendahara</option>
+                                    </select>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary">Terapkan ke Data Terpilih</button>
                     </div>
                 </form>
             </div>
@@ -196,7 +316,11 @@
                         <label class="form-label">File Excel (.xlsx)</label>
                         <input type="file" name="file" class="form-control" accept=".xlsx,.xls" required>
                         <div class="form-text">
-                            Baris dengan NIP yang sudah terdaftar akan diperbarui datanya, NIP baru/kosong akan ditambahkan sebagai data baru.
+                            @if ($statusKepegawaian === 'mitra')
+                                Baris dengan Sobat ID yang sudah terdaftar akan diperbarui datanya, Sobat ID baru/kosong akan ditambahkan sebagai data baru.
+                            @else
+                                Baris dengan NIP yang sudah terdaftar akan diperbarui datanya, NIP baru/kosong akan ditambahkan sebagai data baru.
+                            @endif
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -219,18 +343,20 @@
         const statusKepegawaian = @json($statusKepegawaian);
         const labelJenis = statusKepegawaian === 'pegawai' ? 'Pegawai' : 'Mitra';
 
+        // Field form beda untuk pegawai & mitra (modal hanya merender field milik jenisnya), jadi diisi sesuai yang ada saja.
+        const fieldForm = statusKepegawaian === 'mitra'
+            ? ['nama', 'sobat_id', 'alamat', 'jenis_mitra']
+            : ['nama', 'nip', 'jabatan', 'pangkat', 'golongan', 'peran_pejabat'];
+
         function isiForm(data) {
-            document.getElementById('input-pm-nama').value = data.nama || '';
-            document.getElementById('input-pm-nip').value = data.nip || '';
-            document.getElementById('input-pm-jabatan').value = data.jabatan || '';
-            document.getElementById('input-pm-pangkat').value = data.pangkat || '';
-            document.getElementById('input-pm-golongan').value = data.golongan || '';
-            document.getElementById('input-pm-peran_pejabat').value = data.peran_pejabat || '';
+            fieldForm.forEach(function (field) {
+                document.getElementById('input-pm-' + field).value = data[field] || '';
+            });
         }
 
         function bukaModalTambah() {
             formPegawaiMitra.reset();
-            document.getElementById('input-pm-peran_pejabat').value = '';
+            isiForm({});
             formPegawaiMitra.action = storeUrl;
             formPegawaiMitraMethod.innerHTML = '';
             modalPegawaiMitraTitle.textContent = 'Tambah ' + labelJenis;

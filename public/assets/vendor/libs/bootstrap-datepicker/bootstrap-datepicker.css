@@ -263,7 +263,7 @@ html:not([dir=rtl]) .datepicker table tr td.range-end:not(.range-start) {
 }
 .light-style .datepicker table thead tr,
 .light-style .datepicker table thead td {
-  color: #5d596c;
+  color: #3a3645;
 }
 .light-style .datepicker table tr td.new,
 .light-style .datepicker table tr th.new {

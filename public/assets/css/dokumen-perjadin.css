@@ -302,6 +302,24 @@
     border-top: 1px dashed #ccc;
 }
 
+/* Laporan yang dialirkan per halaman (alirkanHalaman di dokumen-perjadin.js): baris
+   terakhir potongan paragraf yang masih bersambung ke halaman berikutnya dibuat rata
+   kiri-kanan juga, seperti paragraf yang terpotong di dokumen biasa. */
+.dokumen-preview .alir-rata-penuh {
+    text-align-last: justify;
+}
+
+/* Saat mengukur tinggi halaman, foto dokumentasi bisa belum selesai dimuat (tinggi 0) —
+   dianggap setinggi maksimumnya supaya baris foto tidak kepepet melewati batas kertas. */
+.dokumen-preview.alir-ukur .dokumentasi-cell img {
+    height: 65mm;
+}
+
+/* Jarak antar blok Laporan (VI, VII, penutup) setelah dipisah jadi tabel/div sendiri. */
+.dokumen-preview .alir-penutup {
+    margin-top: 1rem;
+}
+
 .dokumen-preview .dokumen-page-num {
     text-align: center;
     font-size: 0.75rem;

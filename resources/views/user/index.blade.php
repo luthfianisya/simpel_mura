@@ -13,7 +13,7 @@
             <h4 class="fw-bold mb-1">Kelola Akun</h4>
             <p class="text-muted mb-0">Kelola akun pengguna beserta hak akses perannya (Admin/Pegawai).</p>
         </div>
-        <a href="{{ route('dashboard') }}" class="btn btn-label-secondary d-inline-flex align-items-center gap-1">
+        <a href="{{ route('dashboard') }}" class="btn btn-outline-primary d-inline-flex align-items-center gap-1">
             <i class="ti ti-arrow-left ti-sm"></i> Kembali
         </a>
     </div>
@@ -46,26 +46,50 @@
     <div class="card">
         <div class="card-header d-flex align-items-center justify-content-between">
             <h5 class="mb-0">Daftar Akun</h5>
+            <div class="d-flex gap-2 flex-wrap">
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal-tambah-akun" {{ $daftarPegawaiBelumPunyaAkun->isEmpty() ? 'disabled title="Semua pegawai sudah punya akun"' : '' }}>
                 <i class="ti ti-plus ti-sm me-1"></i> Tambah Akun
             </button>
+            </div>
+        </div>
+        {{-- Bar aksi massal: tampil hanya saat ada baris dicentang, dipindah ke atas header tabel oleh pilih-massal.js --}}
+        <div class="bulk-bar d-none" data-bulk-bar data-tampil-jika-terpilih>
+            <span class="bulk-bar-info"><i class="ti ti-checks me-1"></i><span data-jumlah-terpilih>0</span> akun dipilih</span>
+            <div class="d-flex gap-2 flex-wrap ms-2">
+                <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modal-massal-akun">
+                    <i class="ti ti-edit me-1"></i> Edit Terpilih
+                </button>
+                <form action="{{ route('user.bulk-destroy') }}" method="POST" class="d-inline" data-isi-id-terpilih
+                    onsubmit="return confirmSubmit(this, 'Hapus ' + this.querySelectorAll('input[name=&quot;ids[]&quot;]').length + ' akun terpilih? Data pegawai tidak ikut terhapus.');">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-sm btn-danger">
+                        <i class="ti ti-trash me-1"></i> Hapus Terpilih
+                    </button>
+                </form>
+                <button type="button" class="btn btn-sm btn-label-secondary" data-batal-pilih>
+                    <i class="ti ti-x me-1"></i> Batal Pilih
+                </button>
+            </div>
         </div>
         <div class="table-responsive">
-            <table class="table">
+            <table class="table" data-pilih-massal data-datatable data-kosong="Belum ada akun.">
                 <thead>
                     <tr>
+                        <th style="width: 1%;" data-orderable="false"><input type="checkbox" class="form-check-input cek-semua" title="Pilih semua"></th>
                         <th>No</th>
                         <th>Nama</th>
                         <th>Username</th>
                         <th>Pegawai Terhubung</th>
                         <th>Peran</th>
                         <th>Status</th>
-                        <th>Aksi</th>
+                        <th data-orderable="false">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($daftarUser as $item)
+                    @foreach ($daftarUser as $item)
                         <tr>
+                            <td><input type="checkbox" class="form-check-input cek-baris" value="{{ $item->id }}"></td>
                             <td>{{ $loop->iteration }}</td>
                             <td>{{ $item->name }}</td>
                             <td><code>{{ $item->username ?? '-' }}</code></td>
@@ -106,7 +130,7 @@
                                     onclick='bukaModalReset({{ $resetPayload }})'>
                                     <i class="ti ti-key ti-sm"></i>
                                 </button>
-                                <form action="{{ route('user.toggle-aktif', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirmSubmit(this, '{{ $item->is_active ? 'Nonaktifkan' : 'Aktifkan' }} akun {{ $item->name }}?', { icon: 'question', confirmButtonColor: '#696cff' });">
+                                <form action="{{ route('user.toggle-aktif', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirmSubmit(this, '{{ $item->is_active ? 'Nonaktifkan' : 'Aktifkan' }} akun {{ $item->name }}?', { icon: 'question', confirmButtonColor: '#2563eb' });">
                                     @csrf
                                     @method('PATCH')
                                     <button type="submit" class="btn btn-icon btn-sm {{ $item->is_active ? 'btn-text-secondary' : 'btn-text-success' }} rounded-pill" title="{{ $item->is_active ? 'Nonaktifkan' : 'Aktifkan' }}">
@@ -122,11 +146,7 @@
                                 </form>
                             </td>
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7" class="text-center text-muted py-4">Belum ada akun.</td>
-                        </tr>
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
         </div>
@@ -210,6 +230,47 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Batal</button>
                         <button type="submit" class="btn btn-primary">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal Edit Akun Terpilih (massal) --}}
+    <div class="modal fade" id="modal-massal-akun" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form action="{{ route('user.bulk-update') }}" method="POST" data-isi-id-terpilih>
+                    @csrf
+                    @method('PATCH')
+                    <div class="modal-header">
+                        <div>
+                            <h5 class="modal-title mb-0">Edit <span data-jumlah-terpilih>0</span> Akun Sekaligus</h5>
+                            <div class="text-muted small">Isian yang bernilai "Tetap" tidak mengalami perubahan.</div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Peran</label>
+                            <select name="role" class="form-select">
+                                <option value="">Tetap</option>
+                                <option value="pegawai">Pegawai (User)</option>
+                                <option value="administrator">Administrator</option>
+                            </select>
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label">Status</label>
+                            <select name="is_active" class="form-select">
+                                <option value="">Tetap</option>
+                                <option value="1">Aktif</option>
+                                <option value="0">Nonaktif</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary">Terapkan ke Akun Terpilih</button>
                     </div>
                 </form>
             </div>

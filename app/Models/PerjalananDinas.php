@@ -33,7 +33,7 @@ class PerjalananDinas extends Model
     protected $fillable = [
         'id_pemohon', 'id_pegawai_mitra_pelaksana', 'id_grup',
         'no_surat_tugas', 'tanggal_surat_tugas', 'perihal', 'uraian_tugas',
-        'tanggal_mulai', 'tanggal_selesai', 'pembebanan',
+        'tanggal_mulai', 'tanggal_selesai', 'pembebanan', 'no_form_permintaan',
         'id_jenis_kegiatan', 'jenis_perjadin',
         'no_spd', 'tanggal_spd', 'angkutan',
         'desa_asal', 'kabupaten_asal', 'desa_tujuan', 'kabupaten_tujuan',
@@ -104,7 +104,25 @@ class PerjalananDinas extends Model
 
     public function dokumentasi()
     {
-        return $this->hasMany(Dokumentasi::class, 'id_perjalanan_dinas', 'id_perjalanan_dinas');
+        // Urutan foto diatur user (drag di wizard); id sebagai pengurut kedua untuk data
+        // lama yang urutannya masih 0 semua.
+        return $this->hasMany(Dokumentasi::class, 'id_perjalanan_dinas', 'id_perjalanan_dinas')
+            ->orderBy('urutan')
+            ->orderBy('id_dokumentasi');
+    }
+
+    public function monitoringSpj()
+    {
+        return $this->hasOne(MonitoringSpj::class, 'id_perjalanan_dinas', 'id_perjalanan_dinas');
+    }
+
+    /**
+     * Total yang dibayarkan ke pelaksana — sama dengan "Jumlah Uang" di kuitansi
+     * (rincian biaya + pengeluaran riil). Relasinya sebaiknya sudah di-eager load.
+     */
+    public function getTotalBiayaAttribute(): float
+    {
+        return (float) $this->rincianBiaya->sum('nominal') + (float) $this->pengeluaranRiil->sum('nominal');
     }
 
     /**
@@ -176,6 +194,7 @@ class PerjalananDinas extends Model
             'tanggal_mulai' => optional($this->tanggal_mulai)->format('Y-m-d'),
             'tanggal_selesai' => optional($this->tanggal_selesai)->format('Y-m-d'),
             'pembebanan' => $this->pembebanan,
+            'no_form_permintaan' => $this->no_form_permintaan,
             'desa_asal' => $this->desa_asal,
             'kabupaten_asal' => $this->kabupaten_asal,
             'desa_tujuan' => $this->desa_tujuan,

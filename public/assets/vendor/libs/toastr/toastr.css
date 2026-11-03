@@ -232,15 +232,15 @@ button.toast-close-button {
   margin-right: 0.75rem !important;
 }
 .toast-message a {
-  color: #7367f0;
+  color: #2563eb;
 }
 .toast-message a:hover {
-  color: rgba(115, 103, 240, 0.6);
+  color: rgba(37, 99, 235, 0.6);
 }
 
 .toast-title {
   margin-left: 0.75rem;
-  color: #5d596c;
+  color: #3a3645;
   margin-bottom: 0.25rem;
 }
 [dir=rtl] .toast-title {
@@ -349,7 +349,7 @@ button.toast-close-button {
 .light-style #toast-container .toast-error,
 .light-style #toast-container .toast-info,
 .light-style #toast-container .toast-warning {
-  color: #5d596c;
+  color: #3a3645;
   background-color: #fff;
 }
 

@@ -85,6 +85,61 @@ class UserController extends Controller
         return back()->with('success', 'Akun ' . $user->name . ' berhasil ' . ($user->is_active ? 'diaktifkan' : 'dinonaktifkan') . '.');
     }
 
+    /**
+     * Ubah peran dan/atau status aktif banyak akun sekaligus. Field kosong = tidak diubah.
+     * Akun sendiri dilewati kalau perubahannya mencabut hak admin atau menonaktifkan.
+     */
+    public function bulkUpdate(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:users,id'],
+            'role' => ['nullable', Rule::in(self::ROLES)],
+            'is_active' => ['nullable', 'boolean'],
+        ], [
+            'ids.required' => 'Pilih minimal satu akun terlebih dahulu.',
+        ]);
+
+        $perubahan = collect($validated)->only(['role', 'is_active'])->filter(fn ($v) => $v !== null && $v !== '')->all();
+        if (empty($perubahan)) {
+            return back()->with('error', 'Belum ada perubahan yang dipilih.');
+        }
+
+        $merugikanDiriSendiri = ($perubahan['role'] ?? 'administrator') !== 'administrator'
+            || (array_key_exists('is_active', $perubahan) && !$perubahan['is_active']);
+
+        $diubah = 0;
+        $dilewati = false;
+        foreach (User::whereIn('id', $validated['ids'])->get() as $user) {
+            if ($user->id === $request->user()->id && $merugikanDiriSendiri) {
+                $dilewati = true;
+                continue;
+            }
+            $user->update($perubahan);
+            $diubah++;
+        }
+
+        return back()->with('success', "{$diubah} akun berhasil diperbarui."
+            . ($dilewati ? ' Akun Anda sendiri dilewati supaya tidak kehilangan akses administrator.' : ''));
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:users,id'],
+        ], [
+            'ids.required' => 'Pilih minimal satu akun terlebih dahulu.',
+        ]);
+
+        $ids = collect($validated['ids'])->map(fn ($id) => (int) $id);
+        $termasukDiriSendiri = $ids->contains($request->user()->id);
+        $dihapus = User::whereIn('id', $ids->reject(fn ($id) => $id === $request->user()->id))->delete();
+
+        return back()->with('success', "{$dihapus} akun berhasil dihapus."
+            . ($termasukDiriSendiri ? ' Akun Anda sendiri tidak ikut dihapus.' : ''));
+    }
+
     public function destroy(Request $request, User $user)
     {
         if ($user->id === $request->user()->id) {

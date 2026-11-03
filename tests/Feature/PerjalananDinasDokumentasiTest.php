@@ -74,3 +74,49 @@ test('dokumentasi milik user lain tidak bisa dihapus', function () {
 
     expect(Dokumentasi::find($dokumentasi->id_dokumentasi))->not->toBeNull();
 });
+
+test('urutan dokumentasi mengikuti hasil drag saat simpan dan saat edit', function () {
+    Storage::fake('public');
+    $user = buatUserDenganPegawai();
+
+    $this->actingAs($user)->post(route('perjalanan-dinas.store'), [
+        'jenis_perjadin' => 'biasa',
+        'status_draft' => 'draft_sesi1',
+        'dokumentasi' => [UploadedFile::fake()->image('a.jpg'), UploadedFile::fake()->image('b.jpg')],
+        'dokumentasi_urutan' => ['baru:1', 'baru:0'],
+    ]);
+
+    $pd = PerjalananDinas::latest('id_perjalanan_dinas')->first();
+    expect($pd->dokumentasi->pluck('nama_file')->all())->toBe(['b.jpg', 'a.jpg']);
+
+    // Edit: foto baru "c" ditaruh paling depan, di antara foto lama yang sudah tersimpan.
+    [$b, $a] = $pd->dokumentasi->all();
+    $this->actingAs($user)->put(route('perjalanan-dinas.update', $pd), [
+        'jenis_perjadin' => 'biasa',
+        'status_draft' => 'draft_sesi1',
+        'dokumentasi' => [UploadedFile::fake()->image('c.jpg')],
+        'dokumentasi_urutan' => ['baru:0', 'lama:' . $a->id_dokumentasi, 'lama:' . $b->id_dokumentasi],
+    ]);
+
+    expect($pd->fresh()->dokumentasi->pluck('nama_file')->all())->toBe(['c.jpg', 'a.jpg', 'b.jpg']);
+});
+
+test('tanpa urutan dari wizard, foto baru ditaruh di belakang foto lama', function () {
+    Storage::fake('public');
+    $user = buatUserDenganPegawai();
+
+    $this->actingAs($user)->post(route('perjalanan-dinas.store'), [
+        'jenis_perjadin' => 'biasa',
+        'status_draft' => 'draft_sesi1',
+        'dokumentasi' => [UploadedFile::fake()->image('a.jpg')],
+    ]);
+    $pd = PerjalananDinas::latest('id_perjalanan_dinas')->first();
+
+    $this->actingAs($user)->put(route('perjalanan-dinas.update', $pd), [
+        'jenis_perjadin' => 'biasa',
+        'status_draft' => 'draft_sesi1',
+        'dokumentasi' => [UploadedFile::fake()->image('b.jpg')],
+    ]);
+
+    expect($pd->fresh()->dokumentasi->pluck('nama_file')->all())->toBe(['a.jpg', 'b.jpg']);
+});

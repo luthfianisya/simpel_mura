@@ -8,7 +8,7 @@
             <h4 class="fw-bold mb-1">Kelola Wilayah</h4>
             <p class="text-muted mb-0">Kelola data master Kabupaten/Kota dan Desa/Kelurahan untuk dropdown Asal &amp; Tujuan di form perjalanan dinas.</p>
         </div>
-        <a href="{{ route('dashboard') }}" class="btn btn-label-secondary d-inline-flex align-items-center gap-1">
+        <a href="{{ route('dashboard') }}" class="btn btn-outline-primary d-inline-flex align-items-center gap-1">
             <i class="ti ti-arrow-left ti-sm"></i> Kembali
         </a>
     </div>
@@ -56,18 +56,18 @@
                         <i class="ti ti-plus ti-sm me-1"></i> Tambah
                     </button>
                 </div>
-                <div class="table-responsive" style="max-height: 560px; overflow-y: auto;">
-                    <table class="table">
+                <div class="table-responsive">
+                    <table class="table" data-datatable data-kosong="Belum ada data.">
                         <thead>
                             <tr>
                                 <th>Provinsi</th>
                                 <th>Nama</th>
                                 <th class="text-end">Dipilih</th>
-                                <th>Aksi</th>
+                                <th data-orderable="false">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse ($daftarKabupatenKota as $provinsi => $items)
+                            @foreach ($daftarKabupatenKota as $provinsi => $items)
                                 @foreach ($items as $item)
                                     <tr>
                                         <td>{{ $loop->first ? $provinsi : '' }}</td>
@@ -91,11 +91,7 @@
                                         </td>
                                     </tr>
                                 @endforeach
-                            @empty
-                                <tr>
-                                    <td colspan="4" class="text-center text-muted py-4">Belum ada data.</td>
-                                </tr>
-                            @endforelse
+                            @endforeach
                         </tbody>
                     </table>
                 </div>
@@ -111,19 +107,19 @@
                         <i class="ti ti-plus ti-sm me-1"></i> Tambah
                     </button>
                 </div>
-                <div class="table-responsive" style="max-height: 560px; overflow-y: auto;">
-                    <table class="table">
+                <div class="table-responsive">
+                    <table class="table" data-datatable data-kosong="Belum ada data.">
                         <thead>
                             <tr>
                                 <th>Kecamatan</th>
                                 <th>Jenis</th>
                                 <th>Nama</th>
                                 <th class="text-end">Dipilih</th>
-                                <th>Aksi</th>
+                                <th data-orderable="false">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse ($daftarDesa as $kecamatan => $items)
+                            @foreach ($daftarDesa as $kecamatan => $items)
                                 @foreach ($items as $item)
                                     <tr>
                                         <td>{{ $loop->first ? $kecamatan : '' }}</td>
@@ -148,11 +144,7 @@
                                         </td>
                                     </tr>
                                 @endforeach
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="text-center text-muted py-4">Belum ada data.</td>
-                                </tr>
-                            @endforelse
+                            @endforeach
                         </tbody>
                     </table>
                 </div>

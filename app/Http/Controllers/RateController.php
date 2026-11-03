@@ -23,7 +23,15 @@ class RateController extends Controller
             'daftarTransportB' => $daftarTransport->where('level', 'B')->groupBy('kecamatan_induk'),
             'daftarTransportC' => $daftarTransport->where('level', 'C')->groupBy('kecamatan_induk'),
             'daftarKecamatan' => RateAkomodasi::orderBy('nama_kecamatan')->pluck('nama_kecamatan'),
-            'daftarDokumenPendukung' => config('dokumen_pendukung'),
+            'daftarDokumenPendukung' => collect(config('dokumen_pendukung'))->map(function ($dokumen) {
+                $path = 'dokumen-pendukung/' . $dokumen['file'];
+                $ada = Storage::disk('public')->exists($path);
+
+                return $dokumen + [
+                    'ekstensi' => strtolower(pathinfo($dokumen['file'], PATHINFO_EXTENSION)),
+                    'ukuran' => $ada ? Storage::disk('public')->size($path) : null,
+                ];
+            }),
         ]);
     }
 

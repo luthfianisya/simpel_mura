@@ -7,6 +7,7 @@ use App\Models\JenisKegiatan;
 use App\Models\Kuitansi;
 use App\Models\LaporanPerjadin;
 use App\Models\PegawaiMitra;
+use App\Models\PenomoranSpd;
 use App\Models\PengeluaranRiil;
 use App\Models\PerjalananDinas;
 use App\Models\RateAkomodasi;
@@ -57,6 +58,7 @@ class PerjalananDinasController extends Controller
         'pernyataan_keterlambatan', 'pernyataan_keterlambatan_keterangan',
         'kesimpulan_hasil_kegiatan', 'tindak_lanjut', 'status_draft',
         'uang_harian_hari', 'transport_hari', 'penginapan_hari',
+        'no_form_permintaan',
     ];
 
     protected array $relasiRekap = [
@@ -110,7 +112,8 @@ class PerjalananDinasController extends Controller
             $sumber = PerjalananDinas::with(['rincianBiaya', 'pengeluaranRiil', 'suratPernyataan', 'kuitansi', 'laporan'])
                 ->find($request->query('from'));
             if ($sumber) {
-                session()->flashInput($sumber->toFormPrefill());
+                // Nomor SPD & Nomor Form Permintaan tidak ikut disalin — tiap dokumen punya nomor sendiri.
+                session()->flashInput(array_merge($sumber->toFormPrefill(), ['no_spd' => null, 'no_form_permintaan' => null]));
             }
         }
 
@@ -314,26 +317,66 @@ class PerjalananDinasController extends Controller
     }
 
     /**
-     * Nomor SPD berikutnya yang belum pernah dipakai, format: {urut}/62130/KU.340/{tahun}.
-     * Bagian "62130/KU.340" tetap, hanya nomor urut & tahun yang berubah.
+     * Pratinjau nomor SPD berikutnya (lihat PenomoranSpd). Nomor finalnya ditetapkan ulang
+     * oleh server saat dokumen disimpan (tentukanNomorSpd), jadi kalau nomor ini keburu
+     * dipakai orang lain, dokumen otomatis mendapat nomor berikutnya — tidak akan dobel.
      */
     public function nomorSpdBerikutnya(Request $request)
     {
         $tahun = (int) $request->query('tahun', now()->year);
 
-        $nomorTerbesar = 0;
-        PerjalananDinas::whereNotNull('no_spd')
-            ->where('no_spd', 'like', "%/62130/KU.340/{$tahun}")
-            ->pluck('no_spd')
-            ->each(function ($noSpd) use ($tahun, &$nomorTerbesar) {
-                if (preg_match('/^(\d+)\/62130\/KU\.340\/' . $tahun . '$/', trim($noSpd), $m)) {
-                    $nomorTerbesar = max($nomorTerbesar, (int) $m[1]);
-                }
-            });
-
         return response()->json([
-            'no_spd' => ($nomorTerbesar + 1) . "/62130/KU.340/{$tahun}",
+            'no_spd' => PenomoranSpd::berikutnya($tahun),
         ]);
+    }
+
+    /**
+     * Nomor SPD yang disimpan untuk sebuah perjalanan dinas. Dipanggil di dalam
+     * DB::transaction() penyimpanan supaya kunci penomoran (PenomoranSpd::ambil) bertahan
+     * sampai nomornya tersimpan.
+     *
+     * - Jenis tanpa SPD → null (nomornya dilepas dan nanti dipakai dokumen lain).
+     * - Dokumen yang sudah punya nomor → tetap nomor itu.
+     * - Draft yang belum "Ambil Nomor" → tetap kosong.
+     * - Selain itu (sudah klik "Ambil Nomor", atau final tanpa nomor) → ambil nomor baru.
+     * - $nomorEksplisit (import Excel) → dipakai apa adanya; duplikasi dicek sebelumnya.
+     */
+    /**
+     * Pesan kalau nomor SPD yang tersimpan beda dengan yang tampil di form (mis. nomor
+     * pratinjau keburu dipakai orang lain yang menyimpan lebih dulu). Null kalau sama.
+     */
+    private function peringatanNomorSpdBerubah(Request $request, ?string $noSpdTersimpan): ?string
+    {
+        $noSpdForm = trim((string) $request->input('no_spd'));
+        if ($noSpdForm === '' || !$noSpdTersimpan || $noSpdForm === $noSpdTersimpan) {
+            return null;
+        }
+
+        return "Nomor SPD {$noSpdForm} sudah dipakai dokumen lain, sehingga dokumen Anda mendapat nomor {$noSpdTersimpan}. "
+            . 'Jika sempat mengekspor/mencetak SPD dengan nomor lama, ekspor ulang dokumennya.';
+    }
+
+    private function tentukanNomorSpd(array $validated, ?PerjalananDinas $perjalananDinas = null, bool $nomorEksplisit = false): ?string
+    {
+        if (!in_array($validated['jenis_perjadin'], $this->jenisSpdWajib, true)) {
+            return null;
+        }
+
+        $diminta = trim((string) ($validated['no_spd'] ?? ''));
+        if ($nomorEksplisit && $diminta !== '') {
+            return $diminta;
+        }
+        if ($perjalananDinas?->no_spd) {
+            return $perjalananDinas->no_spd;
+        }
+        if ($diminta === '' && $validated['status_draft'] !== 'selesai') {
+            return null;
+        }
+
+        $tanggal = $validated['tanggal_spd'] ?? $validated['tanggal_mulai'] ?? null;
+        $tahun = $tanggal ? (int) substr($tanggal, 0, 4) : now()->year;
+
+        return PenomoranSpd::ambil($tahun, $perjalananDinas?->id_perjalanan_dinas);
     }
 
     // Opsi "Lainnya..." di dropdown Jenis Kegiatan — bikin baris jenis_kegiatan baru
@@ -374,13 +417,15 @@ class PerjalananDinasController extends Controller
             'status_draft' => 'required|in:draft_sesi1,selesai',
             'no_surat_tugas' => "{$wajib}|string|max:255",
             'tanggal_surat_tugas' => "{$wajib}|date",
-            'id_jenis_kegiatan' => "{$wajib}|exists:jenis_kegiatan,id_jenis_kegiatan",
-            'perihal' => "{$wajib}|string|max:255",
+            // Jenis Kegiatan tidak lagi ditampilkan di form (lihat wizard) — opsional.
+            'id_jenis_kegiatan' => 'nullable|exists:jenis_kegiatan,id_jenis_kegiatan',
+            'perihal' => "{$wajib}|string|max:2000",
             'uraian_tugas' => 'nullable|string',
             'id_pegawai_mitra_pelaksana' => "{$wajib}|exists:pegawai_mitra,id_pegawai_mitra",
             'tanggal_mulai' => "{$wajib}|date",
             'tanggal_selesai' => $isDraft ? 'nullable|date' : 'required|date|after_or_equal:tanggal_mulai',
             'pembebanan' => "{$wajib}|string|max:255",
+            'no_form_permintaan' => 'nullable|string|max:255',
             'desa_asal' => "{$wajibDesa}|string|max:255",
             'kabupaten_asal' => "{$wajib}|string|max:255",
             'desa_tujuan' => "{$wajibDesa}|string|max:255",
@@ -389,7 +434,9 @@ class PerjalananDinasController extends Controller
             'id_ppk' => 'nullable|exists:pegawai_mitra,id_pegawai_mitra',
             'id_bendahara' => 'nullable|exists:pegawai_mitra,id_pegawai_mitra',
 
-            'no_spd' => $isDraft ? 'nullable|string|max:255' : ($butuhSpd ? 'required|string|max:255' : 'nullable|string|max:255'),
+            // Nomor SPD selalu ditetapkan server (tentukanNomorSpd) — kalau kosong saat
+            // "Selesai & Simpan", nomornya diambilkan otomatis.
+            'no_spd' => 'nullable|string|max:255',
             'tanggal_spd' => $isDraft ? 'nullable|date' : ($butuhSpd ? 'required|date' : 'nullable|date'),
             'angkutan' => 'nullable|string|max:255',
 
@@ -424,6 +471,10 @@ class PerjalananDinasController extends Controller
             // dengan index array file "dokumentasi.*" di atas — lihat simpanDataTerkait().
             'dokumentasi_caption' => 'nullable|array',
             'dokumentasi_caption.*' => 'nullable|string|max:255',
+            // Urutan foto hasil drag di wizard, isinya token "lama:{id_dokumentasi}" untuk
+            // file yang sudah tersimpan dan "baru:{index dokumentasi.*}" untuk file baru.
+            'dokumentasi_urutan' => 'nullable|array',
+            'dokumentasi_urutan.*' => ['string', 'regex:/^(lama|baru):\d+$/'],
         ];
     }
 
@@ -444,6 +495,7 @@ class PerjalananDinasController extends Controller
             'tanggal_mulai' => $validated['tanggal_mulai'] ?? null,
             'tanggal_selesai' => $validated['tanggal_selesai'] ?? null,
             'pembebanan' => $validated['pembebanan'] ?? null,
+            'no_form_permintaan' => $validated['no_form_permintaan'] ?? null,
             'id_jenis_kegiatan' => $validated['id_jenis_kegiatan'] ?? null,
             'jenis_perjadin' => $validated['jenis_perjadin'],
             'no_spd' => $validated['no_spd'] ?? null,
@@ -518,16 +570,43 @@ class PerjalananDinasController extends Controller
             LaporanPerjadin::where('id_perjalanan_dinas', $perjalananDinas->id_perjalanan_dinas)->delete();
         }
 
+        // File baru ditaruh di belakang file yang sudah ada; kalau wizard mengirim urutan
+        // hasil drag (dokumentasi_urutan), urutan itu yang dipakai — lihat aturUrutanDokumentasi().
         $dokumentasiCaptions = $request->input('dokumentasi_caption', []);
+        $urutanTerakhir = (int) Dokumentasi::where('id_perjalanan_dinas', $perjalananDinas->id_perjalanan_dinas)->max('urutan');
+        $idDokumentasiBaru = [];
         foreach ($request->file('dokumentasi', []) as $index => $file) {
             $path = Storage::disk('public')->putFile('dokumentasi', $file);
-            Dokumentasi::create([
+            $idDokumentasiBaru[$index] = Dokumentasi::create([
                 'id_perjalanan_dinas' => $perjalananDinas->id_perjalanan_dinas,
                 'nama_file' => $file->getClientOriginalName(),
                 'caption' => $dokumentasiCaptions[$index] ?? null,
+                'urutan' => $urutanTerakhir + $index + 1,
                 'path_file' => $path,
                 'uploaded_at' => now(),
-            ]);
+            ])->id_dokumentasi;
+        }
+
+        $this->aturUrutanDokumentasi($perjalananDinas, $validated['dokumentasi_urutan'] ?? [], $idDokumentasiBaru);
+    }
+
+    /**
+     * Terapkan urutan foto dari wizard. Token "lama:{id}" menunjuk file yang sudah tersimpan
+     * (hanya milik perjalanan dinas ini yang diproses), "baru:{index}" menunjuk file yang
+     * barusan diunggah di request yang sama.
+     */
+    private function aturUrutanDokumentasi(PerjalananDinas $perjalananDinas, array $urutan, array $idDokumentasiBaru): void
+    {
+        foreach (array_values($urutan) as $posisi => $token) {
+            [$jenis, $kunci] = explode(':', $token, 2);
+            $idDokumentasi = $jenis === 'lama' ? (int) $kunci : ($idDokumentasiBaru[(int) $kunci] ?? null);
+            if (!$idDokumentasi) {
+                continue;
+            }
+
+            Dokumentasi::where('id_dokumentasi', $idDokumentasi)
+                ->where('id_perjalanan_dinas', $perjalananDinas->id_perjalanan_dinas)
+                ->update(['urutan' => $posisi + 1]);
         }
     }
 
@@ -545,7 +624,8 @@ class PerjalananDinasController extends Controller
         $isDraft = $request->input('status_draft') !== 'selesai';
         $validated = $request->validate($this->validationRules($butuhSpd, $isDraft, (string) $request->input('jenis_perjadin')));
 
-        DB::transaction(function () use ($validated, $request, $pemohonId) {
+        $noSpd = DB::transaction(function () use ($validated, $request, $pemohonId) {
+            $validated['no_spd'] = $this->tentukanNomorSpd($validated);
             $perjalananDinas = PerjalananDinas::create(array_merge(
                 $this->perjalananDinasAttributes($validated),
                 ['id_pemohon' => $pemohonId]
@@ -553,10 +633,13 @@ class PerjalananDinasController extends Controller
 
             $this->simpanDataTerkait($perjalananDinas, $validated, $request);
             $this->catatPemilihanWilayah($validated);
+
+            return $perjalananDinas->no_spd;
         });
 
         return redirect()->route('dashboard')
-            ->with('success', 'Perjalanan dinas berhasil disimpan.');
+            ->with('success', 'Perjalanan dinas berhasil disimpan.' . ($noSpd ? " Nomor SPD: {$noSpd}." : ''))
+            ->with('warning', $this->peringatanNomorSpdBerubah($request, $noSpd));
     }
 
     public function update(Request $request, PerjalananDinas $perjalananDinas)
@@ -568,6 +651,7 @@ class PerjalananDinasController extends Controller
         $validated = $request->validate($this->validationRules($butuhSpd, $isDraft, (string) $request->input('jenis_perjadin')));
 
         DB::transaction(function () use ($validated, $request, $perjalananDinas) {
+            $validated['no_spd'] = $this->tentukanNomorSpd($validated, $perjalananDinas);
             $perjalananDinas->update($this->perjalananDinasAttributes($validated));
 
             // Rincian/pengeluaran/pernyataan gampangnya dibongkar-pasang ulang (bukan
@@ -582,7 +666,8 @@ class PerjalananDinasController extends Controller
         });
 
         return redirect()->route('dashboard')
-            ->with('success', 'Perjalanan dinas berhasil diperbarui.');
+            ->with('success', 'Perjalanan dinas berhasil diperbarui.' . ($perjalananDinas->no_spd ? " Nomor SPD: {$perjalananDinas->no_spd}." : ''))
+            ->with('warning', $this->peringatanNomorSpdBerubah($request, $perjalananDinas->no_spd));
     }
 
     /**
@@ -675,6 +760,7 @@ class PerjalananDinasController extends Controller
             'Keterlambatan Pengajuan Tagihan (Ya/Tidak)', 'Keterangan Keterlambatan',
             'Kesimpulan Hasil Kegiatan', 'Tindak Lanjut (1 poin per baris, Alt+Enter utk baris baru)', 'Status (Draft/Selesai)',
             'Jumlah Hari Uang Harian', 'Jumlah Hari Transport', 'Jumlah Hari Penginapan',
+            'No Form Permintaan',
         ];
 
         $lastCol = Coordinate::stringFromColumnIndex(count($headers));
@@ -691,7 +777,7 @@ class PerjalananDinasController extends Controller
         // Kolom tanggal & no surat tugas/spd diformat teks — kalau dibiarkan format
         // tanggal bawaan Excel, nilainya jadi serial number pas dibaca ulang PhpSpreadsheet
         // dan gampang salah tafsir. Lebih aman minta diketik "YYYY-MM-DD" langsung.
-        $kolomTeks = ['B', 'C', 'H', 'I', 'R', 'S', 'AH'];
+        $kolomTeks = ['B', 'C', 'H', 'I', 'R', 'S', 'AH', 'AS'];
         foreach ($kolomTeks as $col) {
             $sheet->getStyle($col . '2:' . $col . '500')->getNumberFormat()->setFormatCode('@');
         }
@@ -711,6 +797,7 @@ class PerjalananDinasController extends Controller
             'Tidak', 'Tidak', 'Tidak', '',
             '', '', 'Draft',
             5, '', 4,
+            '',
         ];
         $sheet->fromArray($contoh, null, 'A2');
         $sheet->getStyle('A2:' . $lastCol . '2')->getFont()->setItalic(true)->getColor()->setRGB('999999');
@@ -840,6 +927,7 @@ class PerjalananDinasController extends Controller
                 'tanggal_mulai' => $data['tanggal_mulai'] ?: null,
                 'tanggal_selesai' => $data['tanggal_selesai'] ?: null,
                 'pembebanan' => $data['pembebanan'],
+                'no_form_permintaan' => $data['no_form_permintaan'] ?: null,
                 'desa_asal' => $data['desa_asal'],
                 'kabupaten_asal' => $data['kabupaten_asal'],
                 'desa_tujuan' => $data['desa_tujuan'],
@@ -877,8 +965,13 @@ class PerjalananDinasController extends Controller
                 $gagal[] = "Baris {$nomorBaris}: " . $validator->errors()->first();
                 continue;
             }
+            if ($butuhSpd && $validated['no_spd'] && PenomoranSpd::sudahDipakai($validated['no_spd'])) {
+                $gagal[] = "Baris {$nomorBaris}: Nomor SPD {$validated['no_spd']} sudah dipakai dokumen lain.";
+                continue;
+            }
 
             DB::transaction(function () use ($validated, $request, $pemohonId) {
+                $validated['no_spd'] = $this->tentukanNomorSpd($validated, null, true);
                 $perjalananDinas = PerjalananDinas::create(array_merge(
                     $this->perjalananDinasAttributes($validated),
                     ['id_pemohon' => $pemohonId]

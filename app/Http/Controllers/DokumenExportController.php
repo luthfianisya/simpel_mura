@@ -62,12 +62,24 @@ class DokumenExportController extends Controller
     // origin/APP_URL — kalau beda dari domain yang dipakai user buka aplikasinya,
     // fetch dari BROWSER bisa kena CORS. Baca langsung dari disk juga selaras dengan
     // dompdf yang di-set isRemoteEnabled:false (tidak fetch HTTP apa pun).
+    //
+    // Nilai src diambil utuh sekali jalan ([^"]*), baru dicek isinya di callback. Foto
+    // yang baru dipilih tapi belum disimpan sudah berupa data: URI base64 (bisa jutaan
+    // karakter) — pola lama yang mencari "/storage/" langsung di dalam src membuat PCRE
+    // mundur-maju di sepanjang base64 itu sampai "Backtrack limit exhausted" dan
+    // preg_replace_callback mengembalikan null (export gagal).
     private function inlineLocalImages(string $html): string
     {
-        return preg_replace_callback(
-            '/(<img\b[^>]*\ssrc=")[^"]*\/(storage|assets)\/([^"]+)(")/i',
+        $hasil = preg_replace_callback(
+            '/(<img\b[^>]*?\ssrc=")([^"]*)(")/i',
             function (array $m) {
-                [, $prefix, $jenis, $relatifPath, $suffix] = $m;
+                [$utuh, $prefix, $src, $suffix] = $m;
+                if (str_starts_with($src, 'data:')
+                    || ! preg_match('/\/(storage|assets)\/([^?#]+)/i', $src, $path)) {
+                    return $utuh;
+                }
+                [, $jenis, $relatifPath] = $path;
+                $jenis = strtolower($jenis);
                 $relatifPath = urldecode($relatifPath);
 
                 if ($jenis === 'storage') {
@@ -94,5 +106,11 @@ class DokumenExportController extends Controller
             },
             $html
         );
+
+        if ($hasil === null) {
+            throw new \RuntimeException('Gagal memproses gambar dokumen: ' . preg_last_error_msg());
+        }
+
+        return $hasil;
     }
 }

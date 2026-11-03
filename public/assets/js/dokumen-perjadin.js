@@ -292,18 +292,22 @@
         const lama = hitungLamaHari(data.tanggal_mulai, data.tanggal_selesai);
         return `
             <div style="font-family:'Bookman Old Style', serif; font-size:11pt;">
-            <div class="d-flex justify-content-between align-items-start">
-                <div class="d-flex align-items-center gap-2">
-                    <img src="${logoUrl}" alt="Logo BPS" style="width:60px;height:auto;">
-                    <div class="fw-bold fst-italic" style="font-family:Arial, sans-serif; font-size:12pt; line-height:1.3;">
+            <!-- Kop pakai <table>, bukan flexbox: dompdf (export PDF di server) tidak mendukung
+                 flex, jadi logo, nama instansi, dan Nomor/Lembar jadi bertumpuk ke bawah. -->
+            <table style="width:100%; border-collapse:collapse;">
+                <tr>
+                    <td style="width:60px; padding:0; vertical-align:middle;">
+                        <img src="${logoUrl}" alt="Logo BPS" style="width:60px;height:auto;display:block;">
+                    </td>
+                    <td class="fw-bold fst-italic" style="padding:0 0 0 0.5rem; vertical-align:middle; font-family:Arial, sans-serif; font-size:12pt; line-height:1.3;">
                         BADAN PUSAT STATISTIK<br>KABUPATEN MURUNG RAYA
-                    </div>
-                </div>
-                <div class="text-end" style="font-size:0.8rem;">
-                    <div>Nomor &nbsp;: ${esc(data.no_spd) || '...........................'}</div>
-                    <div>Lembar &nbsp;: 1</div>
-                </div>
-            </div>
+                    </td>
+                    <td class="text-end" style="padding:0; vertical-align:top; white-space:nowrap; font-size:0.8rem;">
+                        Nomor &nbsp;: ${esc(data.no_spd) || '...........................'}<br>
+                        Lembar &nbsp;: 1
+                    </td>
+                </tr>
+            </table>
             <table class="dokumen-table dokumen-rincian mt-3">
                 <tr><td colspan="3" class="text-center" style="font-size:18pt; font-weight:normal;">SURAT PERJALANAN DINAS</td></tr>
                 <tr><td width="5%">1</td><td width="40%">Pejabat Pembuat Komitmen</td><td>${esc(ppk.nama) || '...'}</td></tr>
@@ -337,6 +341,7 @@
                     <div>Dikeluarkan di : Puruk Cahu</div>
                     <div>Pada Tanggal &nbsp;&nbsp;: ${fmtTanggalPanjang(data.tanggal_spd)}</div>
                 </div>
+                <br>
                 <div>Pejabat Pembuat Komitmen,</div>
                 <div class="mt-5 fw-bold text-decoration-underline">${esc(ppk.nama) || '(...........................)'}</div>
                 <div>NIP. ${esc(fmtNip(ppk.nip))}</div>
@@ -741,16 +746,22 @@
         const pelaksana = data.pelaksana || pegawaiKosong();
         const penandatangan = data.penandatangan || pegawaiKosong();
 
-        let dasar = '1. Surat Tugas Nomor ' + (esc(data.no_surat_tugas) || '...........................')
-            + '<br>&nbsp;&nbsp;&nbsp;tanggal ' + fmtTanggalPanjang(data.tanggal_surat_tugas);
+        // Daftar bernomor dengan hanging indent: nomor di kolom sendiri, jadi baris
+        // "tanggal ..." sejajar dengan awal teks "Surat Tugas"/"SPD", bukan dengan nomornya.
+        const dasarItems = ['Surat Tugas Nomor ' + (esc(data.no_surat_tugas) || '...........................')
+            + '<br>tanggal ' + fmtTanggalPanjang(data.tanggal_surat_tugas)];
         if (data.no_spd) {
-            dasar += '<br>2. SPD Nomor ' + esc(data.no_spd) + '<br>&nbsp;&nbsp;&nbsp;tanggal ' + fmtTanggalPanjang(data.tanggal_spd);
+            dasarItems.push('SPD Nomor ' + esc(data.no_spd) + '<br>tanggal ' + fmtTanggalPanjang(data.tanggal_spd));
         }
+        const dasar = '<table class="dokumen-table">' + dasarItems.map(function (isi, i) {
+            return '<tr><td style="width:1.5em;padding-left:0;padding-right:0;">' + (i + 1) + '.</td>'
+                + '<td style="padding-left:0;">' + isi + '</td></tr>';
+        }).join('') + '</table>';
 
         // Tindak Lanjut: satu poin per baris di textarea input -> daftar bernomor.
         const tindakLanjutItems = String(data.tindak_lanjut || '').split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
         const tindakLanjutHtml = tindakLanjutItems.length
-            ? '<ol class="dokumen-list">' + tindakLanjutItems.map(function (item) { return '<li>' + esc(item) + '</li>'; }).join('') + '</ol>'
+            ? '<ol class="dokumen-list alir-isi">' + tindakLanjutItems.map(function (item) { return '<li>' + esc(item) + '</li>'; }).join('') + '</ol>'
             : '-';
 
         // Pakai <table> (bukan CSS grid) supaya susunan 2 kolomnya juga kebaca benar
@@ -771,17 +782,23 @@
             for (let i = 0; i < rows.length; i += 2) {
                 bodyRows += '<tr>' + dokumentasiCell(rows[i]) + dokumentasiCell(rows[i + 1]) + '</tr>';
             }
-            dokumentasiGrid = '<table class="dokumen-table dokumentasi-grid"><colgroup><col width="50%"><col width="50%"></colgroup>' + bodyRows + '</table>';
+            dokumentasiGrid = '<table class="dokumen-table dokumentasi-grid alir-isi"><colgroup><col width="50%"><col width="50%"></colgroup><tbody>' + bodyRows + '</tbody></table>';
         } else {
             dokumentasiGrid = '<p class="text-center text-muted">Belum ada dokumentasi.</p>';
         }
 
+        // Laporan dialirkan seperti dokumen biasa (lihat alirkanHalaman): tiap anak
+        // langsung div[data-alir-halaman] adalah 1 "blok" — "utuh" tidak boleh terpotong,
+        // "teks" dipotong per kata, "daftar" per butir, "tabel" per baris. Penutup + ttd
+        // minimal di halaman 2 (data-halaman-baru="bukan-pertama"), Dokumentasi selalu
+        // mulai di halaman baru.
         return `
-            <div style="font-family:Arial, sans-serif;">
+            <div style="font-family:Arial, sans-serif;" data-alir-halaman>
+            <div data-blok="utuh">
             <div class="dokumen-title">LAPORAN HASIL PERJALANAN DINAS</div>
             <table class="dokumen-table mt-3">
-                <tr><td width="16%" style="vertical-align:top;">Kepada Yth</td><td>: Kepala Badan Pusat Statistik Kabupaten Murung Raya</td></tr>
-                <tr><td style="vertical-align:top;">Perihal</td><td>: Laporan Perjalanan Dinas dalam rangka ${esc(data.perihal) || '...........................'}</td></tr>
+                <tr><td width="16%" style="vertical-align:top;">Kepada Yth</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td>Kepala Badan Pusat Statistik Kabupaten Murung Raya</td></tr>
+                <tr><td style="vertical-align:top;">Perihal</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td>Laporan Perjalanan Dinas dalam rangka ${esc(data.perihal) || '...........................'}</td></tr>
             </table>
             <table class="dokumen-table mt-3">
                 <tr><td width="4%" style="vertical-align:top;">I.</td><td width="27%" style="vertical-align:top;">Pelaksana Perjalanan</td><td style="vertical-align:top;">
@@ -795,18 +812,24 @@
                 <tr><td style="vertical-align:top;">III.</td><td style="vertical-align:top;">Tujuan Perjalanan Dinas</td><td style="vertical-align:top;">${esc(data.perihal) || '...........................'}</td></tr>
                 <tr><td style="vertical-align:top;">IV.</td><td style="vertical-align:top;">Daerah Tujuan/Instansi</td><td style="vertical-align:top;">${data.desa_tujuan ? esc(data.desa_tujuan) + (data.kabupaten_tujuan ? ', ' + esc(data.kabupaten_tujuan) : '') : (esc(data.kabupaten_tujuan) || '...........................')}</td></tr>
                 <tr><td style="vertical-align:top;">V.</td><td style="vertical-align:top;">Waktu Pelaksanaan</td><td style="vertical-align:top;">${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}</td></tr>
-                <tr><td style="vertical-align:top;">VI.</td><td colspan="2" style="vertical-align:top;">
-                    Kesimpulan Hasil Kegiatan :<br>
-                    <span style="text-align:justify;display:block;">${esc(data.kesimpulan_hasil_kegiatan) || '-'}</span>
+            </table>
+            </div>
+
+            <table class="dokumen-table" data-blok="teks">
+                <tr><td width="4%" class="alir-label" style="vertical-align:top;">VI.</td><td style="vertical-align:top;">
+                    <span class="alir-judul">Kesimpulan Hasil Kegiatan :<br></span>
+                    <span class="alir-isi" style="text-align:justify;display:block;">${esc(data.kesimpulan_hasil_kegiatan) || '-'}</span>
                 </td></tr>
-                <tr><td style="vertical-align:top;">VII.</td><td style="vertical-align:top;">Tindak Lanjut</td><td style="vertical-align:top;">
-                    : Hal-hal yang perlu diperhatikan antara lain :
+            </table>
+
+            <table class="dokumen-table" data-blok="${tindakLanjutItems.length ? 'daftar' : 'utuh'}">
+                <tr><td width="4%" class="alir-label" style="vertical-align:top;">VII.</td><td width="27%" class="alir-label" style="vertical-align:top;">Tindak Lanjut</td><td style="vertical-align:top;">
+                    <span class="alir-judul">: Hal-hal yang perlu diperhatikan antara lain :</span>
                     ${tindakLanjutHtml}
                 </td></tr>
             </table>
 
-            <div class="dokumen-page-break">
-                <div class="dokumen-page-num">- 2 -</div>
+            <div data-blok="utuh" data-halaman-baru="bukan-pertama" class="alir-penutup">
                 <p>Demikian Laporan Perjalanan Dinas ini dibuat sebagai bahan Laporan.</p>
                 <table class="dokumen-table mt-3">
                     <tr>
@@ -824,9 +847,8 @@
                 </table>
             </div>
 
-            <div class="dokumen-page-break">
-                <div class="dokumen-page-num">- 3 -</div>
-                <div class="dokumen-title" style="text-decoration:none;">Dokumentasi</div>
+            <div data-blok="${rows.length ? 'tabel' : 'utuh'}" data-halaman-baru="selalu">
+                <div class="dokumen-title alir-judul" style="text-decoration:none;">Dokumentasi</div>
                 ${dokumentasiGrid}
             </div>
             </div>
@@ -1081,10 +1103,159 @@
         return pages.map(function (pageNodes) { return { style: rootStyle, nodes: pageNodes }; });
     }
 
-    // Dipertahankan untuk kompatibilitas (kalau ada pemakai lain yang cuma butuh HTML
-    // string, tanpa auto-split-per-tinggi) — hasilnya 1 <div> per halaman LOGIS saja.
+    // Cadangan tinggi halaman saat mengalirkan dokumen: pengukuran dilakukan di browser,
+    // sedangkan PDF dibuat dompdf (Arial dipetakan ke Helvetica, metriknya hampir sama),
+    // jadi disisakan sedikit ruang untuk selisih pembulatan baris supaya tidak meluber.
+    const CADANGAN_TINGGI_HALAMAN = 0.96;
+
+    // Alirkan dokumen ber-penanda [data-alir-halaman] (Laporan) ke halaman-halaman fisik
+    // seperti dokumen biasa: isi diukur sungguhan di DOM tersembunyi selebar area konten
+    // kertas, lalu dipotong tepat di batas halaman. Jenis blok (data-blok):
+    //   utuh   — tidak boleh terpotong; pindah ke halaman berikutnya kalau tidak muat
+    //   teks   — .alir-isi dipotong per kata
+    //   daftar — butir <li> di .alir-isi dipotong per butir (nomor tetap bersambung)
+    //   tabel  — baris <tr> di .alir-isi dipotong per baris
+    // Potongan lanjutan mengosongkan .alir-label (mis. "VI.") dan membuang .alir-judul.
+    // data-halaman-baru="selalu" = mulai di halaman baru; "bukan-pertama" = tidak boleh
+    // di halaman 1 (penutup + ttd Laporan). Halaman ke-2 dst diberi nomor "- n -".
+    function alirkanHalaman(html, paperClass) {
+        const size = pageContentSizePx(paperClass);
+        const batas = size.height * CADANGAN_TINGGI_HALAMAN;
+
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+        const root = temp.querySelector('[data-alir-halaman]');
+        const rootStyle = root.getAttribute('style') || '';
+
+        const measure = document.createElement('div');
+        measure.className = 'dokumen-preview alir-ukur';
+        measure.style.cssText = 'position:fixed;top:-99999px;left:-99999px;visibility:hidden;'
+            + 'border:0;padding:0;min-height:0;box-sizing:content-box;width:' + size.width + 'px;';
+        document.body.appendChild(measure);
+
+        const halaman = [];
+        let page = null;
+
+        function halamanBaru() {
+            if (page) halaman.push(Array.from(page.childNodes));
+            page = document.createElement('div');
+            page.setAttribute('style', rootStyle);
+            // flow-root supaya margin anak pertama/terakhir ikut terhitung di tinggi halaman.
+            page.style.display = 'flow-root';
+            measure.innerHTML = '';
+            measure.appendChild(page);
+            if (halaman.length > 0) {
+                page.insertAdjacentHTML('beforeend', '<div class="dokumen-page-num">- ' + (halaman.length + 1) + ' -</div>');
+            }
+        }
+
+        function muat() {
+            return page.getBoundingClientRect().height <= batas;
+        }
+
+        function adaIsiSelain(el) {
+            return Array.from(page.children).some(function (c) {
+                return c !== el && !c.classList.contains('dokumen-page-num');
+            });
+        }
+
+        function jadikanLanjutan(el) {
+            el.querySelectorAll('.alir-label').forEach(function (td) { td.innerHTML = ''; });
+            el.querySelectorAll('.alir-judul').forEach(function (j) { j.remove(); });
+        }
+
+        function taruhUtuh(blok) {
+            page.appendChild(blok);
+            if (!muat() && adaIsiSelain(blok)) {
+                page.removeChild(blok);
+                halamanBaru();
+                page.appendChild(blok);
+            }
+        }
+
+        // Taruh blok yang bisa dipecah: isi(el, dari, sampai) mengisi el dengan unit
+        // [dari, sampai). Tiap halaman diisi unit sebanyak-banyaknya (binary search).
+        function taruhBertahap(blok, jumlah, isi) {
+            let dari = 0;
+            let lanjutan = false;
+            while (dari < jumlah) {
+                const el = blok.cloneNode(true);
+                if (lanjutan) jadikanLanjutan(el);
+                isi(el, dari, jumlah, lanjutan);
+                page.appendChild(el);
+                if (muat()) return;
+
+                let lo = 0;
+                let hi = jumlah - dari - 1;
+                while (lo < hi) {
+                    const mid = Math.floor((lo + hi + 1) / 2);
+                    isi(el, dari, dari + mid, lanjutan);
+                    if (muat()) lo = mid; else hi = mid - 1;
+                }
+
+                if (lo === 0) {
+                    if (adaIsiSelain(el)) {
+                        // Tidak ada 1 unit pun yang muat di sisa halaman ini — mulai di halaman baru.
+                        page.removeChild(el);
+                        halamanBaru();
+                        continue;
+                    }
+                    lo = 1; // halaman kosong pun tidak cukup untuk 1 unit: paksa taruh.
+                }
+                isi(el, dari, dari + lo, lanjutan);
+                dari += lo;
+                lanjutan = true;
+                halamanBaru();
+            }
+        }
+
+        halamanBaru();
+        Array.from(root.children).forEach(function (blok) {
+            const aturan = blok.dataset.halamanBaru;
+            if (aturan === 'selalu' && adaIsiSelain(null)) halamanBaru();
+            if (aturan === 'bukan-pertama' && halaman.length === 0) halamanBaru();
+
+            const jenis = blok.dataset.blok || 'utuh';
+            if (jenis === 'teks') {
+                const kata = blok.querySelector('.alir-isi').textContent.trim().split(/\s+/);
+                taruhBertahap(blok, kata.length, function (el, dari, sampai) {
+                    const isiEl = el.querySelector('.alir-isi');
+                    isiEl.textContent = kata.slice(dari, sampai).join(' ');
+                    // Baris terakhir potongan yang masih bersambung ikut rata kiri-kanan.
+                    isiEl.classList.toggle('alir-rata-penuh', sampai < kata.length);
+                });
+            } else if (jenis === 'daftar') {
+                const butir = Array.from(blok.querySelectorAll('.alir-isi > li'));
+                taruhBertahap(blok, butir.length, function (el, dari, sampai) {
+                    const ol = el.querySelector('.alir-isi');
+                    ol.innerHTML = '';
+                    ol.setAttribute('start', dari + 1);
+                    butir.slice(dari, sampai).forEach(function (li) { ol.appendChild(li.cloneNode(true)); });
+                });
+            } else if (jenis === 'tabel') {
+                const baris = Array.from(blok.querySelectorAll('.alir-isi > tbody > tr'));
+                taruhBertahap(blok, baris.length, function (el, dari, sampai) {
+                    const tbody = el.querySelector('.alir-isi > tbody');
+                    tbody.innerHTML = '';
+                    baris.slice(dari, sampai).forEach(function (tr) { tbody.appendChild(tr.cloneNode(true)); });
+                });
+            } else {
+                taruhUtuh(blok);
+            }
+        });
+        halaman.push(Array.from(page.childNodes));
+        document.body.removeChild(measure);
+
+        return halaman.map(function (nodes) { return { style: rootStyle, nodes: nodes }; });
+    }
+
+    // Pecah dokumen jadi 1 <div> per halaman: dokumen ber-[data-alir-halaman] (Laporan)
+    // dialirkan per tinggi kertas (alirkanHalaman), sisanya per halaman LOGIS saja.
     function renderPaginated(html, paperClass) {
-        return splitLogicalPages(html).map(function (page) {
+        const pages = html.indexOf('data-alir-halaman') !== -1
+            ? alirkanHalaman(html, paperClass)
+            : splitLogicalPages(html);
+        return pages.map(function (page) {
             const pageWrap = document.createElement('div');
             pageWrap.className = 'dokumen-preview ' + paperClass;
             const inner = document.createElement('div');

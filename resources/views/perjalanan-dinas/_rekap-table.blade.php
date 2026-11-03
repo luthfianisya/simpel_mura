@@ -19,11 +19,11 @@
 
         #table-rekap-perjadin thead th {
             text-transform: uppercase;
-            font-size: 0.72rem;
+            font-size: var(--bs-body-font-size);
             letter-spacing: 0.4px;
-            color: #566a7f;
-            background-color: #eef0f7;
-            border-bottom: 2px solid #dfe3f0;
+            color: #fff;
+            background-color: #1B449C;
+            border-bottom: 2px solid #1B449C;
             white-space: nowrap;
         }
 
@@ -57,12 +57,15 @@
         <h5 class="mb-0"><i class="ti ti-table me-1"></i> {{ $cardTitle ?? 'Rekap Perjalanan Dinas' }}</h5>
         {{-- <div id="rekap-perjadin-export"></div> --}}
         <div class="d-flex gap-2">
-            <select id="filter-jenis-perjadin" class="form-select" style="width: auto;">
-                <option value="">Semua Jenis Perjadin</option>
-                <option value="Biasa">Biasa</option>
-                <option value="Dalam Kota ≤8 Jam">Dalam Kota ≤8 Jam</option>
-                <option value="Dalam Kota >8 Jam">Dalam Kota &gt;8 Jam</option>
-            </select>
+            {{-- Dipindah ke sebelah tombol "Kolom" oleh atur-kolom.js (data-filter-tabel). --}}
+            <div data-filter-tabel="table-rekap-perjadin">
+                <select id="filter-jenis-perjadin" class="form-select" title="Filter jenis perjadin">
+                    <option value="">Semua Jenis Perjadin</option>
+                    <option value="Biasa">Biasa</option>
+                    <option value="Dalam Kota ≤8 Jam">Dalam Kota ≤8 Jam</option>
+                    <option value="Dalam Kota >8 Jam">Dalam Kota &gt;8 Jam</option>
+                </select>
+            </div>
             <div class="dropdown">
                 <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="ti ti-plus ti-sm me-1"></i> Buat Dokumen
@@ -110,18 +113,19 @@
                 <tr>
                     <th>No</th>
                     <th>Status</th>
-                    <th>Jenis Perjadin</th>
+                    <th>Jenis</th>
                     <th>Nama Pemohon</th>
-                    <th>Tanggal Permohonan</th>
-                    <th>Nama</th>
+                    <th>Tanggal</th>
+                    <th>Nama Pelaksana</th>
                     <th>Tugas</th>
                     <th>Daerah Asal</th>
                     <th>Daerah Tujuan</th>
                     <th>Angkutan</th>
                     <th>Tanggal Pelaksanaan</th>
-                    <th>MAK</th>
+                    <th>Pembebanan</th>
                     <th>No Surat Tugas</th>
                     <th>No SPD</th>
+                    <th>No Form Permintaan</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -137,7 +141,7 @@
                             @endif
                         </td>
                         <td>
-                            <span class="badge rounded-pill bg-label-{{ ['biasa' => 'info', 'dalam_kota_kurang_8_jam' => 'secondary', 'dalam_kota_lebih_8_jam' => 'primary'][$item->jenis_perjadin] ?? 'secondary' }}">
+                            <span class="badge rounded-pill bg-label-{{ ['biasa' => 'info', 'dalam_kota_kurang_8_jam' => 'warning', 'dalam_kota_lebih_8_jam' => 'primary'][$item->jenis_perjadin] ?? 'secondary' }}">
                                 {{ $item->jenis_perjadin_label }}
                             </span>
                         </td>
@@ -169,10 +173,17 @@
                             @endif
                         </td>
                         <td>{{ $item->pembebanan }}</td>
-                        <td><span class="badge bg-label-secondary rekap-nomor">{{ $item->no_surat_tugas }}</span></td>
+                        <td class="text-nowrap">{{ $item->no_surat_tugas }}</td>
                         <td>
                             @if ($item->no_spd)
-                                <span class="badge bg-label-secondary rekap-nomor">{{ $item->no_spd }}</span>
+                                <span class="text-nowrap">{{ $item->no_spd }}</span>
+                            @else
+                                <span class="text-muted">-</span>
+                            @endif
+                        </td>
+                        <td>
+                            @if ($item->no_form_permintaan)
+                                <span class="text-nowrap">{{ $item->no_form_permintaan }}</span>
                             @else
                                 <span class="text-muted">-</span>
                             @endif
@@ -202,7 +213,7 @@
                                 </form>
                             @elseif ($item->status_draft === 'selesai' && $item->dimilikiOleh(auth()->user()->id_pegawai_mitra ?? null))
                                 <form action="{{ route('perjalanan-dinas.buka-kembali', $item) }}" method="POST" class="d-inline"
-                                    onsubmit="return confirmSubmit(this, 'Buka kembali perjalanan dinas ini untuk diedit? Status akan kembali jadi draft.', { icon: 'question', confirmButtonColor: '#696cff' });">
+                                    onsubmit="return confirmSubmit(this, 'Buka kembali perjalanan dinas ini untuk diedit? Status akan kembali jadi draft.', { icon: 'question', confirmButtonColor: '#2563eb' });">
                                     @csrf
                                     @method('PATCH')
                                     <button type="submit" class="btn btn-icon btn-sm btn-text-warning rounded-pill" title="Buka Kembali untuk Diedit">
@@ -279,8 +290,6 @@
 </div>
 
 @push('page-js')
-    <script src="{{ asset('assets/vendor/libs/datatables/jquery.dataTables.js') }}"></script>
-    <script src="{{ asset('assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
     <script src="{{ asset('assets/vendor/libs/datatables-buttons/datatables-buttons.js') }}"></script>
     <script src="{{ asset('assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.js') }}"></script>
     <script src="{{ asset('assets/vendor/libs/jszip/jszip.js') }}"></script>
@@ -374,6 +383,7 @@
                     },
                 ],
                 initComplete: function () {
+                    window.SimpelAturKolom.pasang(this.api());
                     this.api().buttons().container().appendTo('#rekap-perjadin-export');
                 },
             });

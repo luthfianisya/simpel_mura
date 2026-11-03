@@ -5,6 +5,9 @@ use App\Http\Controllers\PegawaiMitraController;
 use App\Http\Controllers\PerjalananDinasController;
 use App\Http\Controllers\RincianBiayaController;
 use App\Http\Controllers\LaporanController;
+use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\MonitoringGupController;
+use App\Http\Controllers\MonitoringSpjController;
 use App\Http\Controllers\BantuanController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WilayahController;
@@ -36,9 +39,16 @@ Route::middleware('auth')->group(function () {
     Route::delete('/perjalanan-dinas/{perjalananDinas}/dokumentasi/{dokumentasi}', [PerjalananDinasController::class, 'hapusDokumentasi'])->name('perjalanan-dinas.dokumentasi.destroy');
     Route::patch('/perjalanan-dinas/{perjalananDinas}/dokumentasi/{dokumentasi}/caption', [PerjalananDinasController::class, 'updateCaptionDokumentasi'])->name('perjalanan-dinas.dokumentasi.caption');
     Route::get('/perjalanan-dinas/{perjalananDinas}', [PerjalananDinasController::class, 'show'])->name('perjalanan-dinas.show');
-    Route::get('/rincian-biaya', [RincianBiayaController::class, 'index'])->name('rincian-biaya.index');
+    Route::get('/monitoring-spj', [MonitoringSpjController::class, 'index'])->name('monitoring-spj.index');
+    Route::patch('/monitoring-spj/bulk', [MonitoringSpjController::class, 'bulkUpdate'])->name('monitoring-spj.bulk-update');
+    Route::put('/monitoring-spj/{perjalananDinas}', [MonitoringSpjController::class, 'update'])->name('monitoring-spj.update');
+    Route::get('/monitoring-gup', [MonitoringGupController::class, 'index'])->name('monitoring-gup.index');
+    Route::get('/rincian-biaya',[RincianBiayaController::class, 'index'])->name('rincian-biaya.index');
     Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
     Route::get('/bantuan', [BantuanController::class, 'index'])->name('bantuan.index');
+    Route::get('/feedback', [FeedbackController::class, 'index'])->name('feedback.index');
+    Route::post('/feedback', [FeedbackController::class, 'store'])->name('feedback.store');
+    Route::patch('/feedback/{feedback}/tindak-lanjut', [FeedbackController::class, 'tindakLanjut'])->name('feedback.tindak-lanjut');
     Route::get('/rate', [RateController::class, 'index'])->name('rate.index');
     Route::get('/dokumen-pendukung/{key}/download', [RateController::class, 'downloadDokumenPendukung'])->name('dokumen-pendukung.download');
     Route::post('/dokumen/export-pdf', [DokumenExportController::class, 'pdf'])->name('dokumen.export-pdf');
@@ -48,6 +58,8 @@ Route::middleware(['auth', 'role:administrator'])->group(function () {
     Route::get('/kelola-pegawai', [PegawaiMitraController::class, 'pegawai'])->name('pegawai-mitra.pegawai');
     Route::get('/kelola-mitra', [PegawaiMitraController::class, 'mitra'])->name('pegawai-mitra.mitra');
     Route::post('/pegawai-mitra', [PegawaiMitraController::class, 'store'])->name('pegawai-mitra.store');
+    Route::patch('/pegawai-mitra/massal', [PegawaiMitraController::class, 'bulkUpdate'])->name('pegawai-mitra.bulk-update');
+    Route::delete('/pegawai-mitra/massal', [PegawaiMitraController::class, 'bulkDestroy'])->name('pegawai-mitra.bulk-destroy');
     Route::put('/pegawai-mitra/{pegawaiMitra}', [PegawaiMitraController::class, 'update'])->name('pegawai-mitra.update');
     Route::delete('/pegawai-mitra/{pegawaiMitra}', [PegawaiMitraController::class, 'destroy'])->name('pegawai-mitra.destroy');
     Route::get('/pegawai-mitra/template/{status}', [PegawaiMitraController::class, 'template'])
@@ -59,6 +71,8 @@ Route::middleware(['auth', 'role:administrator'])->group(function () {
 
     Route::get('/kelola-akun', [UserController::class, 'index'])->name('user.index');
     Route::post('/kelola-akun', [UserController::class, 'store'])->name('user.store');
+    Route::patch('/kelola-akun/massal', [UserController::class, 'bulkUpdate'])->name('user.bulk-update');
+    Route::delete('/kelola-akun/massal', [UserController::class, 'bulkDestroy'])->name('user.bulk-destroy');
     Route::put('/kelola-akun/{user}', [UserController::class, 'update'])->name('user.update');
     Route::patch('/kelola-akun/{user}/reset-password', [UserController::class, 'resetPassword'])->name('user.reset-password');
     Route::patch('/kelola-akun/{user}/toggle-aktif', [UserController::class, 'toggleAktif'])->name('user.toggle-aktif');
@@ -81,25 +95,33 @@ Route::middleware(['auth', 'role:administrator'])->group(function () {
 });
 
 Route::get('/dashboard', function () {
-    $daftarPerjalananDinas = \App\Models\PerjalananDinas::with([
-        'pemohon', 'pelaksana', 'penandatanganSt', 'ppk', 'bendahara', 'jenisKegiatan',
-        'rincianBiaya', 'pengeluaranRiil', 'kuitansi', 'suratPernyataan', 'laporan', 'dokumentasi',
-    ])
-        ->latest()
-        ->get();
+    $jumlahPerJenis = \App\Models\PerjalananDinas::query()
+        ->selectRaw('jenis_perjadin, COUNT(*) AS jumlah')
+        ->groupBy('jenis_perjadin')
+        ->pluck('jumlah', 'jenis_perjadin');
 
     $statistikPerjadin = [
-        'total' => $daftarPerjalananDinas->count(),
-        'biasa' => $daftarPerjalananDinas->where('jenis_perjadin', 'biasa')->count(),
-        'dalam_kota_kurang_8_jam' => $daftarPerjalananDinas->where('jenis_perjadin', 'dalam_kota_kurang_8_jam')->count(),
-        'dalam_kota_lebih_8_jam' => $daftarPerjalananDinas->where('jenis_perjadin', 'dalam_kota_lebih_8_jam')->count(),
+        'total' => (int) $jumlahPerJenis->sum(),
+        'biasa' => (int) ($jumlahPerJenis['biasa'] ?? 0),
+        'dalam_kota_kurang_8_jam' => (int) ($jumlahPerJenis['dalam_kota_kurang_8_jam'] ?? 0),
+        'dalam_kota_lebih_8_jam' => (int) ($jumlahPerJenis['dalam_kota_lebih_8_jam'] ?? 0),
     ];
 
-    $dokumenDataById = $daftarPerjalananDinas->mapWithKeys(
-        fn ($pd) => [$pd->id_perjalanan_dinas => $pd->toPreviewData()]
-    );
+    // Sama dengan isi halaman Monitoring SPJ: hanya perjalanan dinas yang sudah selesai (final).
+    // Yang belum punya baris monitoring / posisi kosong dihitung "Belum Diproses".
+    $jumlahPerPosisi = \App\Models\PerjalananDinas::query()
+        ->where('status_draft', 'selesai')
+        ->leftJoin('monitoring_spj', 'monitoring_spj.id_perjalanan_dinas', '=', 'perjalanan_dinas.id_perjalanan_dinas')
+        ->selectRaw('monitoring_spj.posisi_spj AS posisi, COUNT(*) AS jumlah')
+        ->groupBy('monitoring_spj.posisi_spj')
+        ->pluck('jumlah', 'posisi');
 
-    return view('dashboard', compact('daftarPerjalananDinas', 'statistikPerjadin', 'dokumenDataById'));
+    $statistikPosisiSpj = ['Belum Diproses' => (int) ($jumlahPerPosisi[''] ?? 0)];
+    foreach (\App\Models\MonitoringSpj::POSISI_SPJ as $posisi) {
+        $statistikPosisiSpj[$posisi] = (int) ($jumlahPerPosisi[$posisi] ?? 0);
+    }
+
+    return view('dashboard', compact('statistikPerjadin', 'statistikPosisiSpj'));
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 require __DIR__ . '/auth.php';

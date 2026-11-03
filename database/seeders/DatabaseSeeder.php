@@ -100,7 +100,7 @@ class DatabaseSeeder extends Seeder
                     'pangkat' => $pangkat !== null && trim((string) $pangkat) !== '' ? trim($pangkat) : null,
                     'golongan' => $golongan !== null && trim((string) $golongan) !== '' ? trim($golongan) : null,
                     'status_kepegawaian' => 'pegawai',
-                    'peran_pejabat' => in_array($peranPejabat, ['kepala_satker', 'ppk', 'bendahara'], true) ? $peranPejabat : null,
+                    'peran_pejabat' => in_array($peranPejabat, ['kepala_satker', 'ppk', 'ppspm', 'bendahara'], true) ? $peranPejabat : null,
                 ]
             );
         }

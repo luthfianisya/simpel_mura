@@ -41,4 +41,13 @@ class User extends Authenticatable
     {
         return $this->belongsTo(PegawaiMitra::class, 'id_pegawai_mitra', 'id_pegawai_mitra');
     }
+
+    /**
+     * Kolom manual Monitoring SPJ cuma boleh diisi pegawai yang peran pejabatnya
+     * PPK, PPSPM, atau Bendahara (diatur di Kelola Pegawai), untuk semua perjalanan dinas.
+     */
+    public function bisaIsiMonitoringSpj(): bool
+    {
+        return in_array(optional($this->pegawaiMitra)->peran_pejabat, ['ppk', 'ppspm', 'bendahara'], true);
+    }
 }

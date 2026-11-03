@@ -16,7 +16,27 @@
 
   <ul class="menu-inner py-1">
     @foreach (config('menu') as $item)
-      @if (in_array(auth()->user()->role, $item['roles']))
+      @continue(!in_array(auth()->user()->role, $item['roles']))
+
+      @if (!empty($item['children']))
+        {{-- Submenu: terbuka & aktif otomatis kalau halaman yang sedang dibuka ada di dalamnya. --}}
+        @php $subAktif = request()->routeIs(...array_column($item['children'], 'route')); @endphp
+        <li class="menu-item {{ $subAktif ? 'active open' : '' }}">
+          <a href="javascript:void(0);" class="menu-link menu-toggle">
+            <i class="menu-icon tf-icons {{ $item['icon'] }}"></i>
+            <div>{{ $item['label'] }}</div>
+          </a>
+          <ul class="menu-sub">
+            @foreach ($item['children'] as $anak)
+              <li class="menu-item {{ request()->routeIs($anak['route']) ? 'active' : '' }}">
+                <a href="{{ route($anak['route']) }}" class="menu-link">
+                  <div>{{ $anak['label'] }}</div>
+                </a>
+              </li>
+            @endforeach
+          </ul>
+        </li>
+      @else
         <li class="menu-item {{ request()->routeIs($item['route']) ? 'active' : '' }}">
           <a href="{{ route($item['route']) }}" class="menu-link">
             <i class="menu-icon tf-icons {{ $item['icon'] }}"></i>

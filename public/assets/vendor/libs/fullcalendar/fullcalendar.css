@@ -197,11 +197,11 @@ html:not([dir=rtl]) .fc .fc-view-harness .fc-scrollgrid-section-header > * {
   background-color: rgba(75, 70, 92, 0.16);
 }
 .light-style .fc-event-primary:not(.fc-list-event) {
-  background-color: #eae8fd !important;
-  color: #7367f0 !important;
+  background-color: #e0e9fc !important;
+  color: #2563eb !important;
 }
 .light-style .fc-event-primary.fc-list-event .fc-list-event-dot {
-  border-color: #7367f0 !important;
+  border-color: #2563eb !important;
 }
 .light-style .fc-event-secondary:not(.fc-list-event) {
   background-color: #f2f2f3 !important;
@@ -334,13 +334,13 @@ html:not([dir=rtl]) .fc .fc-view-harness .fc-scrollgrid-section-header > * {
 }
 .dark-style .fc-event-primary:not(.fc-list-event) {
   background-color: #3a3b64 !important;
-  color: #7367f0 !important;
+  color: #2563eb !important;
 }
 .dark-style .fc-event-primary:not(.fc-list-event) {
   box-shadow: none;
 }
 .dark-style .fc-event-primary.fc-list-event .fc-list-event-dot {
-  border-color: #7367f0 !important;
+  border-color: #2563eb !important;
 }
 .dark-style .fc-event-secondary:not(.fc-list-event) {
   background-color: #424659 !important;

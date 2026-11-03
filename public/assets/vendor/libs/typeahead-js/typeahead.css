@@ -53,13 +53,13 @@
 }
 .light-style .twitter-typeahead .tt-suggestion {
   font-weight: 400;
-  color: #5d596c;
+  color: #3a3645;
   padding: 0.42rem 1rem;
 }
 .light-style .twitter-typeahead .tt-suggestion:hover, .light-style .twitter-typeahead .tt-suggestion:focus {
   text-decoration: none;
-  color: #7367f0;
-  background-color: rgba(115, 103, 240, 0.08);
+  color: #2563eb;
+  background-color: rgba(37, 99, 235, 0.08);
 }
 
 .dark-style .twitter-typeahead .tt-menu {
@@ -80,8 +80,8 @@
 }
 .dark-style .twitter-typeahead .tt-menu .tt-suggestion:hover, .dark-style .twitter-typeahead .tt-menu .tt-suggestion:focus {
   text-decoration: none;
-  color: #7367f0;
-  background-color: rgba(115, 103, 240, 0.08);
+  color: #2563eb;
+  background-color: rgba(37, 99, 235, 0.08);
 }
 .dark-style .twitter-typeahead .tt-hint {
   color: #5e6692;

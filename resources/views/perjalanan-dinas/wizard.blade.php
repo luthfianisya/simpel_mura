@@ -119,6 +119,42 @@
             background: #bb2d3b;
         }
 
+        /* Urutan foto bisa diatur dengan drag (SortableJS): kursor "grab", nomor urut di
+           pojok kiri atas, dan bayangan pudar di posisi tujuan saat digeser. */
+        #dokumentasi-preview-list .dokumentasi-thumb {
+            cursor: grab;
+            background-color: #fff;
+            transition: box-shadow 0.15s ease;
+        }
+
+        #dokumentasi-preview-list .dokumentasi-thumb:hover {
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
+        }
+
+        #dokumentasi-preview-list .dokumentasi-thumb input {
+            cursor: text;
+        }
+
+        .dokumentasi-nomor {
+            position: absolute;
+            top: -6px;
+            left: -6px;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 4px;
+            border-radius: 10px;
+            background: #2563eb;
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 600;
+            line-height: 20px;
+        }
+
+        .dokumentasi-ghost {
+            opacity: 0.4;
+            border: 1px dashed #2563eb !important;
+        }
+
         /* Tanda bintang merah field wajib (cuma wajib saat "Selesai & Simpan", lihat
            isDataWajibLengkap — draft boleh kosong, tapi tetap ditandai dari awal biar
            user tahu apa yang bakal diminta lengkap nanti). */
@@ -159,7 +195,7 @@
             <p class="text-muted mb-0">{{ $jenisLabel }}</p>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <a href="{{ route('dashboard') }}" class="btn btn-label-secondary d-inline-flex align-items-center gap-1">
+            <a href="{{ route('dashboard') }}" class="btn btn-outline-primary d-inline-flex align-items-center gap-1">
                 <i class="ti ti-arrow-left ti-sm"></i> Kembali
             </a>
             @if ($mode !== 'view' && $pemohonPegawai)
@@ -167,7 +203,7 @@
                 <button type="button" id="btn-selesai" class="btn btn-primary"><i class="ti ti-circle-check ti-sm me-1"></i> Selesai</button>
             @endif
             @if ($mode === 'view' && $perjalananDinas && $perjalananDinas->status_draft === 'selesai' && $perjalananDinas->dimilikiOleh(auth()->user()->id_pegawai_mitra))
-                <form action="{{ route('perjalanan-dinas.buka-kembali', $perjalananDinas) }}" method="POST" onsubmit="return confirmSubmit(this, 'Buka kembali perjalanan dinas ini untuk diedit? Status akan kembali jadi draft.', { icon: 'question', confirmButtonColor: '#696cff' });">
+                <form action="{{ route('perjalanan-dinas.buka-kembali', $perjalananDinas) }}" method="POST" onsubmit="return confirmSubmit(this, 'Buka kembali perjalanan dinas ini untuk diedit? Status akan kembali jadi draft.', { icon: 'question', confirmButtonColor: '#2563eb' });">
                     @csrf
                     @method('PATCH')
                     <button type="submit" class="btn btn-warning"><i class="ti ti-lock-open ti-sm me-1"></i> Buka Kembali untuk Diedit</button>
@@ -299,7 +335,7 @@
                                             <label class="form-label">No. Surat Tugas<span class="required-mark">*</span></label>
                                             <div class="input-group">
                                                 <span class="input-group-text">B-</span>
-                                                <input type="text" id="input-no_surat_tugas_angka" class="form-control" inputmode="numeric" pattern="[0-9]*" placeholder="mis. 1082" value="{{ $noSuratTugasAngka }}">
+                                                <input type="text" id="input-no_surat_tugas_angka" class="form-control" inputmode="numeric" pattern="[0-9]*" value="{{ $noSuratTugasAngka }}">
                                                 <span class="input-group-text" id="suffix-no_surat_tugas">/62130/KU.340/{{ now()->year }}</span>
                                             </div>
                                             <input type="hidden" id="input-no_surat_tugas" name="no_surat_tugas" value="{{ $oldNoSuratTugas }}">
@@ -310,6 +346,8 @@
                                             <input type="text" id="input-tanggal_surat_tugas" name="tanggal_surat_tugas" class="form-control" autocomplete="off" placeholder="dd-mm-yyyy" value="{{ old('tanggal_surat_tugas') }}" required>
                                             <div class="field-error" id="err-input-tanggal_surat_tugas">Tanggal surat tugas wajib diisi.</div>
                                         </div>
+                                        {{-- Jenis Kegiatan disembunyikan dari form (tidak wajib lagi). Nilai lama tetap
+                                             dikirim lewat input tersembunyi di bawah supaya tidak terhapus saat data diubah.
                                         <div class="col-md-12">
                                             <label class="form-label">Jenis Kegiatan<span class="required-mark">*</span></label>
                                             <select id="input-jenis_kegiatan" name="id_jenis_kegiatan" class="form-select" required>
@@ -335,10 +373,12 @@
                                                 <button type="button" id="btn-tambah-jenis_kegiatan" class="btn btn-outline-primary">Tambah</button>
                                             </div>
                                         </div>
+                                        --}}
+                                        <input type="hidden" name="id_jenis_kegiatan" value="{{ old('id_jenis_kegiatan') }}">
                                         <div class="col-md-12">
                                             <label class="form-label">Perihal<span class="required-mark">*</span></label>
-                                            <input type="text" id="input-perihal" name="perihal" class="form-control" value="{{ old('perihal') }}" required>
-                                            <div class="field-error" id="err-input-perihal">Perihal wajib diisi &mdash; periksa lagi walau sudah terisi otomatis dari Jenis Kegiatan (lengkapi bagian "[]" dengan nama survei).</div>
+                                            <textarea id="input-perihal" name="perihal" class="form-control" rows="3" maxlength="2000" required>{{ old('perihal') }}</textarea>
+                                            <div class="field-error" id="err-input-perihal">Perihal wajib diisi.</div>
                                         </div>
                                         {{-- <div class="col-md-12">
                                             <label class="form-label">Uraian Tugas</label>
@@ -392,12 +432,17 @@
                                             <label class="form-label">Tanggal Kuitansi</label>
                                             <input type="text" id="input-tanggal_kuitansi" name="tanggal_kuitansi" class="form-control" autocomplete="off" value="{{ old('tanggal_kuitansi') ?: ($mode !== 'view' ? now()->format('Y-m-d') : '') }}">
                                         </div>
-                                        <div class="col-md-8">
+                                        <div class="col-md-6">
                                             <label class="form-label">Pembebanan (Akun/MAK)<span class="required-mark">*</span></label>
                                             <input type="text" id="input-pembebanan" name="pembebanan" class="form-control" value="{{ old('pembebanan') }}" placeholder="mis. GG.2902.BMA.006.530.B.524113" required>
-                                            <div class="field-error" id="err-input-pembebanan">Pembebanan (Akun/MAK) wajib diisi &mdash; periksa lagi walau sudah terisi otomatis dari Jenis Kegiatan.</div>
+                                            <div class="field-error" id="err-input-pembebanan">Pembebanan (Akun/MAK) wajib diisi.</div>
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-3">
+                                            <label class="form-label" for="input-no_form_permintaan">No. Form Permintaan</label>
+                                            <input type="text" id="input-no_form_permintaan" name="no_form_permintaan" class="form-control" maxlength="255"
+                                                value="{{ old('no_form_permintaan') }}" placeholder="Nomor FP">
+                                        </div>
+                                        <div class="col-md-3">
                                             <label class="form-label">Tingkat Biaya Perjadin</label>
                                             <select id="input-tingkat_biaya" class="form-select">
                                                 <option value="">-</option>
@@ -569,10 +614,11 @@
                                             <div class="col-md-6">
                                                 <label class="form-label">No. SPD<span class="required-mark">*</span></label>
                                                 <div class="input-group">
-                                                    <input type="text" id="input-no_spd" name="no_spd" class="form-control" value="{{ old('no_spd') }}" required>
+                                                    <input type="text" id="input-no_spd" name="no_spd" class="form-control" value="{{ old('no_spd') }}" readonly placeholder="Klik Ambil Nomor" required>
                                                     <button type="button" id="btn-ambil-nomor-spd" class="btn btn-outline-primary">Ambil Nomor</button>
                                                 </div>
                                                 <div class="field-error" id="err-input-no_spd">Nomor SPD wajib diisi.</div>
+                                                {{-- <div class="form-text">Nomor dikunci saat dokumen disimpan. Jika nomor ini keburu dipakai dokumen lain, otomatis diganti nomor berikutnya.</div> --}}
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label">Tanggal SPD<span class="required-mark">*</span></label>
@@ -597,7 +643,7 @@
                                             </div>
                                         </div>
                                         <div class="d-flex justify-content-between mt-4">
-                                            <button type="button" class="btn btn-label-secondary btn-wizard-prev"><i class="ti ti-arrow-left ti-sm me-1"></i> Kembali</button>
+                                            <button type="button" class="btn btn-outline-primary btn-wizard-prev"><i class="ti ti-arrow-left ti-sm me-1"></i> Kembali</button>
                                             <button type="button" class="btn btn-primary btn-wizard-next">Lanjut <i class="ti ti-arrow-right ti-sm ms-1"></i></button>
                                         </div>
                                     </div>
@@ -637,11 +683,12 @@
                                     <h6 class="mb-3">Dokumentasi<span class="required-mark">*</span></h6>
                                     <input type="file" id="input-dokumentasi" name="dokumentasi[]" class="form-control" multiple accept="image/*,.pdf">
                                     <div id="dokumentasi-preview-list" class="d-flex flex-wrap gap-2 mt-3"></div>
+                                    <div class="form-text">Geser (drag) foto untuk mengubah urutannya di dokumen Laporan. Urutan tersimpan saat dokumen disimpan.</div>
                                     <div class="field-error" id="err-laporan-dokumentasi">Minimal 1 file dokumentasi wajib diunggah.</div>
                                 </div>
                             </div>
                             <div class="d-flex justify-content-between mt-4">
-                                <button type="button" class="btn btn-label-secondary btn-wizard-prev"><i class="ti ti-arrow-left ti-sm me-1"></i> Kembali</button>
+                                <button type="button" class="btn btn-outline-primary btn-wizard-prev"><i class="ti ti-arrow-left ti-sm me-1"></i> Kembali</button>
                                 <button type="button" class="btn btn-primary btn-wizard-next">Lanjut <i class="ti ti-arrow-right ti-sm ms-1"></i></button>
                             </div>
                         </div>
@@ -693,7 +740,7 @@
                                 </div>
                             </div>
                             <div class="d-flex justify-content-between mt-4">
-                                <button type="button" class="btn btn-label-secondary btn-wizard-prev"><i class="ti ti-arrow-left ti-sm me-1"></i> Kembali</button>
+                                <button type="button" class="btn btn-outline-primary btn-wizard-prev"><i class="ti ti-arrow-left ti-sm me-1"></i> Kembali</button>
                                 <button type="button" class="btn btn-primary btn-wizard-next">Lanjut <i class="ti ti-arrow-right ti-sm ms-1"></i></button>
                             </div>
                         </div>
@@ -727,7 +774,7 @@
                                 </div>
                             </div>
                             <div class="d-flex justify-content-between mt-4">
-                                <button type="button" class="btn btn-label-secondary btn-wizard-prev"><i class="ti ti-arrow-left ti-sm me-1"></i> Kembali</button>
+                                <button type="button" class="btn btn-outline-primary btn-wizard-prev"><i class="ti ti-arrow-left ti-sm me-1"></i> Kembali</button>
                                 <button type="button" class="btn btn-primary btn-wizard-next">Lanjut <i class="ti ti-arrow-right ti-sm ms-1"></i></button>
                             </div>
                         </div>
@@ -782,7 +829,7 @@
                                 </div>
                             </div>
                             <div class="d-flex justify-content-between mt-4">
-                                <button type="button" class="btn btn-label-secondary btn-wizard-prev"><i class="ti ti-arrow-left ti-sm me-1"></i> Kembali</button>
+                                <button type="button" class="btn btn-outline-primary btn-wizard-prev"><i class="ti ti-arrow-left ti-sm me-1"></i> Kembali</button>
                                 <button type="button" class="btn btn-primary btn-wizard-next">Lanjut <i class="ti ti-arrow-right ti-sm ms-1"></i></button>
                             </div>
                         </div>
@@ -805,7 +852,7 @@
                                 <i class="ti ti-info-circle me-1"></i> Tanggal Kuitansi diisi di step Data Umum, di samping Tanggal Mulai &ndash; Selesai.
                             </div>
                             <div class="d-flex justify-content-between mt-4">
-                                <button type="button" class="btn btn-label-secondary btn-wizard-prev"><i class="ti ti-arrow-left ti-sm me-1"></i> Kembali</button>
+                                <button type="button" class="btn btn-outline-primary btn-wizard-prev"><i class="ti ti-arrow-left ti-sm me-1"></i> Kembali</button>
                             </div>
                         </div>
                         <div class="col-lg-6">
@@ -898,6 +945,7 @@
     <script src="{{ asset('assets/vendor/libs/bs-stepper/bs-stepper.js') }}"></script>
     <script src="{{ asset('assets/vendor/libs/select2/select2.js') }}"></script>
     <script src="{{ asset('assets/vendor/libs/flatpickr/flatpickr.js') }}"></script>
+    <script src="{{ asset('assets/vendor/libs/sortablejs/sortable.js') }}"></script>
     <script src="{{ asset('assets/js/forms-selects.js') }}"></script>
     <script src="{{ asset('assets/js/dokumen-perjadin.js') }}?v={{ filemtime(public_path('assets/js/dokumen-perjadin.js')) }}"></script>
     <script>
@@ -1144,7 +1192,7 @@
                     // "biasa" (antar kabupaten/kota) tidak pakai Desa/Kel. asal & tujuan
                     // (fieldnya tidak ditampilkan sama sekali di step Data Umum untuk jenis
                     // ini) — cukup Kabupaten/Kota sebagai wilayah acuan.
-                    fields: ['input-no_surat_tugas', 'input-tanggal_surat_tugas', 'input-jenis_kegiatan',
+                    fields: ['input-no_surat_tugas', 'input-tanggal_surat_tugas',
                         'input-pelaksana', 'input-tanggal_mulai', 'input-tanggal_selesai',
                         'input-kabupaten_asal', 'input-kabupaten_tujuan']
                         .concat(jenisPerjadin === 'biasa' ? [] : ['input-desa_asal', 'input-desa_tujuan']),
@@ -1488,7 +1536,16 @@
             const tanggalSpdInput = document.getElementById('input-tanggal_spd');
             const btnAmbilNomorSpd = document.getElementById('btn-ambil-nomor-spd');
 
+            // Dokumen yang sudah punya nomor SPD tidak bisa ambil nomor lagi — nomornya
+            // tetap milik dokumen ini (lihat tentukanNomorSpd di controller).
+            function kunciTombolAmbilNomor() {
+                if (btnAmbilNomorSpd && noSpdInput) {
+                    btnAmbilNomorSpd.disabled = noSpdInput.value.trim() !== '';
+                }
+            }
+
             if (btnAmbilNomorSpd) {
+                kunciTombolAmbilNomor();
                 btnAmbilNomorSpd.addEventListener('click', function () {
                     const tahunSumber = (tanggalSpdInput && tanggalSpdInput.value) || document.getElementById('input-tanggal_mulai')?.value || '';
                     const tahun = tahunSumber.slice(0, 4);
@@ -1502,9 +1559,7 @@
                                 noSpdInput.dispatchEvent(new Event('input', { bubbles: true }));
                             }
                         })
-                        .finally(function () {
-                            btnAmbilNomorSpd.disabled = false;
-                        });
+                        .finally(kunciTombolAmbilNomor);
                 });
             }
 
@@ -1785,47 +1840,51 @@
                 ? route('perjalanan-dinas.dokumentasi.caption', [$perjalananDinas, '__ID__'])
                 : null);
 
-            // File yang sudah tersimpan di server (mode edit) — dihapus lewat tombol "x"
-            // langsung AJAX (permanen seketika, tidak menunggu form disubmit). Caption-nya
-            // juga diedit langsung AJAX (endpoint terpisah, lihat updateCaptionDokumentasi)
-            // karena update() form utama sengaja tidak pernah mengubah baris Dokumentasi
-            // yang sudah ada.
-            let existingDokumentasi = @json($existingDokumentasi ?? []);
-            // File baru yang baru dipilih user tapi belum disubmit. FileList bawaan
-            // <input type="file"> read-only (tidak bisa dihapus satu-satu), jadi daftar
-            // sebenarnya disimpan manual di sini — tiap berubah, disinkronkan ulang ke
-            // dokumentasiInput.files lewat DataTransfer supaya yang benar-benar ikut
-            // terkirim saat submit cuma yang tersisa (belum dihapus). pendingCaptions
-            // sejajar index-nya dengan pendingFiles, dikirim sebagai input hidden
-            // "dokumentasi_caption[]" terpisah (lihat rebuildDokumentasiCaptionInputs)
-            // supaya di server tetap bisa dipasangkan ke file "dokumentasi[]" yang sesuai.
-            let pendingFiles = [];
-            let pendingPreviewUrls = [];
-            let pendingCaptions = [];
+            // Semua foto (yang sudah tersimpan maupun yang baru dipilih) ada di satu daftar
+            // berurutan supaya bisa diatur ulang dengan drag. Tiap item:
+            //   { lama: true,  id, nama_file, url, caption }   — sudah tersimpan di server
+            //   { lama: false, file, url, caption }             — baru dipilih, belum disubmit
+            // File lama dihapus & caption-nya diubah langsung lewat AJAX (endpoint terpisah,
+            // lihat hapusDokumentasi/updateCaptionDokumentasi) karena update() form utama
+            // tidak pernah mengubah baris Dokumentasi yang sudah ada. File baru ikut terkirim
+            // saat submit: FileList bawaan <input type="file"> read-only, jadi isinya disusun
+            // ulang lewat DataTransfer tiap daftar berubah, caption-nya lewat input hidden
+            // "dokumentasi_caption[]" yang sejajar index-nya. Urutan akhirnya dikirim sebagai
+            // "dokumentasi_urutan[]" (token lama:{id} / baru:{index file}), lihat
+            // aturUrutanDokumentasi() di controller.
+            let daftarDokumentasi = (@json($existingDokumentasi ?? [])).map(function (d) {
+                return { lama: true, id: d.id, nama_file: d.nama_file, url: d.url, caption: d.caption };
+            });
+
+            function dokumentasiBaru() {
+                return daftarDokumentasi.filter(function (item) { return !item.lama; });
+            }
 
             function dokumentasiGabungan() {
-                return existingDokumentasi.map(function (d) { return { nama_file: d.nama_file, url: d.url, caption: d.caption }; })
-                    .concat(pendingFiles.map(function (file, i) { return { nama_file: file.name, url: pendingPreviewUrls[i] || '', caption: pendingCaptions[i] }; }));
+                return daftarDokumentasi.map(function (item) {
+                    return { nama_file: item.lama ? item.nama_file : item.file.name, url: item.url || '', caption: item.caption };
+                });
             }
 
-            function rebuildDokumentasiInputFiles() {
+            function inputHiddenDokumentasi(nama, nilai) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = nama;
+                input.value = nilai;
+                form.appendChild(input);
+            }
+
+            // Sinkronkan file baru, caption-nya, dan urutan semua foto ke field form.
+            function sinkronDokumentasiKeForm() {
+                const baru = dokumentasiBaru();
                 const dt = new DataTransfer();
-                pendingFiles.forEach(function (file) { dt.items.add(file); });
+                baru.forEach(function (item) { dt.items.add(item.file); });
                 dokumentasiInput.files = dt.files;
-            }
 
-            // Caption file yang belum diupload dikirim sebagai input hidden terpisah
-            // (bukan lewat FormData bawaan <input type="file">, yang tidak bisa
-            // dititipi field lain per-file) — dibangun ulang tiap pendingCaptions
-            // berubah supaya urutannya selalu sejajar sama dokumentasiInput.files.
-            function rebuildDokumentasiCaptionInputs() {
-                form.querySelectorAll('input[name="dokumentasi_caption[]"]').forEach(function (el) { el.remove(); });
-                pendingCaptions.forEach(function (caption) {
-                    const input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = 'dokumentasi_caption[]';
-                    input.value = caption || '';
-                    form.appendChild(input);
+                form.querySelectorAll('input[name="dokumentasi_caption[]"], input[name="dokumentasi_urutan[]"]').forEach(function (el) { el.remove(); });
+                baru.forEach(function (item) { inputHiddenDokumentasi('dokumentasi_caption[]', item.caption || ''); });
+                daftarDokumentasi.forEach(function (item) {
+                    inputHiddenDokumentasi('dokumentasi_urutan[]', item.lama ? 'lama:' + item.id : 'baru:' + baru.indexOf(item));
                 });
             }
 
@@ -1833,16 +1892,23 @@
                 const box = document.createElement('div');
                 box.className = 'border rounded p-2 text-center position-relative dokumentasi-thumb';
                 box.style.width = '110px';
+                box.title = 'Geser untuk mengubah urutan';
+
+                const nomor = document.createElement('span');
+                nomor.className = 'dokumentasi-nomor';
+                box.appendChild(nomor);
+
                 if (url && /\.(jpe?g|png|gif|webp)$/i.test(namaFile || '')) {
                     const img = document.createElement('img');
                     img.src = url;
+                    img.draggable = false;
                     img.style.width = '100%';
                     img.style.height = '60px';
                     img.style.objectFit = 'cover';
                     img.style.borderRadius = '4px';
                     box.appendChild(img);
                 } else {
-                    box.innerHTML = '<i class="ti ti-file-text ti-lg"></i>';
+                    box.insertAdjacentHTML('beforeend', '<i class="ti ti-file-text ti-lg"></i>');
                 }
                 const label = document.createElement('div');
                 label.className = 'small text-truncate mt-1';
@@ -1871,81 +1937,97 @@
                 return btn;
             }
 
+            function hapusDariDaftar(item) {
+                daftarDokumentasi = daftarDokumentasi.filter(function (x) { return x !== item; });
+                touched['laporan-dokumentasi'] = true;
+                sinkronDokumentasiKeForm();
+                renderDokumentasiList();
+                renderAllPreviews();
+            }
+
             function renderDokumentasiList() {
                 dokumentasiList.innerHTML = '';
 
-                existingDokumentasi.forEach(function (d) {
-                    const box = boksDokumentasi(d.nama_file, d.url, d.caption, function (caption) {
-                        fetch(dokumentasiCaptionUrlTemplate.replace('__ID__', d.id), {
-                            method: 'PATCH',
-                            headers: { 'X-CSRF-TOKEN': dokumentasiCsrfToken, 'Accept': 'application/json', 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ caption: caption }),
-                        }).then(function (res) {
-                            if (!res.ok) throw new Error('gagal simpan caption');
-                            d.caption = caption;
-                            renderAllPreviews();
-                        }).catch(function () {
-                            swalError('Gagal menyimpan caption. Coba lagi.');
+                daftarDokumentasi.forEach(function (item, posisi) {
+                    let box;
+                    if (item.lama) {
+                        box = boksDokumentasi(item.nama_file, item.url, item.caption, function (caption) {
+                            fetch(dokumentasiCaptionUrlTemplate.replace('__ID__', item.id), {
+                                method: 'PATCH',
+                                headers: { 'X-CSRF-TOKEN': dokumentasiCsrfToken, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ caption: caption }),
+                            }).then(function (res) {
+                                if (!res.ok) throw new Error('gagal simpan caption');
+                                item.caption = caption;
+                                renderAllPreviews();
+                            }).catch(function () {
+                                swalError('Gagal menyimpan caption. Coba lagi.');
+                            });
                         });
-                    });
-                    box.appendChild(tombolHapusDokumentasi(async function () {
-                        const ok = await swalConfirm('Hapus file "' + (d.nama_file || '') + '"? File yang sudah tersimpan akan langsung dihapus permanen.');
-                        if (!ok) return;
-                        fetch(dokumentasiDestroyUrlTemplate.replace('__ID__', d.id), {
-                            method: 'DELETE',
-                            headers: { 'X-CSRF-TOKEN': dokumentasiCsrfToken, 'Accept': 'application/json' },
-                        }).then(function (res) {
-                            if (!res.ok) throw new Error('gagal hapus');
-                            existingDokumentasi = existingDokumentasi.filter(function (item) { return item.id !== d.id; });
-                            touched['laporan-dokumentasi'] = true;
-                            renderDokumentasiList();
+                        box.appendChild(tombolHapusDokumentasi(async function () {
+                            const ok = await swalConfirm('Hapus file "' + (item.nama_file || '') + '"? File yang sudah tersimpan akan langsung dihapus permanen.');
+                            if (!ok) return;
+                            fetch(dokumentasiDestroyUrlTemplate.replace('__ID__', item.id), {
+                                method: 'DELETE',
+                                headers: { 'X-CSRF-TOKEN': dokumentasiCsrfToken, 'Accept': 'application/json' },
+                            }).then(function (res) {
+                                if (!res.ok) throw new Error('gagal hapus');
+                                hapusDariDaftar(item);
+                            }).catch(function () {
+                                swalError('Gagal menghapus file dokumentasi. Coba lagi.');
+                            });
+                        }));
+                    } else {
+                        box = boksDokumentasi(item.file.name, item.url || '', item.caption, function (caption) {
+                            item.caption = caption;
+                            sinkronDokumentasiKeForm();
                             renderAllPreviews();
-                        }).catch(function () {
-                            swalError('Gagal menghapus file dokumentasi. Coba lagi.');
                         });
-                    }));
-                    dokumentasiList.appendChild(box);
-                });
-
-                pendingFiles.forEach(function (file, index) {
-                    const box = boksDokumentasi(file.name, pendingPreviewUrls[index] || '', pendingCaptions[index], function (caption) {
-                        pendingCaptions[index] = caption;
-                        rebuildDokumentasiCaptionInputs();
-                        renderAllPreviews();
-                    });
-                    if (file.type.startsWith('image/') && !pendingPreviewUrls[index]) {
-                        const reader = new FileReader();
-                        reader.onload = function (e) {
-                            pendingPreviewUrls[index] = e.target.result;
-                            renderDokumentasiList();
-                            renderAllPreviews();
-                        };
-                        reader.readAsDataURL(file);
+                        if (item.file.type.startsWith('image/') && !item.url) {
+                            const reader = new FileReader();
+                            reader.onload = function (e) {
+                                item.url = e.target.result;
+                                renderDokumentasiList();
+                                renderAllPreviews();
+                            };
+                            reader.readAsDataURL(item.file);
+                        }
+                        box.appendChild(tombolHapusDokumentasi(function () { hapusDariDaftar(item); }));
                     }
-                    box.appendChild(tombolHapusDokumentasi(function () {
-                        pendingFiles.splice(index, 1);
-                        pendingPreviewUrls.splice(index, 1);
-                        pendingCaptions.splice(index, 1);
-                        rebuildDokumentasiInputFiles();
-                        rebuildDokumentasiCaptionInputs();
-                        touched['laporan-dokumentasi'] = true;
-                        renderDokumentasiList();
-                        renderAllPreviews();
-                    }));
+                    box.querySelector('.dokumentasi-nomor').textContent = posisi + 1;
+                    box._itemDokumentasi = item;
                     dokumentasiList.appendChild(box);
                 });
 
                 updateStepperStatus();
             }
 
+            // Drag untuk mengubah urutan (SortableJS). Caption & tombol hapus tidak memulai drag.
+            if (window.Sortable && form.dataset.mode !== 'view') {
+                Sortable.create(dokumentasiList, {
+                    animation: 150,
+                    filter: 'input, .dokumentasi-hapus',
+                    preventOnFilter: false,
+                    ghostClass: 'dokumentasi-ghost',
+                    onEnd: function () {
+                        daftarDokumentasi = Array.from(dokumentasiList.children).map(function (box) { return box._itemDokumentasi; });
+                        sinkronDokumentasiKeForm();
+                        renderDokumentasiList();
+                        renderAllPreviews();
+                    },
+                });
+            }
+
             renderDokumentasiList();
+            sinkronDokumentasiKeForm();
 
             dokumentasiInput.addEventListener('change', function () {
-                pendingFiles = pendingFiles.concat(Array.from(dokumentasiInput.files));
-                pendingPreviewUrls = pendingFiles.map(function (_, i) { return pendingPreviewUrls[i]; });
-                pendingCaptions = pendingFiles.map(function (_, i) { return pendingCaptions[i]; });
-                rebuildDokumentasiInputFiles();
-                rebuildDokumentasiCaptionInputs();
+                // File yang barusan dipilih ditambahkan ke belakang daftar. dokumentasiInput.files
+                // saat ini hanya berisi pilihan terbaru, lalu disusun ulang oleh sinkronDokumentasiKeForm().
+                Array.from(dokumentasiInput.files).forEach(function (file) {
+                    daftarDokumentasi.push({ lama: false, file: file, url: '', caption: '' });
+                });
+                sinkronDokumentasiKeForm();
                 touched['laporan-dokumentasi'] = true;
                 renderDokumentasiList();
                 renderAllPreviews();
@@ -1971,7 +2053,7 @@
                 const pengeluaranCount = document.querySelectorAll('#pengeluaran-rows > div').length;
                 const pernyataanCount = ['tidak_pakai_kendaraan_dinas', 'tidak_menginap_hotel', 'keterlambatan']
                     .filter(function (jenis) { return document.getElementById('input-pernyataan-' + jenis).checked; }).length;
-                const dokumentasiCount = existingDokumentasi.length + pendingFiles.length;
+                const dokumentasiCount = daftarDokumentasi.length;
                 const fmtTanggalPanjang = DokumenPerjadin.fmtTanggalPanjang;
                 const esc = DokumenPerjadin.esc;
 

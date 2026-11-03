@@ -322,7 +322,7 @@ html:not([dir=rtl]) .bs-stepper .bs-stepper-header .step:last-child .step-trigge
 }
 .light-style .bs-stepper .bs-stepper-header .bs-stepper-title,
 .light-style .bs-stepper .bs-stepper-header .bs-stepper-label {
-  color: #5d596c;
+  color: #3a3645;
 }
 .light-style .bs-stepper .bs-stepper-header .bs-stepper-label .bs-stepper-subtitle {
   color: #a5a3ae !important;
@@ -339,7 +339,7 @@ html:not([dir=rtl]) .bs-stepper .bs-stepper-header .step:last-child .step-trigge
   color: #a5a3ae;
 }
 .light-style .bs-stepper .step-trigger:focus {
-  color: #5d596c;
+  color: #3a3645;
 }
 .light-style .bs-stepper.vertical .bs-stepper-header {
   border-bottom: none;

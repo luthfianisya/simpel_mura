@@ -9,10 +9,22 @@ class PegawaiMitra extends Model
     protected $table = 'pegawai_mitra';
     protected $primaryKey = 'id_pegawai_mitra';
 
+    // Peran mitra statistik. Labelnya sekaligus dipakai sebagai "jabatan" mitra di
+    // dokumen perjalanan dinas (Surat Tugas, SPD, dst).
+    public const JENIS_MITRA = [
+        'pendataan' => 'Mitra Pendataan',
+        'pendataan_pengolahan' => 'Mitra Pendataan & Pengolahan',
+    ];
+
     protected $fillable = [
-        'nip', 'nama', 'jabatan', 'pangkat', 'golongan',
+        'nip', 'sobat_id', 'nama', 'jabatan', 'pangkat', 'golongan', 'alamat', 'jenis_mitra',
         'status_kepegawaian', 'peran_pejabat',
     ];
+
+    public function getJenisMitraLabelAttribute(): ?string
+    {
+        return self::JENIS_MITRA[$this->jenis_mitra] ?? null;
+    }
 
     public function perjalananDinasSebagaiPemohon()
     {
