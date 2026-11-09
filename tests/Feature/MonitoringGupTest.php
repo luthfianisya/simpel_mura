@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Gup;
 use App\Models\Kuitansi;
 use App\Models\MonitoringSpj;
 use App\Models\PegawaiMitra;
@@ -20,8 +21,11 @@ function buatSpjGup(string $perihal, int $nominal, ?string $jenisPembayaran, ?st
     ]);
     RincianBiaya::create(['id_perjalanan_dinas' => $pd->id_perjalanan_dinas, 'jenis_komponen' => 'uang_harian', 'nominal' => $nominal]);
     Kuitansi::create(['id_perjalanan_dinas' => $pd->id_perjalanan_dinas, 'tanggal_kuitansi' => '2026-01-08']);
+    // SPJ GUP bertanggal = sudah dikelompokkan ke GUP bertanggal itu.
+    $gup = ($jenisPembayaran === 'GUP' && $tanggalGup) ? (Gup::whereDate('tanggal_gup', $tanggalGup)->first() ?? Gup::create(['tanggal_gup' => $tanggalGup])) : null;
     MonitoringSpj::create([
         'id_perjalanan_dinas' => $pd->id_perjalanan_dinas,
+        'id_gup' => $gup?->id_gup,
         'jenis_pembayaran' => $jenisPembayaran,
         'tanggal_gup' => $tanggalGup,
         'sudah_dibayar' => $dibayar,

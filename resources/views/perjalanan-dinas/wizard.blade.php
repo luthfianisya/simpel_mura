@@ -437,13 +437,14 @@
                                             <input type="text" id="input-pembebanan" name="pembebanan" class="form-control" value="{{ old('pembebanan') }}" placeholder="mis. GG.2902.BMA.006.530.B.524113" required>
                                             <div class="field-error" id="err-input-pembebanan">Pembebanan (Akun/MAK) wajib diisi.</div>
                                         </div>
-                                        <div class="col-md-3">
+                                        {{-- No. FP mengisi sisa lebar baris (col-md), Tk. Biaya cukup sempit. --}}
+                                        <div class="col-md">
                                             <label class="form-label" for="input-no_form_permintaan">No. Form Permintaan</label>
                                             <input type="text" id="input-no_form_permintaan" name="no_form_permintaan" class="form-control" maxlength="255"
                                                 value="{{ old('no_form_permintaan') }}" placeholder="Nomor FP">
                                         </div>
-                                        <div class="col-md-3">
-                                            <label class="form-label">Tingkat Biaya Perjadin</label>
+                                        <div class="col-md-2">
+                                            <label class="form-label" for="input-tingkat_biaya">Tk. Biaya Perjadin</label>
                                             <select id="input-tingkat_biaya" class="form-select">
                                                 <option value="">-</option>
                                                 <option value="A">A</option>

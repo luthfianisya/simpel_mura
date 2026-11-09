@@ -95,7 +95,8 @@ window.SimpelAturKolom = (function () {
         const kunci = kunciPenyimpanan(api, indexTabel);
         const kolom = api.columns().indexes().toArray().filter(function (i) {
             const judul = judulKolom(api, i);
-            return judul !== '' && judul.toLowerCase() !== 'aksi';
+            // data-atur-kolom="false" = kolom teknis (mis. kunci kelompok GUP) yang tidak boleh diatur.
+            return judul !== '' && judul.toLowerCase() !== 'aksi' && api.column(i).header().dataset.aturKolom !== 'false';
         });
         if (!kolom.length) return;
 

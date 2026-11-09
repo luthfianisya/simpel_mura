@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\BacaImportExcel;
 use App\Models\Dokumentasi;
 use App\Models\JenisKegiatan;
 use App\Models\Kuitansi;
@@ -29,6 +30,8 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class PerjalananDinasController extends Controller
 {
+    use BacaImportExcel;
+
     protected array $jenisSpdWajib = ['biasa', 'dalam_kota_lebih_8_jam'];
 
     private const JENIS_PERJADIN_LABELS = [
@@ -41,6 +44,36 @@ class PerjalananDinasController extends Controller
 
     private const JUMLAH_REKOMENDASI_DESA = 8;
 
+    // Pesan & nama kolom (sesuai header Excel) untuk error import, supaya yang dilaporkan
+    // langsung menunjuk kolom yang harus diperbaiki di file.
+    private const PESAN_VALIDASI_IMPORT = [
+        'required' => 'kolom ":attribute" wajib diisi.',
+        'date' => 'kolom ":attribute" harus tanggal dengan format YYYY-MM-DD.',
+        'after_or_equal' => 'kolom ":attribute" tidak boleh sebelum ":date".',
+        'exists' => 'kolom ":attribute" tidak ditemukan.',
+        'numeric' => 'kolom ":attribute" harus berupa angka.',
+        'integer' => 'kolom ":attribute" harus berupa angka bulat.',
+        'min' => 'kolom ":attribute" tidak boleh negatif.',
+        'max' => 'kolom ":attribute" terlalu panjang (maks. :max karakter).',
+        'in' => 'kolom ":attribute" tidak valid.',
+        'string' => 'kolom ":attribute" harus berupa teks.',
+    ];
+
+    private const NAMA_KOLOM_IMPORT = [
+        'jenis_perjadin' => 'Jenis Perjalanan Dinas', 'no_surat_tugas' => 'No Surat Tugas',
+        'tanggal_surat_tugas' => 'Tanggal Surat Tugas', 'perihal' => 'Perihal', 'uraian_tugas' => 'Uraian Tugas',
+        'id_pegawai_mitra_pelaksana' => 'NIP Pelaksana', 'tanggal_mulai' => 'Tanggal Mulai',
+        'tanggal_selesai' => 'Tanggal Selesai', 'pembebanan' => 'Pembebanan (MAK)', 'no_form_permintaan' => 'No Form Permintaan',
+        'desa_asal' => 'Desa/Kel Asal', 'kabupaten_asal' => 'Kabupaten/Kota Asal',
+        'desa_tujuan' => 'Desa/Kel Tujuan', 'kabupaten_tujuan' => 'Kabupaten/Kota Tujuan',
+        'id_penandatangan_st' => 'NIP Penandatangan ST', 'id_ppk' => 'NIP PPK', 'id_bendahara' => 'NIP Bendahara',
+        'tanggal_spd' => 'Tanggal SPD', 'angkutan' => 'Angkutan', 'tanggal_kuitansi' => 'Tanggal Kuitansi',
+        'rincian.uang_harian' => 'Uang Harian (Rp)', 'rincian.transport' => 'Transport (Rp)', 'rincian.penginapan' => 'Penginapan (Rp)',
+        'rincian_hari.uang_harian' => 'Jumlah Hari Uang Harian', 'rincian_hari.transport' => 'Jumlah Hari Transport',
+        'rincian_hari.penginapan' => 'Jumlah Hari Penginapan',
+        'pengeluaran.*.uraian' => 'Pengeluaran - Uraian', 'pengeluaran.*.nominal' => 'Pengeluaran - Nominal',
+    ];
+
     // Urutan & nama kolom template import — dipakai bareng oleh importTemplate() (nulis
     // header) dan import() (baca baris), supaya dua-duanya selalu sinkron.
     private const KOLOM_IMPORT = [
@@ -48,7 +81,7 @@ class PerjalananDinasController extends Controller
         'nip_pelaksana', 'tanggal_mulai', 'tanggal_selesai', 'pembebanan',
         'desa_asal', 'kabupaten_asal', 'desa_tujuan', 'kabupaten_tujuan',
         'nip_penandatangan_st', 'nip_ppk', 'nip_bendahara',
-        'no_spd', 'tanggal_spd', 'angkutan', 'tingkat_biaya',
+        'tanggal_spd', 'angkutan', 'tingkat_biaya',
         'uang_harian', 'transport', 'penginapan',
         'pengeluaran1_jenis', 'pengeluaran1_uraian', 'pengeluaran1_nominal',
         'pengeluaran2_jenis', 'pengeluaran2_uraian', 'pengeluaran2_nominal',
@@ -339,7 +372,8 @@ class PerjalananDinasController extends Controller
      * - Dokumen yang sudah punya nomor → tetap nomor itu.
      * - Draft yang belum "Ambil Nomor" → tetap kosong.
      * - Selain itu (sudah klik "Ambil Nomor", atau final tanpa nomor) → ambil nomor baru.
-     * - $nomorEksplisit (import Excel) → dipakai apa adanya; duplikasi dicek sebelumnya.
+     * - $selaluAmbil (import Excel) → selalu diambilkan nomor baru, termasuk untuk draft,
+     *   karena template import tidak punya kolom No SPD (penomoran sepenuhnya otomatis).
      */
     /**
      * Pesan kalau nomor SPD yang tersimpan beda dengan yang tampil di form (mis. nomor
@@ -356,20 +390,17 @@ class PerjalananDinasController extends Controller
             . 'Jika sempat mengekspor/mencetak SPD dengan nomor lama, ekspor ulang dokumennya.';
     }
 
-    private function tentukanNomorSpd(array $validated, ?PerjalananDinas $perjalananDinas = null, bool $nomorEksplisit = false): ?string
+    private function tentukanNomorSpd(array $validated, ?PerjalananDinas $perjalananDinas = null, bool $selaluAmbil = false): ?string
     {
         if (!in_array($validated['jenis_perjadin'], $this->jenisSpdWajib, true)) {
             return null;
         }
 
         $diminta = trim((string) ($validated['no_spd'] ?? ''));
-        if ($nomorEksplisit && $diminta !== '') {
-            return $diminta;
-        }
         if ($perjalananDinas?->no_spd) {
             return $perjalananDinas->no_spd;
         }
-        if ($diminta === '' && $validated['status_draft'] !== 'selesai') {
+        if (!$selaluAmbil && $diminta === '' && $validated['status_draft'] !== 'selesai') {
             return null;
         }
 
@@ -745,12 +776,14 @@ class PerjalananDinasController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Template Perjalanan Dinas');
 
+        // Urutannya mengikuti KOLOM_IMPORT. No SPD sengaja tidak ada: nomornya selalu
+        // diberikan otomatis oleh sistem saat import.
         $headers = [
             'Jenis Perjalanan Dinas', 'No Surat Tugas', 'Tanggal Surat Tugas (YYYY-MM-DD)', 'Jenis Kegiatan', 'Perihal', 'Uraian Tugas',
             'NIP Pelaksana', 'Tanggal Mulai (YYYY-MM-DD)', 'Tanggal Selesai (YYYY-MM-DD)', 'Pembebanan (MAK)',
             'Desa/Kel Asal', 'Kabupaten/Kota Asal', 'Desa/Kel Tujuan', 'Kabupaten/Kota Tujuan',
             'NIP Penandatangan ST (kosongkan = otomatis)', 'NIP PPK (kosongkan = otomatis)', 'NIP Bendahara (kosongkan = otomatis)',
-            'No SPD (wajib utk Biasa/>8 Jam)', 'Tanggal SPD (YYYY-MM-DD)', 'Angkutan', 'Tingkat Biaya',
+            'Tanggal SPD (YYYY-MM-DD)', 'Angkutan', 'Tingkat Biaya',
             'Uang Harian (Rp)', 'Transport (Rp)', 'Penginapan (Rp)',
             'Pengeluaran 1 - Jenis', 'Pengeluaran 1 - Uraian', 'Pengeluaran 1 - Nominal',
             'Pengeluaran 2 - Jenis', 'Pengeluaran 2 - Uraian', 'Pengeluaran 2 - Nominal',
@@ -762,6 +795,7 @@ class PerjalananDinasController extends Controller
             'Jumlah Hari Uang Harian', 'Jumlah Hari Transport', 'Jumlah Hari Penginapan',
             'No Form Permintaan',
         ];
+        $kol = fn (string $field) => self::kolomImport($field);
 
         $lastCol = Coordinate::stringFromColumnIndex(count($headers));
         foreach ($headers as $i => $header) {
@@ -769,26 +803,31 @@ class PerjalananDinasController extends Controller
             $sheet->setCellValue($col . '1', $header);
             $sheet->getColumnDimension($col)->setWidth(22);
         }
-        $sheet->getStyle('A1:' . $lastCol . '1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:' . $lastCol . '1')->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
         $sheet->getStyle('A1:' . $lastCol . '1')->getFill()
-            ->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('E7E7E9');
-        $sheet->freezePane('A2');
+            ->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('1B449C');
+        $sheet->getStyle('A1:' . $lastCol . '1')->getAlignment()->setWrapText(true)->setVertical('center');
+        $sheet->getRowDimension(1)->setRowHeight(36);
+        // Header + baris contoh dibekukan supaya contohnya selalu terlihat saat mengisi.
+        $sheet->freezePane('A3');
 
-        // Kolom tanggal & no surat tugas/spd diformat teks — kalau dibiarkan format
-        // tanggal bawaan Excel, nilainya jadi serial number pas dibaca ulang PhpSpreadsheet
-        // dan gampang salah tafsir. Lebih aman minta diketik "YYYY-MM-DD" langsung.
-        $kolomTeks = ['B', 'C', 'H', 'I', 'R', 'S', 'AH', 'AS'];
-        foreach ($kolomTeks as $col) {
-            $sheet->getStyle($col . '2:' . $col . '500')->getNumberFormat()->setFormatCode('@');
+        // Kolom tanggal & nomor diformat teks — kalau dibiarkan format tanggal bawaan
+        // Excel, nilainya jadi serial number pas dibaca ulang PhpSpreadsheet dan gampang
+        // salah tafsir. Lebih aman minta diketik "YYYY-MM-DD" langsung.
+        $kolomTeks = ['no_surat_tugas', 'tanggal_surat_tugas', 'nip_pelaksana', 'tanggal_mulai', 'tanggal_selesai',
+            'nip_penandatangan_st', 'nip_ppk', 'nip_bendahara', 'tanggal_spd', 'tanggal_kuitansi', 'no_form_permintaan'];
+        foreach ($kolomTeks as $field) {
+            $sheet->getStyle($kol($field) . '2:' . $kol($field) . '500')->getNumberFormat()->setFormatCode('@');
         }
 
-        // Baris contoh, ditimpa/dihapus admin sebelum import.
+        // Baris 2 = contoh pengisian. Ditandai "[CONTOH]" di kolom Perihal; baris bertanda
+        // itu SELALU dilewati saat import, jadi boleh dibiarkan di file.
         $contoh = [
-            'Biasa', 'B-1122/62130/KU.340/2026', '2026-08-13', 'Pendataan Lapangan', 'Pendataan Sakernas Agustus 2026', '',
+            'Biasa', 'B-1122/62130/KU.340/2026', '2026-08-13', 'Pendataan Lapangan', self::PENANDA_CONTOH . ' Pendataan Sakernas Agustus 2026', '',
             '19990307 202104 1 001', '2026-08-15', '2026-08-19', 'DIPA BPS Kabupaten Murung Raya',
             'Desa Contoh', 'Kabupaten Murung Raya', 'Desa Tujuan Contoh', 'Kabupaten Murung Raya',
             '', '', '',
-            '1/62130/KU.340/2026', '2026-08-13', 'Kendaraan Umum', 'C',
+            '2026-08-13', 'Kendaraan Umum', 'C',
             500000, 300000, 700000,
             '', '', '',
             '', '', '',
@@ -797,10 +836,15 @@ class PerjalananDinasController extends Controller
             'Tidak', 'Tidak', 'Tidak', '',
             '', '', 'Draft',
             5, '', 4,
-            '',
+            'FP-001/2026',
         ];
-        $sheet->fromArray($contoh, null, 'A2');
-        $sheet->getStyle('A2:' . $lastCol . '2')->getFont()->setItalic(true)->getColor()->setRGB('999999');
+        $sheet->fromArray($contoh, null, 'A2', true);
+        $gayaContoh = $sheet->getStyle('A2:' . $lastCol . '2');
+        $gayaContoh->getFont()->setItalic(true)->getColor()->setRGB('8A6D00');
+        $gayaContoh->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('FFF4CC');
+        $sheet->getComment('A2')->setAuthor('SIMPEL')->setWidth('260pt')->setHeight('70pt')
+            ->getText()->createTextRun('Baris CONTOH: tidak ikut diimport selama kolom Perihal diawali "[CONTOH]". '
+                . 'Mulai isi data Anda di baris 3. No SPD tidak perlu diisi — diberikan otomatis.');
 
         $addDropdown = function (string $col, array $options, string $title) use ($sheet) {
             for ($row = 2; $row <= 200; $row++) {
@@ -816,17 +860,37 @@ class PerjalananDinasController extends Controller
             }
         };
 
-        $addDropdown('A', array_values(self::JENIS_PERJADIN_LABELS), 'Jenis Perjalanan Dinas');
-        $addDropdown('D', JenisKegiatan::orderBy('nama_kegiatan')->pluck('nama_kegiatan')->all(), 'Jenis Kegiatan');
-        $addDropdown('U', ['A', 'B', 'C'], 'Tingkat Biaya');
-        $addDropdown('Y', ['Transportasi', 'Akomodasi'], 'Jenis Pengeluaran');
-        $addDropdown('AB', ['Transportasi', 'Akomodasi'], 'Jenis Pengeluaran');
-        $addDropdown('AE', ['Transportasi', 'Akomodasi'], 'Jenis Pengeluaran');
-        $addDropdown('AI', self::YA_TIDAK, 'Tidak Menggunakan Kendaraan Dinas');
-        $addDropdown('AJ', self::YA_TIDAK, 'Tidak Menginap di Hotel');
-        $addDropdown('AK', self::YA_TIDAK, 'Keterlambatan Pengajuan Tagihan');
-        $addDropdown('AO', ['Draft', 'Selesai'], 'Status');
+        $addDropdown($kol('jenis_perjadin'), array_values(self::JENIS_PERJADIN_LABELS), 'Jenis Perjalanan Dinas');
+        $addDropdown($kol('jenis_kegiatan'), JenisKegiatan::orderBy('nama_kegiatan')->pluck('nama_kegiatan')->all(), 'Jenis Kegiatan');
+        $addDropdown($kol('tingkat_biaya'), ['A', 'B', 'C'], 'Tingkat Biaya');
+        foreach ([1, 2, 3] as $n) {
+            $addDropdown($kol("pengeluaran{$n}_jenis"), ['Transportasi', 'Akomodasi'], 'Jenis Pengeluaran');
+        }
+        $addDropdown($kol('pernyataan_tidak_pakai_kendaraan_dinas'), self::YA_TIDAK, 'Tidak Menggunakan Kendaraan Dinas');
+        $addDropdown($kol('pernyataan_tidak_menginap_hotel'), self::YA_TIDAK, 'Tidak Menginap di Hotel');
+        $addDropdown($kol('pernyataan_keterlambatan'), self::YA_TIDAK, 'Keterlambatan Pengajuan Tagihan');
+        $addDropdown($kol('status_draft'), ['Draft', 'Selesai'], 'Status');
 
+        // Sheet petunjuk singkat (import hanya membaca sheet pertama).
+        $petunjuk = $spreadsheet->createSheet();
+        $petunjuk->setTitle('Petunjuk');
+        $petunjuk->fromArray([
+            ['Petunjuk Pengisian Template Import Perjalanan Dinas'],
+            [''],
+            ['1. Isi data di sheet "Template Perjalanan Dinas", mulai dari baris 3. Satu baris = satu perjalanan dinas.'],
+            ['2. Baris 2 (kuning) adalah CONTOH. Baris yang kolom Perihal-nya diawali "[CONTOH]" tidak akan ikut diimport, jadi boleh dibiarkan.'],
+            ['   Jika ingin memakai baris 2 untuk data sungguhan, hapus tulisan "[CONTOH]" dari kolom Perihal.'],
+            ['3. No SPD tidak perlu diisi — sistem memberikan nomor SPD berikutnya secara otomatis (untuk jenis Biasa dan Dalam Kota > 8 Jam).'],
+            ['4. Tanggal diketik dengan format YYYY-MM-DD, contoh 2026-08-15.'],
+            ['5. NIP Penandatangan ST, PPK, dan Bendahara boleh dikosongkan — otomatis memakai pejabat yang terdaftar.'],
+            ['6. Status "Draft" boleh belum lengkap; status "Selesai" wajib lengkap sesuai form.'],
+            ['7. Dokumentasi (foto/file) tidak ikut diimport — unggah lewat menu Edit setelah data masuk.'],
+        ], null, 'A1');
+        $petunjuk->getStyle('A1')->getFont()->setBold(true)->setSize(13);
+        $petunjuk->getColumnDimension('A')->setWidth(130);
+
+        $spreadsheet->setActiveSheetIndex(0);
+        $sheet->setSelectedCell('A3');
         $writer = new Xlsx($spreadsheet);
 
         return response()->streamDownload(function () use ($writer) {
@@ -834,6 +898,12 @@ class PerjalananDinasController extends Controller
         }, 'template_perjalanan_dinas.xlsx', [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
+    }
+
+    /** Huruf kolom Excel untuk sebuah field di KOLOM_IMPORT (mis. 'perihal' → 'E'). */
+    private static function kolomImport(string $field): string
+    {
+        return Coordinate::stringFromColumnIndex(array_search($field, self::KOLOM_IMPORT, true) + 1);
     }
 
     /**
@@ -853,7 +923,14 @@ class PerjalananDinasController extends Controller
         ]);
 
         $spreadsheet = IOFactory::load($request->file('file')->getRealPath());
-        $rows = $spreadsheet->getActiveSheet()->toArray(null, true, true, false);
+        // Nilai mentah (tanpa format tampilan Excel) supaya tanggal yang terlanjur diketik
+        // sebagai tanggal Excel bisa dibaca tepat lewat normalisasiTanggalImport().
+        $rows = $spreadsheet->getSheet(0)->toArray(null, true, false, false);
+
+        // Template versi lama masih punya kolom "No SPD" — kolom itu dibuang supaya urutan
+        // kolom lainnya tetap cocok. Nomor SPD selalu diberikan otomatis.
+        $kolomNoSpdLama = collect($rows[0] ?? [])
+            ->search(fn ($h) => str_starts_with(strtolower(trim((string) $h)), 'no spd'));
 
         $pejabatOtomatis = PegawaiMitra::whereIn('peran_pejabat', ['kepala_satker', 'ppk', 'bendahara'])
             ->get()->keyBy('peran_pejabat');
@@ -867,15 +944,25 @@ class PerjalananDinasController extends Controller
                 continue; // baris header
             }
             $nomorBaris = $i + 1;
+            if ($kolomNoSpdLama !== false) {
+                array_splice($row, $kolomNoSpdLama, 1);
+            }
 
             $data = array_combine(
                 self::KOLOM_IMPORT,
                 array_pad(array_slice($row, 0, count(self::KOLOM_IMPORT)), count(self::KOLOM_IMPORT), null)
             );
             $data = array_map(fn ($v) => $v !== null ? trim((string) $v) : '', $data);
+            foreach (['tanggal_surat_tugas', 'tanggal_mulai', 'tanggal_selesai', 'tanggal_spd', 'tanggal_kuitansi'] as $kolomTanggal) {
+                $data[$kolomTanggal] = $this->normalisasiTanggalImport($data[$kolomTanggal]);
+            }
 
-            // Baris kosong (mis. sisa baris contoh dropdown yang belum diisi) dilewati diam-diam.
+            // Baris kosong (mis. sisa baris dropdown yang belum diisi) dilewati diam-diam.
             if ($data['no_surat_tugas'] === '' && $data['perihal'] === '') {
+                continue;
+            }
+            // Baris contoh dari template tidak ikut diimport (termasuk contoh template lama).
+            if ($this->barisContohImport($data)) {
                 continue;
             }
 
@@ -886,15 +973,29 @@ class PerjalananDinasController extends Controller
                     : null;
             }
 
-            $idJenisKegiatan = $jenisKegiatanByNama[$data['jenis_kegiatan']] ?? null;
-            $idPelaksana = PegawaiMitra::where('nip', $data['nip_pelaksana'])->value('id_pegawai_mitra');
+            if ($jenisPerjadin === null) {
+                $gagal[] = "Baris {$nomorBaris}: Jenis Perjalanan Dinas \"{$data['jenis_perjadin']}\" tidak dikenal (pilih dari dropdown: "
+                    . implode(' / ', self::JENIS_PERJADIN_LABELS) . ').';
+                continue;
+            }
 
-            $resolvePejabat = function (string $nipKolom, string $peran) use ($data, $pejabatOtomatis) {
-                if ($data[$nipKolom] !== '') {
-                    return PegawaiMitra::where('nip', $data[$nipKolom])->value('id_pegawai_mitra');
-                }
-                return $pejabatOtomatis->get($peran)?->id_pegawai_mitra;
-            };
+            $idJenisKegiatan = $jenisKegiatanByNama[$data['jenis_kegiatan']] ?? null;
+            // NIP dicocokkan tanpa spasi, jadi "19990307 202104 1 001" = "199903072021041001".
+            $cariNip = fn (string $nip) => PegawaiMitra::whereRaw("REPLACE(nip, ' ', '') = ?", [str_replace(' ', '', $nip)])
+                ->value('id_pegawai_mitra');
+            $nipTakDikenal = collect(['nip_pelaksana' => 'NIP Pelaksana', 'nip_penandatangan_st' => 'NIP Penandatangan ST',
+                'nip_ppk' => 'NIP PPK', 'nip_bendahara' => 'NIP Bendahara'])
+                ->filter(fn ($label, $kolom) => $data[$kolom] !== '' && !$cariNip($data[$kolom]))
+                ->map(fn ($label, $kolom) => "{$label} {$data[$kolom]}");
+            if ($nipTakDikenal->isNotEmpty()) {
+                $gagal[] = "Baris {$nomorBaris}: " . $nipTakDikenal->implode(', ') . ' tidak terdaftar di data Pegawai/Mitra.';
+                continue;
+            }
+
+            $idPelaksana = $data['nip_pelaksana'] !== '' ? $cariNip($data['nip_pelaksana']) : null;
+            $resolvePejabat = fn (string $nipKolom, string $peran) => $data[$nipKolom] !== ''
+                ? $cariNip($data[$nipKolom])
+                : $pejabatOtomatis->get($peran)?->id_pegawai_mitra;
             $idPenandatanganSt = $resolvePejabat('nip_penandatangan_st', 'kepala_satker');
             $idPpk = $resolvePejabat('nip_ppk', 'ppk');
             $idBendahara = $resolvePejabat('nip_bendahara', 'bendahara');
@@ -908,7 +1009,7 @@ class PerjalananDinasController extends Controller
                     $pengeluaran[] = [
                         'jenis' => $jenis,
                         'uraian' => $data["pengeluaran{$n}_uraian"],
-                        'nominal' => (float) ($data["pengeluaran{$n}_nominal"] ?: 0),
+                        'nominal' => $this->angkaImport($data["pengeluaran{$n}_nominal"]) ?? 0,
                     ];
                 }
             }
@@ -935,18 +1036,18 @@ class PerjalananDinasController extends Controller
                 'id_penandatangan_st' => $idPenandatanganSt,
                 'id_ppk' => $idPpk,
                 'id_bendahara' => $idBendahara,
-                'no_spd' => $data['no_spd'] ?: null,
+                'no_spd' => null, // diberikan otomatis di bawah
                 'tanggal_spd' => $data['tanggal_spd'] ?: null,
                 'angkutan' => $data['angkutan'] ?: null,
                 'rincian' => [
-                    'uang_harian' => (float) ($data['uang_harian'] ?: 0),
-                    'transport' => (float) ($data['transport'] ?: 0),
-                    'penginapan' => (float) ($data['penginapan'] ?: 0),
+                    'uang_harian' => $this->angkaImport($data['uang_harian']) ?? 0,
+                    'transport' => $this->angkaImport($data['transport']) ?? 0,
+                    'penginapan' => $this->angkaImport($data['penginapan']) ?? 0,
                 ],
                 'rincian_hari' => [
-                    'uang_harian' => $data['uang_harian_hari'] !== '' ? (int) $data['uang_harian_hari'] : null,
-                    'transport' => $data['transport_hari'] !== '' ? (int) $data['transport_hari'] : null,
-                    'penginapan' => $data['penginapan_hari'] !== '' ? (int) $data['penginapan_hari'] : null,
+                    'uang_harian' => $this->angkaImport($data['uang_harian_hari'], true),
+                    'transport' => $this->angkaImport($data['transport_hari'], true),
+                    'penginapan' => $this->angkaImport($data['penginapan_hari'], true),
                 ],
                 'pengeluaran' => $pengeluaran,
                 'tanggal_kuitansi' => $data['tanggal_kuitansi'] ?: null,
@@ -960,13 +1061,14 @@ class PerjalananDinasController extends Controller
                 'tindak_lanjut' => $tindakLanjut ?: null,
             ];
 
-            $validator = Validator::make($validated, $this->validationRules($butuhSpd, $validated['status_draft'] !== 'selesai', $jenisPerjadin));
+            $validator = Validator::make(
+                $validated,
+                $this->validationRules($butuhSpd, $validated['status_draft'] !== 'selesai', $jenisPerjadin),
+                self::PESAN_VALIDASI_IMPORT,
+                self::NAMA_KOLOM_IMPORT
+            );
             if ($validator->fails()) {
                 $gagal[] = "Baris {$nomorBaris}: " . $validator->errors()->first();
-                continue;
-            }
-            if ($butuhSpd && $validated['no_spd'] && PenomoranSpd::sudahDipakai($validated['no_spd'])) {
-                $gagal[] = "Baris {$nomorBaris}: Nomor SPD {$validated['no_spd']} sudah dipakai dokumen lain.";
                 continue;
             }
 
@@ -982,6 +1084,11 @@ class PerjalananDinasController extends Controller
             $berhasil++;
         }
 
+        if ($berhasil === 0 && !$gagal) {
+            return back()->with('error', 'Tidak ada data yang diimport. Isi data mulai baris 3 — baris contoh '
+                . '(Perihal diawali ' . self::PENANDA_CONTOH . ') tidak ikut diimport.');
+        }
+
         $pesan = "Import selesai: {$berhasil} perjalanan dinas berhasil dibuat.";
         if ($gagal) {
             $pesan .= ' ' . count($gagal) . ' baris gagal: ' . implode(' | ', array_slice($gagal, 0, 10));
@@ -992,5 +1099,20 @@ class PerjalananDinasController extends Controller
         }
 
         return back()->with('success', $pesan);
+    }
+
+    /**
+     * Baris contoh di template import: Perihal diawali PENANDA_CONTOH, atau persis contoh
+     * template versi lama (sebelum ada penanda) yang sering ikut terunggah.
+     */
+    private function barisContohImport(array $data): bool
+    {
+        if ($this->diawaliPenandaContoh($data['perihal'])) {
+            return true;
+        }
+
+        return $data['no_surat_tugas'] === 'B-1122/62130/KU.340/2026'
+            && $data['perihal'] === 'Pendataan Sakernas Agustus 2026'
+            && $data['desa_asal'] === 'Desa Contoh';
     }
 }

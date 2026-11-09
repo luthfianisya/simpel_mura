@@ -6,8 +6,10 @@ use App\Http\Controllers\PerjalananDinasController;
 use App\Http\Controllers\RincianBiayaController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\GupController;
 use App\Http\Controllers\MonitoringGupController;
 use App\Http\Controllers\MonitoringSpjController;
+use App\Http\Controllers\RincianNonPerjadinImportController;
 use App\Http\Controllers\BantuanController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WilayahController;
@@ -41,6 +43,17 @@ Route::middleware('auth')->group(function () {
     Route::get('/perjalanan-dinas/{perjalananDinas}', [PerjalananDinasController::class, 'show'])->name('perjalanan-dinas.show');
     Route::get('/monitoring-spj', [MonitoringSpjController::class, 'index'])->name('monitoring-spj.index');
     Route::patch('/monitoring-spj/bulk', [MonitoringSpjController::class, 'bulkUpdate'])->name('monitoring-spj.bulk-update');
+    // Pengelompokan GUP — didaftarkan sebelum /monitoring-spj/{perjalananDinas}.
+    Route::post('/monitoring-spj/gup', [GupController::class, 'store'])->name('gup.store');
+    Route::patch('/monitoring-spj/gup/keluarkan', [GupController::class, 'keluarkan'])->name('gup.keluarkan');
+    Route::patch('/monitoring-spj/gup/{gup}/tambah', [GupController::class, 'tambah'])->name('gup.tambah');
+    Route::put('/monitoring-spj/gup/{gup}', [GupController::class, 'update'])->name('gup.update');
+    Route::delete('/monitoring-spj/gup/{gup}', [GupController::class, 'destroy'])->name('gup.destroy');
+    Route::get('/monitoring-spj/rincian/import/template', [RincianNonPerjadinImportController::class, 'template'])->name('monitoring-spj.rincian.import-template');
+    Route::post('/monitoring-spj/rincian/import', [RincianNonPerjadinImportController::class, 'import'])->name('monitoring-spj.rincian.import');
+    Route::post('/monitoring-spj/rincian', [MonitoringSpjController::class, 'rincianStore'])->name('monitoring-spj.rincian.store');
+    Route::put('/monitoring-spj/rincian/{monitoringSpj}', [MonitoringSpjController::class, 'rincianUpdate'])->name('monitoring-spj.rincian.update');
+    Route::delete('/monitoring-spj/rincian/{monitoringSpj}', [MonitoringSpjController::class, 'rincianDestroy'])->name('monitoring-spj.rincian.destroy');
     Route::put('/monitoring-spj/{perjalananDinas}', [MonitoringSpjController::class, 'update'])->name('monitoring-spj.update');
     Route::get('/monitoring-gup', [MonitoringGupController::class, 'index'])->name('monitoring-gup.index');
     Route::get('/rincian-biaya',[RincianBiayaController::class, 'index'])->name('rincian-biaya.index');
@@ -116,9 +129,15 @@ Route::get('/dashboard', function () {
         ->groupBy('monitoring_spj.posisi_spj')
         ->pluck('jumlah', 'posisi');
 
-    $statistikPosisiSpj = ['Belum Diproses' => (int) ($jumlahPerPosisi[''] ?? 0)];
+    // Ditambah Rincian Non-Perjadin yang diinput tim keuangan di Monitoring SPJ.
+    $rincianPerPosisi = \App\Models\MonitoringSpj::rincianNonPerjadin()
+        ->selectRaw('posisi_spj AS posisi, COUNT(*) AS jumlah')
+        ->groupBy('posisi_spj')
+        ->pluck('jumlah', 'posisi');
+
+    $statistikPosisiSpj = ['Belum Diproses' => (int) ($jumlahPerPosisi[''] ?? 0) + (int) ($rincianPerPosisi[''] ?? 0)];
     foreach (\App\Models\MonitoringSpj::POSISI_SPJ as $posisi) {
-        $statistikPosisiSpj[$posisi] = (int) ($jumlahPerPosisi[$posisi] ?? 0);
+        $statistikPosisiSpj[$posisi] = (int) ($jumlahPerPosisi[$posisi] ?? 0) + (int) ($rincianPerPosisi[$posisi] ?? 0);
     }
 
     return view('dashboard', compact('statistikPerjadin', 'statistikPosisiSpj'));

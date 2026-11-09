@@ -19,6 +19,9 @@
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var jszip_dist_jszip__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! jszip/dist/jszip */ "./node_modules/jszip/dist/jszip.js");
 /* harmony import */ var jszip_dist_jszip__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(jszip_dist_jszip__WEBPACK_IMPORTED_MODULE_0__);
+// SIMPEL: bundle bawaan tidak memasang JSZip ke window, padahal tombol "Export Excel"
+// DataTables (buttons.html5.js) membacanya dari window.JSZip — tanpa ini tombolnya tidak muncul.
+try { window.JSZip = jszip_dist_jszip__WEBPACK_IMPORTED_MODULE_0___default(); } catch (e) {}
 
 
 /***/ }),

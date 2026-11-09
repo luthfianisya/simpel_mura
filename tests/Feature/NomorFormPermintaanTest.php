@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Gup;
 use App\Models\MonitoringSpj;
 use App\Models\PerjalananDinas;
 use App\Models\RincianBiaya;
@@ -49,7 +50,8 @@ test('nomor form permintaan tampil di rekap, monitoring spj, dan rincian monitor
         'status_draft' => 'selesai',
     ]);
     RincianBiaya::create(['id_perjalanan_dinas' => $pd->id_perjalanan_dinas, 'jenis_komponen' => 'uang_harian', 'nominal' => 100000]);
-    MonitoringSpj::create(['id_perjalanan_dinas' => $pd->id_perjalanan_dinas, 'jenis_pembayaran' => 'GUP', 'tanggal_gup' => '2026-03-11']);
+    $gup = Gup::create(['tanggal_gup' => '2026-03-11']);
+    MonitoringSpj::create(['id_perjalanan_dinas' => $pd->id_perjalanan_dinas, 'id_gup' => $gup->id_gup, 'jenis_pembayaran' => 'GUP', 'tanggal_gup' => '2026-03-11']);
 
     $this->actingAs($user)->get(route('perjalanan-dinas.index'))->assertOk()->assertSee('FP-007/2026');
     $this->actingAs($user)->get(route('monitoring-spj.index'))->assertOk()->assertSee('FP-007/2026');

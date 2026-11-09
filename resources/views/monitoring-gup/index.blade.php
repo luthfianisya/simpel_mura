@@ -116,8 +116,8 @@
             <div class="d-flex align-items-center gap-2">
                 <i class="ti ti-hourglass ti-md"></i>
                 <span>
-                    <b>{{ $menunggu->count() }} SPJ</b> berjenis pembayaran GUP belum diisi Tanggal GUP-nya
-                    ({{ $fmtRupiah($menunggu->sum(fn ($pd) => $pd->total_biaya)) }}).
+                    <b>{{ $menunggu->count() }} SPJ</b> berjenis pembayaran GUP belum dikelompokkan ke GUP mana pun
+                    ({{ $fmtRupiah($menunggu->sum('nominal')) }}).
                 </span>
             </div>
             <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#modal-rincian-gup"
@@ -151,7 +151,7 @@
                         @endphp
                         <tr>
                             <td class="text-center fw-semibold">{{ $gup['nomor'] }}</td>
-                            <td data-order="{{ $gup['tanggal']->format('Y-m-d') }}">
+                            <td data-order="{{ optional($gup['tanggal'])->format('Y-m-d') }}">
                                 <span class="tanggal-gup">{{ $fmtTanggalPanjang($gup['tanggal']) }}</span>
                             </td>
                             <td class="text-center">{{ $gup['jumlah'] }} SPJ</td>
@@ -204,28 +204,28 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($daftarSpj as $pd)
+                        @foreach ($daftarSpj as $baris)
                             <tr>
-                                <td class="text-nowrap">{{ $fmtTanggal(optional($pd->kuitansi)->tanggal_kuitansi) }}</td>
-                                <td style="min-width: 260px;">{{ $pd->perihal }}</td>
-                                <td>{{ $pd->pelaksana->nama ?? '-' }}</td>
-                                <td class="text-nowrap small">{{ $pd->pembebanan }}</td>
-                                <td class="text-nowrap">{{ $pd->no_form_permintaan ?: '-' }}</td>
+                                <td class="text-nowrap">{{ $fmtTanggal($baris['tanggal']) }}</td>
+                                <td style="min-width: 260px;">{{ $baris['uraian'] }}</td>
+                                <td>{{ $baris['penerima'] }}</td>
+                                <td class="text-nowrap small">{{ $baris['pembebanan'] }}</td>
+                                <td class="text-nowrap">{{ $baris['nomor_fp'] ?: '-' }}</td>
                                 <td>
-                                    @if ($pd->monitoringSpj->posisi_spj)
-                                        <span class="badge rounded-pill bg-label-{{ $posisiBadge[$pd->monitoringSpj->posisi_spj] ?? 'secondary' }}">{{ $pd->monitoringSpj->posisi_spj }}</span>
+                                    @if ($baris['spj']->posisi_spj)
+                                        <span class="badge rounded-pill bg-label-{{ $posisiBadge[$baris['spj']->posisi_spj] ?? 'secondary' }}">{{ $baris['spj']->posisi_spj }}</span>
                                     @else
                                         <span class="text-muted">-</span>
                                     @endif
                                 </td>
-                                <td class="text-end nominal">{{ $fmtRupiah($pd->total_biaya) }}</td>
+                                <td class="text-end nominal">{{ $fmtRupiah($baris['nominal']) }}</td>
                             </tr>
                         @endforeach
                     </tbody>
                     <tfoot>
                         <tr>
                             <th colspan="6" class="text-end">Total</th>
-                            <th class="text-end nominal">{{ $fmtRupiah($daftarSpj->sum(fn ($pd) => $pd->total_biaya)) }}</th>
+                            <th class="text-end nominal">{{ $fmtRupiah($daftarSpj->sum('nominal')) }}</th>
                         </tr>
                     </tfoot>
                 </table>

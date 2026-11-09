@@ -17,7 +17,8 @@ class MonitoringSpj extends Model
     public const JENIS_PEMBAYARAN = ['GUP', 'LS Bendahara', 'LS KPPN'];
 
     protected $fillable = [
-        'id_perjalanan_dinas',
+        'id_perjalanan_dinas', 'id_gup',
+        'tanggal_rincian', 'uraian_rincian', 'penerima_rincian', 'pembebanan_rincian', 'nominal_rincian',
         'tanggal_diperiksa_ppk', 'no_spp_spm', 'tanggal_spp', 'tanggal_spm',
         'no_sp2d', 'tanggal_sp2d', 'nomor_fp',
         'keterangan', 'posisi_spj', 'sudah_dibayar', 'cara_bayar',
@@ -31,11 +32,36 @@ class MonitoringSpj extends Model
         'tanggal_spm' => 'date',
         'tanggal_sp2d' => 'date',
         'tanggal_gup' => 'date',
+        'tanggal_rincian' => 'date',
+        'nominal_rincian' => 'decimal:2',
         'sudah_dibayar' => 'boolean',
         'sudah_spby' => 'boolean',
         'sudah_kuitansi' => 'boolean',
         'sudah_drpp' => 'boolean',
     ];
+
+    /**
+     * Kelompok GUP tempat SPJ ini dimasukkan (lihat GupController). Kolom tanggal_gup di
+     * tabel ini ikut disamakan dengan tanggal GUP-nya supaya tetap terbaca di tempat lain.
+     */
+    public function gup()
+    {
+        return $this->belongsTo(Gup::class, 'id_gup', 'id_gup');
+    }
+
+    /**
+     * Rincian Non-Perjadin: baris yang diinput langsung oleh tim keuangan, bukan dari
+     * perjalanan dinas (id_perjalanan_dinas kosong).
+     */
+    public function scopeRincianNonPerjadin($query)
+    {
+        return $query->whereNull('id_perjalanan_dinas');
+    }
+
+    public function getIsRincianAttribute(): bool
+    {
+        return $this->id_perjalanan_dinas === null;
+    }
 
     public function perjalananDinas()
     {

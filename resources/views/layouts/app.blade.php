@@ -241,6 +241,7 @@
   <script src="{{ asset('assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>
   <script src="{{ asset('assets/js/atur-kolom.js') }}?v={{ filemtime(public_path('assets/js/atur-kolom.js')) }}"></script>
   <script src="{{ asset('assets/js/tabel-data.js') }}?v={{ filemtime(public_path('assets/js/tabel-data.js')) }}"></script>
+  <script src="{{ asset('assets/js/export-excel.js') }}?v={{ filemtime(public_path('assets/js/export-excel.js')) }}"></script>
   <script src="{{ asset('assets/js/pilih-massal.js') }}?v={{ filemtime(public_path('assets/js/pilih-massal.js')) }}"></script>
   <script src="{{ asset('assets/vendor/js/menu.js') }}"></script>
   <script src="{{ asset('assets/js/main.js') }}"></script>

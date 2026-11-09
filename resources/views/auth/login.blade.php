@@ -232,7 +232,7 @@
             </div>
             <h1>SIMPEL</h1>
             <p class="kepanjangan">Sistem Informasi Penyusunan Dokumen Pertanggungjawaban Perjalanan Dinas Elektronik</p>
-            <p class="keterangan">Susun SPD, kuitansi, dan laporan perjalanan dinas dalam satu tempat, cepat dan rapi.</p>
+            {{-- <p class="keterangan">Susun SPD, kuitansi, dan laporan perjalanan dinas dalam satu tempat, cepat dan rapi.</p> --}}
 
             <div class="login-fitur" aria-hidden="true">
               <div class="kartu-fitur k-1">
@@ -278,7 +278,7 @@
                 <div class="input-ikon">
                   <i class="ti ti-user"></i>
                   <input type="text" id="username" name="username" class="form-control @error('username') is-invalid @enderror"
-                    value="{{ old('username') }}" required autofocus autocomplete="username" placeholder="mis. fia">
+                    value="{{ old('username') }}" required autofocus autocomplete="username" placeholder="Masukkan username...">
                 </div>
                 @error('username')
                   <div class="invalid-feedback d-block">{{ $message }}</div>

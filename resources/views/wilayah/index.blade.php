@@ -2,6 +2,50 @@
 
 @section('title', 'Kelola Wilayah')
 
+@push('page-css')
+    <style>
+        .tab-wilayah { display: flex; flex-wrap: wrap; gap: 0.75rem; border: 0; }
+        .tab-wilayah .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 240px;
+            padding: 0.7rem 0.9rem;
+            border: 1px solid #e3e7f1;
+            border-radius: 0.5rem;
+            background: #fff;
+            color: #4b5a7c;
+            text-align: left;
+            transition: all 0.15s ease;
+        }
+        .tab-wilayah .nav-link:hover { border-color: rgba(37, 99, 235, 0.4); color: #2563eb; }
+        .tab-wilayah .nav-link .ikon {
+            width: 36px;
+            height: 36px;
+            flex-shrink: 0;
+            border-radius: 0.375rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: #2563eb;
+            background: rgba(37, 99, 235, 0.1);
+        }
+        .tab-wilayah .nav-link .judul { display: block; font-weight: 600; font-size: 0.9rem; }
+        .tab-wilayah .nav-link small { color: #8a94ad; }
+        .tab-wilayah .nav-link.active {
+            border-color: #2563eb;
+            background: rgba(37, 99, 235, 0.06);
+            color: #2563eb;
+            box-shadow: 0 6px 14px -8px rgba(37, 99, 235, 0.6);
+        }
+        .tab-wilayah .nav-link.active .ikon { color: #fff; background: #2563eb; }
+        @media (max-width: 575.98px) {
+            .tab-wilayah .nav-item, .tab-wilayah .nav-link { width: 100%; min-width: 0; }
+        }
+    </style>
+@endpush
+
 @section('content')
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
@@ -46,14 +90,42 @@
         </div>
     </div>
 
-    <div class="row g-4">
-        {{-- Kabupaten/Kota --}}
-        <div class="col-lg-5">
-            <div class="card h-100">
-                <div class="card-header d-flex align-items-center justify-content-between">
-                    <h5 class="mb-0">Kabupaten/Kota</h5>
+    {{-- Satu kartu lebar penuh dengan tab, supaya tabel, pencarian, dan pagination tidak
+         berdesakan seperti saat dua tabel ditaruh berdampingan. --}}
+    <div class="card">
+        <div class="card-header pb-0">
+            <ul class="nav tab-wilayah" role="tablist">
+                <li class="nav-item">
+                    <button type="button" class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-kabkota" role="tab">
+                        <span class="ikon"><i class="ti ti-building-community"></i></span>
+                        <span>
+                            <span class="judul">Kabupaten/Kota</span>
+                            <small>{{ $daftarKabupatenKota->flatten()->count() }} wilayah &middot; {{ $daftarKabupatenKota->count() }} provinsi</small>
+                        </span>
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button type="button" class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-desa" role="tab">
+                        <span class="ikon"><i class="ti ti-home-2"></i></span>
+                        <span>
+                            <span class="judul">Desa/Kelurahan</span>
+                            <small>{{ $daftarDesa->flatten()->count() }} wilayah &middot; {{ $daftarDesa->count() }} kecamatan di Murung Raya</small>
+                        </span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="tab-content p-0">
+            {{-- Kabupaten/Kota --}}
+            <div class="tab-pane fade show active" id="tab-kabkota" role="tabpanel">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 px-4 pt-4">
+                    <div>
+                        <h5 class="mb-0">Kabupaten/Kota</h5>
+                        <p class="text-muted small mb-0">Pilihan Asal &amp; Tujuan untuk perjalanan dinas biasa (antar kabupaten/kota).</p>
+                    </div>
                     <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modal-kabkota" onclick="bukaModalTambahKabKota()">
-                        <i class="ti ti-plus ti-sm me-1"></i> Tambah
+                        <i class="ti ti-plus ti-sm me-1"></i> Tambah Kabupaten/Kota
                     </button>
                 </div>
                 <div class="table-responsive">
@@ -70,9 +142,10 @@
                             @foreach ($daftarKabupatenKota as $provinsi => $items)
                                 @foreach ($items as $item)
                                     <tr>
-                                        <td>{{ $loop->first ? $provinsi : '' }}</td>
-                                        <td>{{ $item->nama }}</td>
-                                        <td class="text-end">
+                                        {{-- Diisi di setiap baris supaya tetap benar saat diurutkan, dicari, atau pindah halaman. --}}
+                                        <td class="text-muted">{{ $provinsi }}</td>
+                                        <td class="fw-medium">{{ $item->nama }}</td>
+                                        <td class="text-end" data-order="{{ $item->jumlah_dipilih }}">
                                             <span class="badge {{ $item->jumlah_dipilih > 0 ? 'bg-label-success' : 'bg-label-secondary' }}">{{ $item->jumlah_dipilih }}x</span>
                                         </td>
                                         <td class="text-nowrap">
@@ -96,15 +169,16 @@
                     </table>
                 </div>
             </div>
-        </div>
 
-        {{-- Desa/Kelurahan --}}
-        <div class="col-lg-7">
-            <div class="card h-100">
-                <div class="card-header d-flex align-items-center justify-content-between">
-                    <h5 class="mb-0">Desa/Kelurahan (Kabupaten Murung Raya)</h5>
+            {{-- Desa/Kelurahan --}}
+            <div class="tab-pane fade" id="tab-desa" role="tabpanel">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 px-4 pt-4">
+                    <div>
+                        <h5 class="mb-0">Desa/Kelurahan (Kabupaten Murung Raya)</h5>
+                        <p class="text-muted small mb-0">Pilihan Asal &amp; Tujuan untuk perjalanan dinas dalam kota.</p>
+                    </div>
                     <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modal-desa" onclick="bukaModalTambahDesa()">
-                        <i class="ti ti-plus ti-sm me-1"></i> Tambah
+                        <i class="ti ti-plus ti-sm me-1"></i> Tambah Desa/Kelurahan
                     </button>
                 </div>
                 <div class="table-responsive">
@@ -122,10 +196,12 @@
                             @foreach ($daftarDesa as $kecamatan => $items)
                                 @foreach ($items as $item)
                                     <tr>
-                                        <td>{{ $loop->first ? $kecamatan : '' }}</td>
-                                        <td>{{ ucfirst($item->jenis) }}</td>
-                                        <td>{{ $item->nama }}</td>
-                                        <td class="text-end">
+                                        <td class="text-muted">{{ $kecamatan }}</td>
+                                        <td>
+                                            <span class="badge rounded-pill {{ $item->jenis === 'kelurahan' ? 'bg-label-info' : 'bg-label-primary' }}">{{ ucfirst($item->jenis) }}</span>
+                                        </td>
+                                        <td class="fw-medium">{{ $item->nama }}</td>
+                                        <td class="text-end" data-order="{{ $item->jumlah_dipilih }}">
                                             <span class="badge {{ $item->jumlah_dipilih > 0 ? 'bg-label-success' : 'bg-label-secondary' }}">{{ $item->jumlah_dipilih }}x</span>
                                         </td>
                                         <td class="text-nowrap">
@@ -232,6 +308,22 @@
 
 @push('page-js')
     <script>
+        // Ingat tab terakhir (mis. setelah tambah/edit desa, halaman kembali ke tab Desa).
+        (function () {
+            const KUNCI = 'simpel.wilayah.tab';
+            try {
+                const tersimpan = localStorage.getItem(KUNCI);
+                const tombol = tersimpan && document.querySelector('.tab-wilayah [data-bs-target="' + tersimpan + '"]');
+                if (tombol) bootstrap.Tab.getOrCreateInstance(tombol).show();
+            } catch (e) {}
+            document.querySelectorAll('.tab-wilayah [data-bs-toggle="tab"]').forEach(function (tombol) {
+                tombol.addEventListener('shown.bs.tab', function () {
+                    try { localStorage.setItem(KUNCI, tombol.dataset.bsTarget); } catch (e) {}
+                    if (window.jQuery && jQuery.fn.dataTable) jQuery.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
+                });
+            });
+        })();
+
         const formKabKota = document.getElementById('form-kabkota');
         const formKabKotaMethod = document.getElementById('form-kabkota-method');
         const modalKabKotaTitle = document.getElementById('modal-kabkota-title');

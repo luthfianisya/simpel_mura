@@ -4,6 +4,9 @@
     <link rel="stylesheet" href="{{ asset('assets/vendor/libs/datatables-fixedcolumns-bs5/fixedcolumns.bootstrap5.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/css/dokumen-perjadin.css') }}?v={{ filemtime(public_path('assets/css/dokumen-perjadin.css')) }}" />
     <style>
+        /* Kolom Aksi menempel (sticky) — sel yang dropdown "⋮"-nya terbuka dinaikkan supaya
+           menunya tidak tertutup sel Aksi baris di bawahnya. */
+        #table-rekap-perjadin td:has(.dropdown-menu.show) { z-index: 10 !important; }
         #table-rekap-perjadin_wrapper .dataTables_filter input {
             min-width: 220px;
         }
@@ -189,38 +192,61 @@
                             @endif
                         </td>
                         <td class="text-nowrap">
-                            <a href="{{ route('perjalanan-dinas.show', $item) }}" class="btn btn-icon btn-sm btn-text-primary rounded-pill" title="Lihat">
-                                <i class="ti ti-eye ti-sm"></i>
-                            </a>
-                            <a href="{{ route('perjalanan-dinas.create', ['jenis' => $item->jenis_perjadin, 'from' => $item->id_perjalanan_dinas]) }}"
-                                class="btn btn-icon btn-sm btn-text-secondary rounded-pill" title="Copy jadi draft baru">
-                                <i class="ti ti-copy ti-sm"></i>
-                            </a>
-                            <button type="button" class="btn btn-icon btn-sm btn-text-success rounded-pill" title="Export" onclick="openDokumenModal({{ $item->id_perjalanan_dinas }})">
-                                <i class="ti ti-download ti-sm"></i>
-                            </button>
-                            @if ($item->bisaDiubahOleh(auth()->user()->id_pegawai_mitra ?? null))
-                                <a href="{{ route('perjalanan-dinas.edit', $item) }}" class="btn btn-icon btn-sm btn-text-warning rounded-pill" title="Edit">
-                                    <i class="ti ti-edit ti-sm"></i>
+                            @php
+                                $bisaUbah = $item->bisaDiubahOleh(auth()->user()->id_pegawai_mitra ?? null);
+                                $bisaBukaKembali = !$bisaUbah && $item->status_draft === 'selesai' && $item->dimilikiOleh(auth()->user()->id_pegawai_mitra ?? null);
+                            @endphp
+                            <div class="d-inline-flex align-items-center gap-1">
+                                <a href="{{ route('perjalanan-dinas.show', $item) }}" class="btn btn-icon btn-sm btn-text-primary rounded-pill" title="Lihat" data-bs-toggle="tooltip">
+                                    <i class="ti ti-eye ti-sm"></i>
                                 </a>
-                                <form action="{{ route('perjalanan-dinas.destroy', $item) }}" method="POST" class="d-inline"
-                                    onsubmit="return confirmSubmit(this, 'Hapus draft perjalanan dinas ini? Tindakan ini tidak bisa dibatalkan.');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-icon btn-sm btn-text-danger rounded-pill" title="Hapus">
-                                        <i class="ti ti-trash ti-sm"></i>
+                                @if ($bisaUbah)
+                                    <a href="{{ route('perjalanan-dinas.edit', $item) }}" class="btn btn-icon btn-sm btn-text-warning rounded-pill" title="Edit" data-bs-toggle="tooltip">
+                                        <i class="ti ti-edit ti-sm"></i>
+                                    </a>
+                                @elseif ($bisaBukaKembali)
+                                    {{-- Data selesai: "Edit" = buka kembali jadi draft dulu. --}}
+                                    <form action="{{ route('perjalanan-dinas.buka-kembali', $item) }}" method="POST" class="d-inline"
+                                        onsubmit="return confirmSubmit(this, 'Buka kembali perjalanan dinas ini untuk diedit? Status akan kembali jadi draft.', { icon: 'question', confirmButtonColor: '#2563eb' });">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="btn btn-icon btn-sm btn-text-warning rounded-pill" title="Buka Kembali untuk Diedit" data-bs-toggle="tooltip">
+                                            <i class="ti ti-lock-open ti-sm"></i>
+                                        </button>
+                                    </form>
+                                @endif
+                                <div class="dropdown d-inline-block">
+                                    <button type="button" class="btn btn-icon btn-sm btn-text-secondary rounded-pill" data-bs-toggle="dropdown"
+                                        data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false" title="Aksi lainnya">
+                                        <i class="ti ti-dots-vertical ti-sm"></i>
                                     </button>
-                                </form>
-                            @elseif ($item->status_draft === 'selesai' && $item->dimilikiOleh(auth()->user()->id_pegawai_mitra ?? null))
-                                <form action="{{ route('perjalanan-dinas.buka-kembali', $item) }}" method="POST" class="d-inline"
-                                    onsubmit="return confirmSubmit(this, 'Buka kembali perjalanan dinas ini untuk diedit? Status akan kembali jadi draft.', { icon: 'question', confirmButtonColor: '#2563eb' });">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" class="btn btn-icon btn-sm btn-text-warning rounded-pill" title="Buka Kembali untuk Diedit">
-                                        <i class="ti ti-lock-open ti-sm"></i>
-                                    </button>
-                                </form>
-                            @endif
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <a class="dropdown-item" href="{{ route('perjalanan-dinas.create', ['jenis' => $item->jenis_perjadin, 'from' => $item->id_perjalanan_dinas]) }}">
+                                                <i class="ti ti-copy me-2"></i> Copy jadi Draft Baru
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <button type="button" class="dropdown-item" onclick="openDokumenModal({{ $item->id_perjalanan_dinas }})">
+                                                <i class="ti ti-download me-2"></i> Unduh Dokumen
+                                            </button>
+                                        </li>
+                                        @if ($bisaUbah)
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <form action="{{ route('perjalanan-dinas.destroy', $item) }}" method="POST"
+                                                    onsubmit="return confirmSubmit(this, 'Hapus draft perjalanan dinas ini? Tindakan ini tidak bisa dibatalkan.');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="dropdown-item text-danger">
+                                                        <i class="ti ti-trash me-2"></i> Hapus
+                                                    </button>
+                                                </form>
+                                            </li>
+                                        @endif
+                                    </ul>
+                                </div>
+                            </div>
                         </td>
                     </tr>
                 @endforeach
@@ -273,8 +299,13 @@
                 </div>
                 <div class="modal-body">
                     <p class="text-muted small">
-                        Belum punya filenya? <a href="{{ route('perjalanan-dinas.import-template') }}">Unduh template Excel</a> terlebih dahulu, isi datanya (1 baris = 1 perjalanan dinas), baru unggah di sini. Dokumentasi (foto/file) tidak ikut diimpor — lengkapi satu per satu lewat menu Edit setelah data masuk.
+                        Belum punya filenya? <a href="{{ route('perjalanan-dinas.import-template') }}">Unduh template Excel</a> terlebih dahulu, isi datanya (1 baris = 1 perjalanan dinas), baru unggah di sini.
                     </p>
+                    <ul class="text-muted small ps-3 mb-3">
+                        <li>Baris contoh (kuning, Perihal diawali <b>[CONTOH]</b>) tidak ikut diimport — boleh dibiarkan.</li>
+                        <li>No SPD tidak perlu diisi, sistem memberikannya otomatis.</li>
+                        <li>Dokumentasi (foto/file) tidak ikut diimport — lengkapi lewat menu Edit setelah data masuk.</li>
+                    </ul>
                     <div class="mb-0">
                         <label class="form-label">File Excel (.xlsx)</label>
                         <input type="file" name="file" class="form-control" accept=".xlsx,.xls" required>
@@ -366,8 +397,14 @@
                             },
                             {
                                 extend: 'excel',
-                                text: 'Excel',
+                                text: '<i class="ti ti-file-spreadsheet me-1"></i>Excel',
                                 className: 'dropdown-item',
+                                title: 'Rekap Perjalanan Dinas',
+                                exportOptions: {
+                                    columns: ':not(:last-child)',
+                                    format: { body: SimpelExportExcel.isiSel },
+                                },
+                                customize: SimpelExportExcel.rapikan,
                             },
                             {
                                 extend: 'pdf',

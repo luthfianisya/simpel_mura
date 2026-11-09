@@ -175,7 +175,7 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Username</label>
-                            <input type="text" name="username" class="form-control" placeholder="mis. fia" required>
+                            <input type="text" name="username" class="form-control" placeholder="Masukkan username..." required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Peran</label>

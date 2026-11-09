@@ -41,7 +41,7 @@
 
 <h6 class="judul-isian-spj">Status SPJ</h6>
 <div class="row g-3">
-    <div class="col-md-4">
+    <div class="col-md-6">
         <label class="form-label">Posisi SPJ</label>
         <select name="posisi_spj" class="form-select">
             <option value="">{{ $kosong }}</option>
@@ -50,7 +50,7 @@
             @endforeach
         </select>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-6">
         <label class="form-label">Jenis Pembayaran</label>
         <select name="jenis_pembayaran" class="form-select">
             <option value="">{{ $kosong }}</option>
@@ -59,10 +59,8 @@
             @endforeach
         </select>
     </div>
-    <div class="col-md-4">
-        <label class="form-label">Tanggal GUP</label>
-        <input type="date" name="tanggal_gup" class="form-control">
-    </div>
+    {{-- Tanggal GUP tidak diisi di sini: mengikuti GUP tempat SPJ dikelompokkan (tombol
+         "Kelompokkan ke GUP" di bar aksi massal). Jenis pembayaran selain GUP = keluar dari GUP. --}}
 
     <div class="col-12">
         <div class="kotak-kelengkapan-spj">

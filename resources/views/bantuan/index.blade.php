@@ -18,10 +18,10 @@
         'opsional' => ['label' => 'Opsional', 'ikon' => 'ti-circle-dashed'],
     ];
     $catatanDokumen = [
-        'Laporan' => 'Kesimpulan, tindak lanjut & min. 1 dokumentasi',
-        'Rincian Biaya' => 'Minimal uang harian',
-        'Keterlambatan Pengajuan Tagihan' => 'Bila tagihan diajukan terlambat',
-        'Kuitansi' => 'Tersusun dari data yang diisi',
+        // 'Laporan' => 'Kesimpulan, tindak lanjut & min. 1 dokumentasi',
+        // 'Rincian Biaya' => 'Minimal uang harian',
+        // 'Keterlambatan Pengajuan Tagihan' => 'Bila tagihan diajukan terlambat',
+        // 'Kuitansi' => 'Tersusun dari data yang diisi',
     ];
     // Urutan dokumen dari Kuitansi (atas) sampai Form Permintaan (bawah); Surat Pernyataan dirinci
     // per jenis pernyataan (nama disamakan dengan pilihan di step Pernyataan).
@@ -377,7 +377,7 @@
                         </div>
                     @endforeach
                 </div>
-                <div class="info-bantuan">
+                {{-- <div class="info-bantuan">
                     <i class="ti ti-info-circle"></i>
                     <span>
                         Saat menyusun berkas SPJ, susun dokumen <b>persis sesuai urutan daftar di atas</b>: Kuitansi
@@ -385,7 +385,7 @@
                         <b>Wajib</b> harus lengkap sebelum &ldquo;Selesai &amp; Simpan&rdquo; (draft boleh belum lengkap),
                         sedangkan <b>Opsional</b> cukup disertakan bila ada dan boleh disusulkan setelah perjalanan selesai.
                     </span>
-                </div>
+                </div> --}}
             </div>
         </div>
 

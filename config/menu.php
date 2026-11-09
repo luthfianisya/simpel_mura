@@ -5,7 +5,7 @@ return [
     ['label' => 'Perjalanan Dinas Saya', 'icon' => 'ti ti-briefcase', 'route' => 'perjalanan-dinas.saya', 'roles' => ['administrator', 'pegawai', 'user']],
     ['label' => 'Semua Perjalanan Dinas', 'icon' => 'ti ti-list-details', 'route' => 'perjalanan-dinas.index', 'roles' => ['administrator', 'pegawai', 'user']],
     ['label' => 'Monitoring SPJ', 'icon' => 'ti ti-clipboard-check', 'route' => 'monitoring-spj.index', 'roles' => ['administrator', 'pegawai', 'user']],
-    ['label' => 'Monitoring GUP', 'icon' => 'ti ti-wallet', 'route' => 'monitoring-gup.index', 'roles' => ['administrator', 'pegawai', 'user']],
+    // ['label' => 'Monitoring GUP', 'icon' => 'ti ti-wallet', 'route' => 'monitoring-gup.index', 'roles' => ['administrator', 'pegawai', 'user']],
     ['label' => 'Rate & Dokumen Pendukung', 'icon' => 'ti ti-coin', 'route' => 'rate.index', 'roles' => ['administrator', 'pegawai', 'user']],
     // Item dengan 'children' tampil sebagai menu yang bisa dibuka-tutup (submenu).
     ['label' => 'Manajemen Pengguna', 'icon' => 'ti ti-users', 'roles' => ['administrator'], 'children' => [
