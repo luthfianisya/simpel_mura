@@ -41,11 +41,13 @@
 
     a { color: inherit; text-decoration: none; }
 
+    /* Konten melebar hampir penuh layar; jarak kiri-kanan menyesuaikan lebar layar
+       (20px di HP, sampai 48px di layar besar). */
     .wadah {
       width: 100%;
-      max-width: 1140px;
+      max-width: 1600px;
       margin: 0 auto;
-      padding: 0 20px;
+      padding: 0 clamp(20px, 3vw, 48px);
     }
 
     /* ---------- Bagian atas ---------- */
@@ -166,7 +168,7 @@
     }
 
     /* ---------- Daftar aplikasi ---------- */
-    /* main juga .wadah (padding 0 20px), jadi padding atas/bawahnya ditulis lebih spesifik. */
+    /* main juga .wadah (padding kiri-kanan), jadi padding atas/bawahnya ditulis lebih spesifik. */
     main.wadah { flex: 1; padding-top: 40px; padding-bottom: 56px; }
     .judul-bagian {
       display: flex;
@@ -178,115 +180,103 @@
     .judul-bagian h2 { margin: 0; font-size: 1.15rem; }
     .judul-bagian span { color: var(--teks-redup); font-size: 0.9rem; }
 
+    /* 3 kolom lega di layar laptop/monitor, 1 kolom di HP. */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr));
+      gap: 28px;
     }
 
-    /* Tiap kartu punya warna aksen sendiri (--aksen-1 gelap, --aksen-2 terang), diisi dari
-       properti "warna" di daftar APLIKASI. */
+    /* Kartu besar & bersih. Warna aksen per aplikasi (--aksen-1 gelap, --aksen-2 terang)
+       diisi dari properti "warna" di daftar APLIKASI, dipakai di ikon & tombol. */
     .kartu {
       --aksen-1: var(--biru-tua);
       --aksen-2: var(--biru);
-      position: relative;
-      overflow: hidden;
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      padding: 24px 22px 22px;
-      background:
-        radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--aksen-2) 14%, transparent) 0, transparent 42%),
-        var(--kartu);
-      border: 1px solid var(--garis);
-      border-radius: 16px;
-      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+      padding: 36px;
+      background: var(--kartu);
+      border: 1px solid #edf0f6;
+      border-radius: 22px;
+      box-shadow: 0 2px 6px -2px rgba(27, 68, 156, 0.06);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
       animation: muncul 0.45s cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
     }
-    /* Garis gradien tipis di atas kartu. */
-    .kartu::before {
-      content: '';
-      position: absolute;
-      inset: 0 0 auto;
-      height: 4px;
-      background: linear-gradient(90deg, var(--aksen-1), var(--aksen-2));
-    }
-    a.kartu:hover,
-    a.kartu:focus-visible {
+    .kartu:hover {
       transform: translateY(-4px);
-      border-color: color-mix(in srgb, var(--aksen-2) 55%, transparent);
-      box-shadow: 0 20px 38px -22px color-mix(in srgb, var(--aksen-1) 70%, transparent);
-      outline: none;
+      box-shadow: 0 22px 44px -26px color-mix(in srgb, var(--aksen-1) 60%, transparent);
     }
-    .kartu.nonaktif { background: #fafbfe; border-style: dashed; }
 
     .kartu-atas {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      gap: 16px;
+      margin-bottom: 30px;
     }
     .ikon {
-      width: 52px;
-      height: 52px;
-      border-radius: 14px;
+      flex-shrink: 0;
+      width: 84px;
+      height: 84px;
+      border-radius: 20px;
       display: grid;
       place-items: center;
       color: #fff;
       background: linear-gradient(135deg, var(--aksen-1), var(--aksen-2));
-      box-shadow: 0 10px 20px -10px color-mix(in srgb, var(--aksen-1) 85%, transparent);
+      box-shadow: 0 14px 26px -14px color-mix(in srgb, var(--aksen-1) 90%, transparent);
     }
-    .kartu.nonaktif::before { background: #e3e7f1; }
-    .kartu.nonaktif .ikon {
-      color: var(--abu);
-      background: #eef1f7;
-      box-shadow: none;
-    }
-    .status {
-      font-size: 0.72rem;
-      font-weight: 700;
-      padding: 5px 10px;
+    .kategori {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: #3d4663;
+      padding: 7px 16px;
       border-radius: 999px;
+      background: #f1f3f8;
       white-space: nowrap;
     }
-    .status.aktif { color: var(--hijau); background: rgba(22, 163, 74, 0.1); }
-    .status.segera { color: var(--abu); background: #eef1f7; }
-    .status.eksternal { color: var(--aksen-1); background: color-mix(in srgb, var(--aksen-2) 14%, transparent); }
+    .kartu.nonaktif .ikon { color: var(--abu); background: #eef1f7; box-shadow: none; }
 
-    .kartu h3 { margin: 0; font-size: 1.1rem; }
-    .kartu .singkatan {
-      display: block;
-      margin-top: 3px;
-      color: var(--teks-redup);
-      font-size: 0.82rem;
+    .kartu h3 {
+      margin: 0 0 12px;
+      font-size: 1.9rem;
+      font-weight: 700;
+      line-height: 1.2;
+      color: #161b2e;
     }
-    .kartu p {
-      margin: 0;
+    .kartu .keterangan {
+      margin: 0 0 32px;
       flex: 1;
       color: var(--teks-redup);
-      font-size: 0.92rem;
+      font-size: 1.1rem;
       line-height: 1.55;
     }
-    .kartu-bawah {
+
+    .tombol {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding-top: 14px;
-      border-top: 1px solid var(--garis);
-      font-size: 0.85rem;
-    }
-    .kartu-bawah .alamat { color: var(--abu); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .kartu-bawah .buka {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      flex-shrink: 0;
+      justify-content: center;
+      gap: 8px;
+      height: 58px;
+      border-radius: 14px;
+      font-size: 1.12rem;
       font-weight: 600;
-      color: var(--aksen-1);
+      color: #fff;
+      background: linear-gradient(135deg, var(--aksen-1), var(--aksen-2));
+      transition: filter 0.2s ease, box-shadow 0.2s ease;
     }
-    a.kartu:hover .buka svg { transform: translateX(3px); }
-    .buka svg { transition: transform 0.18s ease; }
+    .tombol svg { transition: transform 0.2s ease; }
+    .tombol:hover,
+    .tombol:focus-visible {
+      filter: brightness(1.06);
+      box-shadow: 0 12px 24px -14px color-mix(in srgb, var(--aksen-1) 95%, transparent);
+      outline: none;
+    }
+    .tombol:hover svg { transform: translateX(3px); }
+    .tombol.nonaktif {
+      color: var(--abu);
+      background: #eef1f7;
+      cursor: default;
+    }
 
     .kosong {
       display: none;
@@ -320,7 +310,10 @@
       .atas { padding-bottom: 80px; }
       .sambutan { padding-top: 24px; }
       .cari-kotak kbd { display: none; }
-      .grid { grid-template-columns: 1fr; }
+      .grid { gap: 18px; }
+      .kartu { padding: 26px; }
+      .ikon { width: 68px; height: 68px; border-radius: 17px; }
+      .kartu h3 { font-size: 1.6rem; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -379,8 +372,9 @@
      * DAFTAR APLIKASI — tambah / ubah kartu cukup di sini.
      *
      *   nama       : nama aplikasi
-     *   singkatan  : kepanjangan / keterangan singkat di bawah nama (boleh kosong)
-     *   deskripsi  : penjelasan 1–2 kalimat
+     *   kategori   : label kecil di kanan atas kartu (mis. "Keuangan")
+     *   singkatan  : kepanjangan / keterangan singkat di bawah nama (yang tampil di kartu)
+     *   deskripsi  : penjelasan tambahan (tidak tampil, hanya ikut dicari)
      *   url        : alamat aplikasi. Awali "/" untuk aplikasi di domain portal ini
      *                (mis. "/aplikasi-lain/"), atau alamat lengkap "https://..." untuk situs lain.
      *                SIMPEL memakai url('simpel') supaya ikut APP_URL.
@@ -393,6 +387,7 @@
     var APLIKASI = [
       {
         nama: 'SipArsip 2026',
+        kategori: 'Tata Usaha',
         singkatan: 'Sistem Informasi Pengelolaan Arsip',
         deskripsi: 'Pengelolaan arsip BPS Kabupaten Murung Raya tahun 2026.',
         url: 'http://s.bps.go.id/siparsip',
@@ -402,6 +397,7 @@
       },
       {
         nama: 'HURA',
+        kategori: 'Kehumasan',
         singkatan: 'Humas BPS Kabupaten Murung Raya',
         deskripsi: 'Kanal kehumasan BPS Kabupaten Murung Raya.',
         url: 'https://sites.google.com/view/humas6213/home',
@@ -411,6 +407,7 @@
       },
       {
         nama: 'ZI-Mura',
+        kategori: 'Zona Integritas',
         singkatan: 'Pembangunan Zona Integritas BPS Kabupaten Murung Raya',
         deskripsi: 'Informasi dan dokumentasi pembangunan Zona Integritas BPS Kabupaten Murung Raya.',
         url: 'https://sites.google.com/view/zi-mura2025/home',
@@ -420,6 +417,7 @@
       },
       {
         nama: 'SEMESTA',
+        kategori: 'Akuntabilitas Kinerja',
         singkatan: 'Sistem Manajemen Akuntabilitas Kinerja dan Tata Kelola',
         deskripsi: 'Manajemen akuntabilitas kinerja dan tata kelola BPS Kabupaten Murung Raya.',
         url: 'https://sites.google.com/view/semesta6213',
@@ -429,6 +427,7 @@
       },
       {
         nama: 'POSE',
+        kategori: 'Sensus Ekonomi',
         singkatan: 'Portal Sensus Ekonomi 2026',
         deskripsi: 'Portal informasi Sensus Ekonomi 2026 BPS Kabupaten Murung Raya.',
         url: 'https://sites.google.com/view/pose26/pose26',
@@ -438,6 +437,7 @@
       },
       {
         nama: 'Pass Ya!',
+        kategori: 'Statistik Sektoral',
         singkatan: 'Pembinaan Statistik Sektoral',
         deskripsi: 'Program pembinaan statistik sektoral BPS Kabupaten Murung Raya.',
         url: 'https://sites.google.com/view/project-ist-2024-pass-ya/home',
@@ -447,6 +447,7 @@
       },
       {
         nama: 'SIMPEL',
+        kategori: 'Keuangan',
         singkatan: 'Sistem Informasi Penyusunan Dokumen Pertanggungjawaban Perjalanan Dinas Elektronik',
         // deskripsi: 'Penyusunan SPD, kuitansi, rincian biaya, dan monitoring SPJ perjalanan dinas secara elektronik.',
         url: @json(url('simpel')),
@@ -482,44 +483,28 @@
       return '<svg width="' + ukuran + '" height="' + ukuran + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (IKON[kunci] || IKON.dokumen) + '</svg>';
     }
 
-    // Alamat yang ditampilkan di kartu: "/simpel/" ditampilkan lengkap dengan domain portal.
-    function alamatTampil(url) {
-      if (!url) return 'Belum tersedia';
-      if (url.charAt(0) === '/') return location.host ? location.host + url.replace(/\/$/, '') : url;
-      return url.replace(/^https?:\/\//, '').replace(/\/$/, '');
-    }
-
     var daftar = document.getElementById('daftar');
     daftar.innerHTML = APLIKASI.map(function (app, i) {
       var bisaDibuka = app.status !== 'segera' && app.url;
-      var tag = bisaDibuka ? 'a' : 'div';
-      var atribut = bisaDibuka
-        ? ' href="' + esc(app.url) + '"' + (app.status === 'eksternal' ? ' target="_blank" rel="noopener"' : '')
-        : ' aria-disabled="true"';
-      var cari = (app.nama + ' ' + (app.singkatan || '') + ' ' + (app.deskripsi || '')).toLowerCase();
+      var tabBaru = app.status === 'eksternal' ? ' target="_blank" rel="noopener"' : '';
+      var cari = [app.nama, app.kategori, app.singkatan, app.deskripsi].join(' ').toLowerCase();
+      var panah = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
 
-      return '<' + tag + ' class="kartu' + (bisaDibuka ? '' : ' nonaktif') + '"' + atribut
+      return '<div class="kartu' + (bisaDibuka ? '' : ' nonaktif') + '"'
         + ' data-cari="' + esc(cari) + '" style="animation-delay:' + Math.min(i * 70, 420) + 'ms'
         + (app.warna ? ';--aksen-1:' + esc(app.warna[0]) + ';--aksen-2:' + esc(app.warna[1]) : '') + '">'
         + '<div class="kartu-atas">'
-        + '<span class="ikon">' + svg(app.ikon, 26) + '</span>'
-        // Badge hanya untuk aplikasi yang belum tersedia ("Segera Hadir").
+        + '<span class="ikon">' + svg(app.ikon, 40) + '</span>'
         + (app.status === 'segera'
-          ? '<span class="status segera">' + esc(LABEL_STATUS.segera) + '</span>'
-          : '')
+          ? '<span class="kategori">' + esc(LABEL_STATUS.segera) + '</span>'
+          : (app.kategori ? '<span class="kategori">' + esc(app.kategori) + '</span>' : ''))
         + '</div>'
-        + '<div><h3>' + esc(app.nama) + '</h3>'
-        + (app.singkatan ? '<span class="singkatan">' + esc(app.singkatan) + '</span>' : '')
-        + '</div>'
-        + '<p>' + esc(app.deskripsi) + '</p>'
-        + '<div class="kartu-bawah">'
-        + '<span class="alamat">' + esc(alamatTampil(app.url)) + '</span>'
+        + '<h3>' + esc(app.nama) + '</h3>'
+        + '<p class="keterangan">' + esc(app.singkatan || app.deskripsi || '') + '</p>'
         + (bisaDibuka
-          ? '<span class="buka">' + (app.status === 'eksternal' ? 'Kunjungi' : 'Buka')
-            + ' <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>'
-          : '')
-        + '</div>'
-        + '</' + tag + '>';
+          ? '<a class="tombol" href="' + esc(app.url) + '"' + tabBaru + '>Buka Aplikasi ' + panah + '</a>'
+          : '<span class="tombol nonaktif">Belum Tersedia</span>')
+        + '</div>';
     }).join('');
 
     // Pencarian langsung saat mengetik.
