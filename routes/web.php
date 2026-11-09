@@ -13,6 +13,7 @@ use App\Http\Controllers\RincianNonPerjadinImportController;
 use App\Http\Controllers\BantuanController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WilayahController;
+use App\Http\Controllers\PenomoranSpdController;
 use App\Http\Controllers\RateController;
 use App\Http\Controllers\DokumenExportController;
 use Illuminate\Support\Facades\Route;
@@ -91,6 +92,9 @@ Route::middleware(['auth', 'role:administrator'])->group(function () {
     Route::patch('/kelola-akun/{user}/toggle-aktif', [UserController::class, 'toggleAktif'])->name('user.toggle-aktif');
     Route::delete('/kelola-akun/{user}', [UserController::class, 'destroy'])->name('user.destroy');
 
+    Route::get('/penomoran-spd', [PenomoranSpdController::class, 'index'])->name('penomoran-spd.index');
+    Route::post('/penomoran-spd', [PenomoranSpdController::class, 'store'])->name('penomoran-spd.store');
+    Route::put('/penomoran-spd/{penomoranSpd}', [PenomoranSpdController::class, 'update'])->name('penomoran-spd.update');
     Route::get('/kelola-wilayah', [WilayahController::class, 'index'])->name('wilayah.index');
     Route::post('/wilayah/kabupaten-kota', [WilayahController::class, 'storeKabupatenKota'])->name('wilayah.kabupaten-kota.store');
     Route::put('/wilayah/kabupaten-kota/{kabupatenKota}', [WilayahController::class, 'updateKabupatenKota'])->name('wilayah.kabupaten-kota.update');

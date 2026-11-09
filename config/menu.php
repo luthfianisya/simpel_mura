@@ -14,6 +14,7 @@ return [
         ['label' => 'Akun', 'route' => 'user.index'],
     ]],
     ['label' => 'Kelola Wilayah', 'icon' => 'ti ti-map-pin', 'route' => 'wilayah.index', 'roles' => ['administrator']],
+    ['label' => 'Penomoran SPD', 'icon' => 'ti ti-hash', 'route' => 'penomoran-spd.index', 'roles' => ['administrator']],
     // ['label' => 'Rincian Biaya', 'icon' => 'ti ti-file-invoice', 'route' => 'rincian-biaya.index', 'roles' => ['administrator', 'pegawai', 'user']],
     // ['label' => 'Laporan', 'icon' => 'ti ti-report', 'route' => 'laporan.index', 'roles' => ['administrator']],
     ['label' => 'Feedback', 'icon' => 'ti ti-message-report', 'route' => 'feedback.index', 'roles' => ['administrator', 'pegawai', 'user']],
