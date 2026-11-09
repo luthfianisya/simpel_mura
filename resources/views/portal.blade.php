@@ -118,9 +118,10 @@
       background: rgba(255, 255, 255, 0.16);
     }
     .sambutan h1 {
-      margin: 16px 0 12px;
-      font-size: clamp(1.8rem, 4vw, 2.6rem);
-      line-height: 1.2;
+      margin: 18px 0 14px;
+      font-size: clamp(2.2rem, 5.5vw, 3.75rem);
+      line-height: 1.1;
+      letter-spacing: -0.5px;
       font-weight: 800;
     }
     .sambutan p {
@@ -256,9 +257,9 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      height: 58px;
-      border-radius: 14px;
-      font-size: 1.12rem;
+      height: 46px;
+      border-radius: 12px;
+      font-size: 1rem;
       font-weight: 600;
       color: #fff;
       background: linear-gradient(135deg, var(--aksen-1), var(--aksen-2));
@@ -336,8 +337,9 @@
       </nav>
 
       <div class="sambutan">
-        <span class="label">Portal Aplikasi</span>
-        <h1 id="salam">Selamat datang</h1>
+        {{-- Badge salam (pagi/siang/sore/malam) diisi lewat JS sesuai jam. --}}
+        <span class="label" id="salam">Selamat datang</span>
+        <h1>Portal Aplikasi Internal</h1>
         <p>Satu pintu untuk seluruh aplikasi internal BPS Kabupaten Murung Raya.<br>Pilih aplikasi yang ingin Anda gunakan di bawah ini.</p>
       </div>
     </div>
@@ -488,7 +490,7 @@
       var bisaDibuka = app.status !== 'segera' && app.url;
       var tabBaru = app.status === 'eksternal' ? ' target="_blank" rel="noopener"' : '';
       var cari = [app.nama, app.kategori, app.singkatan, app.deskripsi].join(' ').toLowerCase();
-      var panah = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+      var panah = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
 
       return '<div class="kartu' + (bisaDibuka ? '' : ' nonaktif') + '"'
         + ' data-cari="' + esc(cari) + '" style="animation-delay:' + Math.min(i * 70, 420) + 'ms'
