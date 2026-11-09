@@ -244,7 +244,7 @@
   <script src="{{ asset('assets/js/export-excel.js') }}?v={{ filemtime(public_path('assets/js/export-excel.js')) }}"></script>
   <script src="{{ asset('assets/js/pilih-massal.js') }}?v={{ filemtime(public_path('assets/js/pilih-massal.js')) }}"></script>
   <script src="{{ asset('assets/vendor/js/menu.js') }}"></script>
-  <script src="{{ asset('assets/js/main.js') }}"></script>
+  <script src="{{ asset('assets/js/main.js') }}?v={{ filemtime(public_path('assets/js/main.js')) }}"></script>
 
   @stack('page-js')
 </body>

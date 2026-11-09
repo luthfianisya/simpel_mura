@@ -324,7 +324,7 @@
   <script src="{{ asset('assets/vendor/libs/popper/popper.js') }}"></script>
   <script src="{{ asset('assets/vendor/js/bootstrap.js') }}"></script>
   <script src="{{ asset('assets/vendor/js/menu.js') }}"></script>
-  <script src="{{ asset('assets/js/main.js') }}"></script>
+  <script src="{{ asset('assets/js/main.js') }}?v={{ filemtime(public_path('assets/js/main.js')) }}"></script>
 
   <script>
     document.getElementById('toggle-password').addEventListener('click', function () {

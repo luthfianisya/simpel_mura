@@ -123,7 +123,10 @@ if (document.getElementById('layout-menu')) {
     }
   } else {
     // Removed style switcher element if not using template customizer
-    styleSwitcherToggleEl.parentElement.remove();
+    // Tidak semua halaman punya tombol style switcher (mis. halaman tanpa navbar).
+    if (styleSwitcherToggleEl && styleSwitcherToggleEl.parentElement) {
+      styleSwitcherToggleEl.parentElement.remove();
+    }
   }
 
   // Update light/dark image based on current style
