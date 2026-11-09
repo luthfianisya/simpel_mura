@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="{{ asset('assets/vendor/css/rtl/core.css') }}" />
   <link rel="stylesheet" href="{{ asset('assets/vendor/css/rtl/theme-default.css') }}" />
   <link rel="stylesheet" href="{{ asset('assets/css/demo.css') }}" />
+  <link rel="stylesheet" href="{{ asset('assets/css/transisi.css') }}?v={{ filemtime(public_path('assets/css/transisi.css')) }}" />
 
   <script src="{{ asset('assets/vendor/js/helpers.js') }}"></script>
   <script src="{{ asset('assets/js/config.js') }}"></script>

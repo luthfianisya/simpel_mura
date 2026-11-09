@@ -160,7 +160,7 @@
             <div class="d-flex gap-2 flex-wrap">
                 @if ($bisaIsi)
                     <button type="button" class="btn btn-primary" onclick="bukaModalRincianBaru(null)">
-                        <i class="ti ti-plus me-1"></i> Tambah Rincian Non-Perjadin
+                        <i class="ti ti-plus me-1"></i> Tambah Rincian SPJ
                     </button>
                     <div class="dropdown">
                         <button class="btn btn-label-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -244,8 +244,7 @@
                                 <input type="checkbox" class="form-check-input cek-semua-spj" title="Pilih semua baris yang tampil sesuai filter/pencarian">
                             @endif
                         </th>
-                        <th>No</th>
-                        <th>Posisi SPJ</th>
+                        <th data-kolom="posisi">Posisi SPJ</th>
                         <th>Tanggal Diperiksa PPK</th>
                         <th>Nomor SPP/SPM</th>
                         <th>Tanggal SPP</th>
@@ -264,7 +263,7 @@
                         <th>Status SPBy</th>
                         <th>Status Kuitansi</th>
                         <th>Status DRPP</th>
-                        <th>Jenis Pembayaran</th>
+                        <th data-kolom="jenis-pembayaran">Jenis Pembayaran</th>
                         <th>Tanggal GUP</th>
                         {{-- Kunci kelompok GUP (tersembunyi, dipakai RowGroup); header kosong supaya tidak muncul di Atur Kolom. --}}
                         {{-- Kunci kelompok GUP (tersembunyi, dipakai RowGroup); diekspor sebagai label GUP. --}}
@@ -284,13 +283,6 @@
                                     <input type="checkbox" class="form-check-input cek-baris-spj" value="{{ $baris['kunci'] }}">
                                 @endif
                             </td>
-                            <td @class(['rekap-nomor' => !$baris['rincian']]) data-order="{{ $baris['no'] }}">
-                                @if ($baris['rincian'])
-                                    <span class="badge rounded-pill bg-label-info" title="Diinput langsung oleh tim keuangan, di luar perjalanan dinas">Non-Perjadin</span>
-                                @else
-                                    {{ $baris['no'] }}
-                                @endif
-                            </td>
                             <td>
                                 @if ($spj?->posisi_spj)
                                     <span class="badge rounded-pill bg-label-{{ $posisiBadge[$spj->posisi_spj] ?? 'secondary' }}">{{ $spj->posisi_spj }}</span>
@@ -306,7 +298,12 @@
                             <td class="rekap-nomor">{{ $baris['nomor_fp'] }}</td>
                             <td class="text-nowrap">{{ $baris['pembebanan'] }}</td>
                             <td data-order="{{ optional($tanggal)->format('Y-m-d') }}">{{ $fmtTanggal($tanggal) }}</td>
-                            <td class="kolom-uraian">{{ $baris['uraian'] }}</td>
+                            <td class="kolom-uraian">
+                                @if ($baris['rincian'])
+                                    <span class="badge rounded-pill bg-label-info me-1" title="Diinput langsung oleh tim keuangan, di luar perjalanan dinas">Non-Perjadin</span>
+                                @endif
+                                {{ $baris['uraian'] }}
+                            </td>
                             <td class="text-end text-nowrap" data-order="{{ $baris['nominal'] }}">{{ number_format($baris['nominal'], 0, ',', '.') }}</td>
                             <td>{{ $baris['penerima'] }}</td>
                             <td>{{ $spj?->keterangan }}</td>
@@ -808,9 +805,8 @@
                 fixedColumns: {
                     rightColumns: 1,
                 },
-                // Kolom 1 ("No" = id_perjalanan_dinas) descending = terbaru di atas.
-                // Kolom 0 = checkbox pilih baris.
-                order: [[1, 'desc']],
+                // Tanpa urutan kolom awal: ikut urutan server (terakhir dibuat paling atas).
+                order: [],
                 // Baris dikelompokkan per GUP; kunci kelompoknya urut teks ("0000" = Belum Masuk
                 // GUP, lalu GUP terbaru), dan selalu jadi urutan pertama supaya kelompok tetap utuh.
                 orderFixed: { pre: [KOLOM_GUP, 'asc'] },
@@ -865,12 +861,12 @@
                 },
             });
 
-            // Index kolom sesuai urutan header: 2 = Posisi SPJ, 21 = Jenis Pembayaran.
+            // Kolom dicari lewat atribut header, jadi tidak bergeser kalau urutan kolom berubah.
             document.getElementById('filter-posisi-spj').addEventListener('change', function () {
-                tabelSpj.column(2).search(this.value, false, false).draw();
+                tabelSpj.column('[data-kolom="posisi"]').search(this.value, false, false).draw();
             });
             document.getElementById('filter-jenis-pembayaran').addEventListener('change', function () {
-                tabelSpj.column(21).search(this.value, false, false).draw();
+                tabelSpj.column('[data-kolom="jenis-pembayaran"]').search(this.value, false, false).draw();
             });
 
             // ----- Bulk edit. Semua baris tetap ada di DOM DataTables (client-side), jadi

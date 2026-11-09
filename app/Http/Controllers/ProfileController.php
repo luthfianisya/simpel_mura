@@ -84,6 +84,7 @@ class ProfileController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return Redirect::to('/');
+        // "/" sekarang portal aplikasi; kembalikan ke halaman login SIMPEL.
+        return Redirect::route('login');
     }
 }

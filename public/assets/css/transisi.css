@@ -1,0 +1,59 @@
+/**
+ * Transisi halus SIMPEL:
+ * 1. Pindah halaman: crossfade antar halaman (View Transitions lintas dokumen, Chrome/Edge 126+;
+ *    browser lain tetap jalan normal tanpa efek).
+ * 2. Isi halaman (breadcrumb, kartu, kolom grid) muncul pelan dari bawah saat halaman dibuka
+ *    dan saat discroll ke bawah. Diatur oleh assets/js/transisi.js.
+ *
+ * Catatan: transform hanya dipakai SELAMA animasi (tanpa fill "forwards"), karena transform
+ * yang menetap di kartu akan merusak dropdown position:fixed dan kolom beku DataTables.
+ */
+
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root) {
+  animation: 140ms ease-in both transisi-pudar-keluar;
+}
+
+::view-transition-new(root) {
+  animation: 220ms ease-out both transisi-pudar-masuk;
+}
+
+@keyframes transisi-pudar-keluar {
+  to { opacity: 0; }
+}
+
+@keyframes transisi-pudar-masuk {
+  from { opacity: 0; }
+}
+
+/* Isi halaman disembunyikan sampai transisi.js selesai memilih blok (masih sebelum halaman
+   tergambar), lalu tiap blok disembunyikan sampai masuk layar. Hanya opacity: layout tetap
+   sama sehingga lebar tabel DataTables & grafik tidak terganggu. */
+.transisi-aktif:not(.transisi-siap) .container-p-y,
+.transisi-aktif .belum-muncul {
+  opacity: 0;
+}
+
+.sedang-muncul {
+  animation: transisi-muncul 420ms cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
+}
+
+@keyframes transisi-muncul {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @view-transition {
+    navigation: none;
+  }
+
+  .sedang-muncul {
+    animation: none;
+  }
+}

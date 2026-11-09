@@ -57,7 +57,7 @@ class MonitoringSpjController extends Controller
         $daftarBaris = $daftarPerjalananDinas->map(fn (PerjalananDinas $pd) => [
             'kunci' => (string) $pd->id_perjalanan_dinas,
             'rincian' => false,
-            'no' => $pd->id_perjalanan_dinas,
+            'dibuat' => $pd->created_at,
             'spj' => $pd->monitoringSpj,
             'nomor_fp' => $pd->no_form_permintaan,
             'pembebanan' => $pd->pembebanan,
@@ -69,7 +69,7 @@ class MonitoringSpjController extends Controller
         ])->concat($daftarRincian->map(fn (MonitoringSpj $m) => [
             'kunci' => 'r' . $m->id_monitoring_spj,
             'rincian' => true,
-            'no' => 0,
+            'dibuat' => $m->created_at,
             'spj' => $m,
             'nomor_fp' => $m->nomor_fp,
             'pembebanan' => $m->pembebanan_rincian,
@@ -84,7 +84,11 @@ class MonitoringSpjController extends Controller
             $kelompokGup[$baris['kunci_gup']]['total'] += $baris['nominal'];
 
             return $baris;
-        })->values();
+        })
+            // Tabel tidak punya kolom nomor: urutan awal = yang terakhir dibuat paling atas
+            // (perjalanan dinas & rincian non-perjadin dicampur), di dalam tiap kelompok GUP.
+            ->sortByDesc(fn (array $baris) => optional($baris['dibuat'])->getTimestamp() ?? 0)
+            ->values();
 
         return view('monitoring-spj.index', [
             'daftarBaris' => $daftarBaris,

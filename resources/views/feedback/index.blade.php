@@ -69,10 +69,10 @@
         <div class="feedback-wadah">
             <form class="feedback-kartu" action="{{ route('feedback.store') }}" method="POST">
                 @csrf
-                <h3>Kami menghargai<br>masukan Anda</h3>
+                <h3>FEEDBACK SIMPEL</h3>
                 <p class="feedback-sub">
                     Kami terus berupaya meningkatkan SIMPEL. Sampaikan kendala, saran, atau
-                    pertanyaan Anda terkait sistem.
+                    tanggapan Anda terkait sistem.
                 </p>
 
                 <textarea name="isi" class="form-control mb-3" rows="5" maxlength="5000" required

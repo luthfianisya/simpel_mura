@@ -1,7 +1,14 @@
 <?php
 
-it('redirects the homepage to the login page', function () {
-    $response = $this->get('/');
+it('menampilkan portal aplikasi di halaman utama', function () {
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('Portal Aplikasi')
+        ->assertSee(json_encode(url('simpel')), false);
+});
 
-    $response->assertRedirect(route('login'));
+it('mengarahkan /simpel ke halaman login simpel', function () {
+    expect(route('login'))->toEndWith('/simpel/login');
+
+    $this->get('/simpel')->assertRedirect(route('login'));
 });

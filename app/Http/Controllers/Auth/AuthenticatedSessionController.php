@@ -42,6 +42,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        // "/" sekarang portal aplikasi; setelah keluar kembali ke halaman login SIMPEL.
+        return redirect()->route('login');
     }
 }

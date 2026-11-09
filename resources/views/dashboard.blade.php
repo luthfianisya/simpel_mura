@@ -314,7 +314,7 @@
 
         {{-- Jumlah perjalanan dinas --}}
         <div class="judul-bagian">
-            <h5>Jumlah Perjalanan Dinas</h5>
+            <h5>Rekapitulasi Jumlah Perjalanan Dinas</h5>
         </div>
         <div class="row g-4 mb-4">
             <div class="col-6 col-xl-3">
@@ -342,7 +342,7 @@
 
         {{-- Posisi SPJ (perjalanan dinas yang sudah selesai, lihat Monitoring SPJ) --}}
         <div class="judul-bagian">
-            <h5>Posisi SPJ</h5>
+            <h5>Rekapitulasi Monitoring SPJ</h5>
             <a href="{{ route('monitoring-spj.index') }}" class="small fw-semibold d-inline-flex align-items-center gap-1">
                 Lihat Monitoring SPJ <i class="ti ti-arrow-right ti-xs"></i>
             </a>
@@ -353,7 +353,7 @@
                     @if ($posisi === 'Dikembalikan')
                         <div class="alur-pemisah"></div>
                     @elseif (! $loop->first)
-                        <div class="alur-panah"><i class="ti ti-chevron-right"></i></div>
+                        {{-- <div class="alur-panah"><i class="ti ti-chevron-right"></i></div> --}}
                     @endif
                     <div class="alur-langkah w-{{ $gaya['warna'] }}">
                         <div class="ikon"><i class="ti {{ $gaya['ikon'] }}"></i></div>

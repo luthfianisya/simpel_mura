@@ -437,20 +437,10 @@
                                             <input type="text" id="input-pembebanan" name="pembebanan" class="form-control" value="{{ old('pembebanan') }}" placeholder="mis. GG.2902.BMA.006.530.B.524113" required>
                                             <div class="field-error" id="err-input-pembebanan">Pembebanan (Akun/MAK) wajib diisi.</div>
                                         </div>
-                                        {{-- No. FP mengisi sisa lebar baris (col-md), Tk. Biaya cukup sempit. --}}
-                                        <div class="col-md">
+                                        <div class="col-md-6">
                                             <label class="form-label" for="input-no_form_permintaan">No. Form Permintaan</label>
                                             <input type="text" id="input-no_form_permintaan" name="no_form_permintaan" class="form-control" maxlength="255"
                                                 value="{{ old('no_form_permintaan') }}" placeholder="Nomor FP">
-                                        </div>
-                                        <div class="col-md-2">
-                                            <label class="form-label" for="input-tingkat_biaya">Tk. Biaya Perjadin</label>
-                                            <select id="input-tingkat_biaya" class="form-select">
-                                                <option value="">-</option>
-                                                <option value="A">A</option>
-                                                <option value="B">B</option>
-                                                <option value="C" selected>C</option>
-                                            </select>
                                         </div>
                                         @unless ($jenis === 'biasa')
                                         <div class="col-md-6">
@@ -641,6 +631,16 @@
                                             <div class="col-md-6" id="wrapper-angkutan_lainnya" style="display: none;">
                                                 <label class="form-label">Sebutkan Alat Angkut</label>
                                                 <input type="text" id="input-angkutan_lainnya" class="form-control" placeholder="mis. Kendaraan Umum">
+                                            </div>
+                                            {{-- Hanya dipakai di dokumen SPD (butir "c. Tingkat Biaya Perjalanan Dinas"). --}}
+                                            <div class="col-md-6">
+                                                <label class="form-label" for="input-tingkat_biaya">Tingkat Biaya Perjalanan Dinas</label>
+                                                <select id="input-tingkat_biaya" class="form-select">
+                                                    <option value="">-</option>
+                                                    <option value="A">A</option>
+                                                    <option value="B">B</option>
+                                                    <option value="C" selected>C</option>
+                                                </select>
                                             </div>
                                         </div>
                                         <div class="d-flex justify-content-between mt-4">

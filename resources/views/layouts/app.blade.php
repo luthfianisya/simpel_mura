@@ -197,9 +197,33 @@
     .swal2-actions .btn[style*="display: none"] {
       display: none !important;
     }
+
+    /* Sebelum DataTables selesai dipasang (menunggu semua script termuat), tabel masih HTML
+       mentah yang bisa lebih lebar dari kartu. Sembunyikan dulu (ruangnya tetap terpakai
+       supaya halaman tidak melompat) dan potong lebarnya agar tidak keluar dari kartu. */
+    .card-datatable:has(> table:not(.dataTable)),
+    .table-responsive:has(> table[data-datatable]:not(.dataTable)) {
+      overflow: hidden;
+    }
+    .card-datatable > table:not(.dataTable),
+    table[data-datatable]:not(.dataTable) {
+      visibility: hidden;
+    }
   </style>
 
   @stack('page-css')
+
+  <link rel="stylesheet" href="{{ asset('assets/css/transisi.css') }}?v={{ filemtime(public_path('assets/css/transisi.css')) }}" />
+  <script>
+    // Aktifkan animasi muncul sebelum halaman tergambar (tanpa kedipan). Kalau transisi.js
+    // gagal jalan, isi halaman tetap ditampilkan setelah 2,5 detik.
+    (function () {
+      var akar = document.documentElement;
+      if (!('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      akar.classList.add('transisi-aktif');
+      setTimeout(function () { if (!window.__transisiSiap) akar.classList.remove('transisi-aktif'); }, 2500);
+    })();
+  </script>
 
   <script src="{{ asset('assets/vendor/js/helpers.js') }}"></script>
   <script src="{{ asset('assets/js/config.js') }}"></script>
@@ -227,6 +251,7 @@
     </div>
   </div>
 
+  <script src="{{ asset('assets/js/transisi.js') }}?v={{ filemtime(public_path('assets/js/transisi.js')) }}"></script>
   <script src="{{ asset('assets/vendor/libs/jquery/jquery.js') }}"></script>
   <script src="{{ asset('assets/vendor/libs/popper/popper.js') }}"></script>
   <script src="{{ asset('assets/vendor/js/bootstrap.js') }}"></script>

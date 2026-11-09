@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Rate & Dokumen Pendukung')
+@section('title', 'Rate Transport dan Akomodasi')
 
 @php
     $fmtRupiah = fn ($v) => 'Rp ' . number_format((float) $v, 0, ',', '.');
@@ -180,7 +180,7 @@
 @section('content')
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
-            <h4 class="fw-bold mb-1">Rate & Dokumen Pendukung</h4>
+            <h4 class="fw-bold mb-1">Rate Transportasi dan Akomodasi</h4>
             <p class="text-muted mb-0">Besaran biaya rate akomodasi &amp; transport dalam kota, serta dokumen referensi (SK, nota, peraturan) sesuai ketentuan yang berlaku.</p>
         </div>
         <a href="{{ route('dashboard') }}" class="btn btn-outline-primary d-inline-flex align-items-center gap-1">
@@ -264,7 +264,8 @@
                 </button>
             @endif
         </div>
-        <div class="table-responsive">
+        {{-- Padding samping & bawah 1.5rem, sama dengan .tab-content di kartu Rate Transport. --}}
+        <div class="table-responsive px-4 pb-4">
             <table class="table" data-datatable data-kosong="Belum ada data.">
                 <thead>
                     <tr>

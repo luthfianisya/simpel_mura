@@ -324,7 +324,6 @@
     <script src="{{ asset('assets/vendor/libs/datatables-buttons/datatables-buttons.js') }}"></script>
     <script src="{{ asset('assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.js') }}"></script>
     <script src="{{ asset('assets/vendor/libs/jszip/jszip.js') }}"></script>
-    <script src="{{ asset('assets/vendor/libs/pdfmake/pdfmake.js') }}"></script>
     <script src="{{ asset('assets/vendor/libs/datatables-buttons/buttons.html5.js') }}"></script>
     <script src="{{ asset('assets/vendor/libs/datatables-buttons/buttons.print.js') }}"></script>
     <script src="{{ asset('assets/vendor/libs/datatables-fixedcolumns/datatables.fixedcolumns.js') }}"></script>
@@ -405,11 +404,6 @@
                                     format: { body: SimpelExportExcel.isiSel },
                                 },
                                 customize: SimpelExportExcel.rapikan,
-                            },
-                            {
-                                extend: 'pdf',
-                                text: '<i class="ti ti-file-description me-1"></i>Pdf',
-                                className: 'dropdown-item',
                             },
                             {
                                 extend: 'copy',
