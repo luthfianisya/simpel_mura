@@ -145,8 +145,8 @@ class PerjalananDinasController extends Controller
             $sumber = PerjalananDinas::with(['rincianBiaya', 'pengeluaranRiil', 'suratPernyataan', 'kuitansi', 'laporan'])
                 ->find($request->query('from'));
             if ($sumber) {
-                // Nomor SPD & Nomor Form Permintaan tidak ikut disalin — tiap dokumen punya nomor sendiri.
-                session()->flashInput(array_merge($sumber->toFormPrefill(), ['no_spd' => null, 'no_form_permintaan' => null]));
+                // Nomor SPD, Nomor Form Permintaan & tanggal laporan tidak ikut disalin — tiap dokumen punya nomor/tanggal sendiri.
+                session()->flashInput(array_merge($sumber->toFormPrefill(), ['no_spd' => null, 'no_form_permintaan' => null, 'tanggal_laporan' => null]));
             }
         }
 
@@ -495,6 +495,7 @@ class PerjalananDinasController extends Controller
 
             'kesimpulan_hasil_kegiatan' => 'nullable|string',
             'tindak_lanjut' => 'nullable|string',
+            'tanggal_laporan' => 'nullable|date',
 
             'dokumentasi' => 'nullable|array',
             'dokumentasi.*' => 'file|max:10240|mimes:jpg,jpeg,png,pdf',
@@ -595,6 +596,7 @@ class PerjalananDinasController extends Controller
                 [
                     'kesimpulan_hasil_kegiatan' => $validated['kesimpulan_hasil_kegiatan'],
                     'tindak_lanjut' => $validated['tindak_lanjut'] ?? null,
+                    'tanggal_laporan' => $validated['tanggal_laporan'] ?? null,
                 ]
             );
         } else {

@@ -65,18 +65,49 @@ class GupController extends Controller
         return $this->kembali($this->jumlah($validated) . ' SPJ berhasil dikeluarkan dari GUP.');
     }
 
-    /** Ubah tanggal GUP; Tanggal GUP semua SPJ di dalamnya ikut berubah. */
+    /**
+     * Ubah data GUP: tanggal GUP, tanggal transfer, dan pajak. Tanggal GUP semua SPJ di
+     * dalamnya ikut berubah.
+     */
     public function update(Request $request, Gup $gup)
     {
         $this->cekAkses($request);
-        $validated = $request->validate(['tanggal_gup' => ['nullable', 'date']]);
+        $request->merge(['pajak' => self::angka($request->input('pajak'))]);
+        $validated = $request->validate([
+            'tanggal_gup' => ['nullable', 'date'],
+            'tanggal_transfer' => ['nullable', 'date'],
+            'pajak' => ['nullable', 'numeric', 'min:0', 'max:9999999999999'],
+        ], [
+            'date' => ':attribute bukan tanggal yang valid.',
+            'numeric' => ':attribute harus berupa angka.',
+            'min' => ':attribute tidak boleh negatif.',
+        ], [
+            'tanggal_gup' => 'Tanggal GUP',
+            'tanggal_transfer' => 'Tanggal transfer',
+            'pajak' => 'Pajak',
+        ]);
 
         DB::transaction(function () use ($gup, $validated) {
-            $gup->update(['tanggal_gup' => $validated['tanggal_gup'] ?? null]);
+            $gup->update([
+                'tanggal_gup' => $validated['tanggal_gup'] ?? null,
+                'tanggal_transfer' => $validated['tanggal_transfer'] ?? null,
+                'pajak' => $validated['pajak'] ?? null,
+            ]);
             $gup->monitoringSpj()->update(['tanggal_gup' => $gup->tanggal_gup]);
         });
 
-        return $this->kembali('Tanggal ' . $this->label($gup) . ' berhasil disimpan.');
+        return $this->kembali('Data ' . $this->label($gup) . ' berhasil disimpan.');
+    }
+
+    /** "Rp 1.250.000" / "1.250.000" / "1250000" → 1250000; kosong → null. */
+    private static function angka($nilai): ?string
+    {
+        if ($nilai === null || trim((string) $nilai) === '') {
+            return null;
+        }
+        $bersih = preg_replace('/[^\d,\-]/', '', (string) $nilai);
+
+        return str_replace(',', '.', $bersih);
     }
 
     /** Hapus GUP; SPJ di dalamnya kembali ke daftar "Belum masuk GUP". */

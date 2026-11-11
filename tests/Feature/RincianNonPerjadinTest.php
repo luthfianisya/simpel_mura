@@ -95,7 +95,7 @@ test('rincian ikut aksi massal: edit terpilih, buat gup, dan keluarkan dari gup'
 
     $this->actingAs($user)->post(route('gup.store'), [
         'ids' => idSpj($spj), 'rincian_ids' => [$rincian->id_monitoring_spj], 'tanggal_gup' => '2026-04-01',
-    ])->assertSessionHas('success', '2 SPJ berhasil dikelompokkan ke GUP ke-1 Tahun 2026.');
+    ])->assertSessionHas('success', '2 SPJ berhasil dikelompokkan ke GUP ke-1 Bulan April.');
     expect($rincian->fresh()->id_gup)->toBe(Gup::sole()->id_gup)
         ->and($rincian->fresh()->tanggal_gup->format('Y-m-d'))->toBe('2026-04-01');
 

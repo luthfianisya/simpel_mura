@@ -52,14 +52,18 @@ class MonitoringGupController extends Controller
         $spjPerGup = $spjGup->groupBy(fn ($baris) => $baris['spj']->id_gup);
         $daftarGup = $semuaGup
             ->filter(fn (Gup $gup) => $gup->tahun === $tahun && $spjPerGup->has($gup->id_gup))
-            ->sortBy('nomor')
+            ->sortBy(fn (Gup $gup) => [$gup->bulan, $gup->nomor])
             ->values()
             ->map(function (Gup $gup) use ($spjPerGup) {
                 $spj = $spjPerGup->get($gup->id_gup);
 
                 return [
+                    'id' => $gup->id_gup,
                     'nomor' => $gup->nomor,
+                    'label' => $gup->label,
                     'tanggal' => $gup->tanggal_gup,
+                    'tanggal_transfer' => $gup->tanggal_transfer,
+                    'pajak' => $gup->pajak,
                     'spj' => $spj->sortBy(fn ($baris) => optional($baris['tanggal'])->format('Y-m-d'))->values(),
                     'jumlah' => $spj->count(),
                     'nominal' => $spj->sum('nominal'),

@@ -680,6 +680,15 @@
                                             <textarea id="input-tindak_lanjut" name="tindak_lanjut" class="form-control" rows="2">{{ old('tindak_lanjut') }}</textarea>
                                             <div class="field-error" id="err-input-tindak_lanjut">Tindak lanjut wajib diisi.</div>
                                         </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label" for="input-tanggal_laporan">Tanggal Laporan</label>
+                                            <input type="text" id="input-tanggal_laporan" name="tanggal_laporan" class="form-control" autocomplete="off" value="{{ old('tanggal_laporan') }}" placeholder="Otomatis">
+                                        </div>
+                                        <div class="col-md-12 mt-1 d-none" id="warning-tanggal_laporan">
+                                            <div class="form-text text-warning">
+                                                <i class="ti ti-alert-triangle me-1"></i><span id="warning-tanggal_laporan-teks"></span>
+                                            </div>
+                                        </div>
                                     </div>
                                     <h6 class="mb-3">Dokumentasi<span class="required-mark">*</span></h6>
                                     <input type="file" id="input-dokumentasi" name="dokumentasi[]" class="form-control" multiple accept="image/*,.pdf">
@@ -1085,6 +1094,7 @@
             pasangFlatpickrTunggal('input-tanggal_surat_tugas');
             pasangFlatpickrTunggal('input-tanggal_spd');
             pasangFlatpickrTunggal('input-tanggal_kuitansi');
+            pasangFlatpickrTunggal('input-tanggal_laporan');
 
             // Tanggal Mulai - Selesai: 1 kotak Flatpickr mode "range", hasilnya
             // disinkronkan ke 2 input hidden (tanggal_mulai/tanggal_selesai) yang
@@ -1653,6 +1663,7 @@
                     jenis_kegiatan_nama: selText('input-jenis_kegiatan'),
                     kesimpulan_hasil_kegiatan: val('input-kesimpulan'),
                     tindak_lanjut: val('input-tindak_lanjut'),
+                    tanggal_laporan: val('input-tanggal_laporan'),
                     pelaksana: pegawaiData('input-pelaksana'),
                     penandatangan: pegawaiData('input-penandatangan_st'),
                     ppk: pegawaiData('input-ppk'),
@@ -2292,8 +2303,31 @@
                 }
             });
 
+            // Tanggal Laporan idealnya antara tanggal selesai pelaksanaan s.d. H+1 hari kerja.
+            // Di luar rentang itu tampilkan peringatan (tidak memblokir simpan); kosong = otomatis H+1.
+            function cekTanggalLaporan() {
+                const wadah = document.getElementById('warning-tanggal_laporan');
+                const tanggal = val('input-tanggal_laporan');
+                const selesai = val('input-tanggal_selesai');
+                if (!tanggal || !selesai) { wadah.classList.add('d-none'); return; }
+                const batas = DokumenPerjadin.tambahHariKerja(selesai, 1);
+                const fmt = DokumenPerjadin.fmtTanggalPanjang;
+                let pesan = '';
+                if (tanggal < selesai) {
+                    pesan = 'Tanggal laporan mendahului tanggal selesai pelaksanaan kegiatan.';
+                } else if (tanggal > batas) {
+                    pesan = 'Tanggal laporan melewati batas H+1 hari kerja dari pelaksanaan kegiatan.';
+                }
+                // if (pesan) pesan += ' Tanggal yang sesuai adalah ' + fmt(selesai) + ' atau ' + fmt(batas) + '.';
+                document.getElementById('warning-tanggal_laporan-teks').textContent = pesan;
+                wadah.classList.toggle('d-none', !pesan);
+            }
+            cekTanggalLaporan();
+
             form.addEventListener('input', renderAllPreviews);
             form.addEventListener('change', renderAllPreviews);
+            form.addEventListener('input', cekTanggalLaporan);
+            form.addEventListener('change', cekTanggalLaporan);
             stepperEl.addEventListener('shown.bs-stepper', renderAllPreviews);
 
             // ----- Isi ulang baris dari data lama (validasi gagal) -----

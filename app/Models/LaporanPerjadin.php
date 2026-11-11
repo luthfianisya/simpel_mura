@@ -9,7 +9,11 @@ class LaporanPerjadin extends Model
     protected $table = 'laporan_perjadin';
     protected $primaryKey = 'id_laporan';
 
-    protected $fillable = ['id_perjalanan_dinas', 'kesimpulan_hasil_kegiatan', 'tindak_lanjut'];
+    protected $fillable = ['id_perjalanan_dinas', 'kesimpulan_hasil_kegiatan', 'tindak_lanjut', 'tanggal_laporan'];
+
+    protected $casts = [
+        'tanggal_laporan' => 'date',
+    ];
 
     public function perjalananDinas()
     {

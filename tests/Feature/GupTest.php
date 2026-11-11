@@ -25,7 +25,7 @@ test('ppk bisa membuat gup baru dari spj terpilih', function () {
         'ids' => idSpj([$spj[0], $spj[1]]),
         'tanggal_gup' => '2026-02-18',
     ])->assertRedirect(route('monitoring-spj.index'))
-        ->assertSessionHas('success', '2 SPJ berhasil dikelompokkan ke GUP ke-1 Tahun 2026.');
+        ->assertSessionHas('success', '2 SPJ berhasil dikelompokkan ke GUP ke-1 Bulan Februari.');
 
     $gup = Gup::sole();
     foreach ([$spj[0], $spj[1]] as $pd) {
@@ -100,17 +100,58 @@ test('mengganti jenis pembayaran ke selain gup mengeluarkan spj dari gup-nya', f
     expect($m->id_gup)->toBeNull()->and($m->tanggal_gup)->toBeNull()->and(Gup::count())->toBe(0);
 });
 
-test('nomor gup dihitung per tahun menurut urutan tanggal', function () {
-    Gup::create(['tanggal_gup' => '2026-02-10']);
-    Gup::create(['tanggal_gup' => '2026-01-21']);
-    Gup::create(['tanggal_gup' => '2025-12-05']);
+test('nomor gup dihitung per bulan menurut urutan tanggal dan mulai lagi tiap bulan', function () {
+    Gup::create(['tanggal_gup' => '2026-11-20']);
+    Gup::create(['tanggal_gup' => '2026-11-03']);
+    Gup::create(['tanggal_gup' => '2026-12-01']);
+    Gup::create(['tanggal_gup' => '2026-11-12']);
+    Gup::create(['tanggal_gup' => '2025-11-05']);
 
     $label = Gup::denganNomor()->mapWithKeys(fn ($g) => [$g->tanggal_gup->format('Y-m-d') => $g->label]);
     expect($label->all())->toBe([
-        '2026-02-10' => 'GUP ke-2 Tahun 2026',
-        '2026-01-21' => 'GUP ke-1 Tahun 2026',
-        '2025-12-05' => 'GUP ke-1 Tahun 2025',
+        '2026-11-20' => 'GUP ke-3 Bulan November',
+        '2026-11-03' => 'GUP ke-1 Bulan November',
+        '2026-12-01' => 'GUP ke-1 Bulan Desember',
+        '2026-11-12' => 'GUP ke-2 Bulan November',
+        // November tahun lain dihitung terpisah.
+        '2025-11-05' => 'GUP ke-1 Bulan November',
     ]);
+});
+
+test('tanggal transfer dan pajak gup bisa diisi dan tampil di kepala gup', function () {
+    [$user, $spj] = siapkanPpkDanSpj(1);
+    $this->actingAs($user)->post(route('gup.store'), ['ids' => idSpj($spj), 'tanggal_gup' => '2026-11-03']);
+    $gup = Gup::sole();
+
+    $this->actingAs($user)->put(route('gup.update', $gup), [
+        'tanggal_gup' => '2026-11-03',
+        'tanggal_transfer' => '2026-11-10',
+        'pajak' => 'Rp 1.250.000',
+    ])->assertRedirect(route('monitoring-spj.index'))
+        ->assertSessionHas('success', 'Data GUP ke-1 Bulan November berhasil disimpan.');
+
+    $gup->refresh();
+    expect($gup->tanggal_transfer->format('Y-m-d'))->toBe('2026-11-10')
+        ->and((float) $gup->pajak)->toBe(1250000.0);
+
+    $kelompok = $this->actingAs($user)->get(route('monitoring-spj.index'))->viewData('kelompokGup');
+    expect($kelompok['0001'])->toMatchArray([
+        'label' => 'GUP ke-1 Bulan November',
+        'tanggal_transfer' => '2026-11-10',
+        'pajak' => 1250000.0,
+    ]);
+
+    // Dikosongkan lagi.
+    $this->actingAs($user)->put(route('gup.update', $gup), ['tanggal_gup' => '2026-11-03', 'tanggal_transfer' => '', 'pajak' => '']);
+    expect($gup->fresh()->tanggal_transfer)->toBeNull()->and($gup->fresh()->pajak)->toBeNull();
+});
+
+test('pajak gup harus angka dan tidak negatif', function () {
+    [$user, $spj] = siapkanPpkDanSpj(1);
+    $this->actingAs($user)->post(route('gup.store'), ['ids' => idSpj($spj), 'tanggal_gup' => '2026-11-03']);
+
+    $this->actingAs($user)->put(route('gup.update', Gup::sole()), ['tanggal_gup' => '2026-11-03', 'pajak' => '-5000'])
+        ->assertSessionHasErrors('pajak');
 });
 
 test('tabel monitoring spj dikelompokkan per gup dengan total nominalnya', function () {
@@ -120,7 +161,7 @@ test('tabel monitoring spj dikelompokkan per gup dengan total nominalnya', funct
     $kelompok = $this->actingAs($user)->get(route('monitoring-spj.index'))->assertOk()->viewData('kelompokGup');
 
     expect($kelompok['0000'])->toMatchArray(['label' => 'Belum Masuk GUP', 'jumlah' => 1, 'total' => 80000])
-        ->and($kelompok['0001'])->toMatchArray(['label' => 'GUP ke-1 Tahun 2026', 'jumlah' => 2, 'total' => 160000]);
+        ->and($kelompok['0001'])->toMatchArray(['label' => 'GUP ke-1 Bulan Februari', 'jumlah' => 2, 'total' => 160000]);
 });
 
 test('pengguna selain ppk ppspm bendahara tidak bisa mengelompokkan gup', function () {

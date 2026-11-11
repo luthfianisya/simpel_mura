@@ -171,6 +171,7 @@ class PerjalananDinas extends Model
             'jenis_kegiatan_nama' => optional($this->jenisKegiatan)->nama_kegiatan,
             'kesimpulan_hasil_kegiatan' => optional($this->laporan)->kesimpulan_hasil_kegiatan,
             'tindak_lanjut' => optional($this->laporan)->tindak_lanjut,
+            'tanggal_laporan' => optional(optional($this->laporan)->tanggal_laporan)->format('Y-m-d'),
             'pelaksana' => $this->pegawaiToArray($this->pelaksana),
             'penandatangan' => $this->pegawaiToArray($this->penandatanganSt),
             'ppk' => $this->pegawaiToArray($this->ppk),
@@ -208,6 +209,7 @@ class PerjalananDinas extends Model
             'tanggal_kuitansi' => optional(optional($this->kuitansi)->tanggal_kuitansi)->format('Y-m-d'),
             'kesimpulan_hasil_kegiatan' => optional($this->laporan)->kesimpulan_hasil_kegiatan,
             'tindak_lanjut' => optional($this->laporan)->tindak_lanjut,
+            'tanggal_laporan' => optional(optional($this->laporan)->tanggal_laporan)->format('Y-m-d'),
         ], $this->relatedArraysData());
 
         // Form wizard: 3 field nominal + 3 field jumlah_hari tetap (rincian[uang_harian],

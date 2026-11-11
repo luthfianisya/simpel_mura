@@ -136,8 +136,10 @@
             <table class="table" id="table-monitoring-gup" data-datatable data-kosong="Belum ada GUP pada tahun ini.">
                 <thead>
                     <tr>
-                        <th>GUP Ke-</th>
+                        <th>GUP</th>
                         <th>Tanggal GUP</th>
+                        <th>Tanggal Transfer</th>
+                        <th class="text-end">Pajak</th>
                         <th>Jumlah SPJ</th>
                         <th>Nominal GUP</th>
                         <th>Status Bayar</th>
@@ -150,10 +152,12 @@
                             $persenBayar = $gup['jumlah'] ? (int) round($gup['sudah_dibayar'] / $gup['jumlah'] * 100) : 0;
                         @endphp
                         <tr>
-                            <td class="text-center fw-semibold">{{ $gup['nomor'] }}</td>
+                            <td class="fw-semibold text-nowrap" data-order="{{ sprintf('%02d-%03d', optional($gup['tanggal'])->month ?? 0, $gup['nomor']) }}">{{ $gup['label'] }}</td>
                             <td data-order="{{ optional($gup['tanggal'])->format('Y-m-d') }}">
                                 <span class="tanggal-gup">{{ $fmtTanggalPanjang($gup['tanggal']) }}</span>
                             </td>
+                            <td data-order="{{ optional($gup['tanggal_transfer'])->format('Y-m-d') }}">{{ $gup['tanggal_transfer'] ? $fmtTanggalPanjang($gup['tanggal_transfer']) : '-' }}</td>
+                            <td class="text-end nominal" data-order="{{ (float) $gup['pajak'] }}">{{ $gup['pajak'] !== null ? $fmtRupiah($gup['pajak']) : '-' }}</td>
                             <td class="text-center">{{ $gup['jumlah'] }} SPJ</td>
                             <td class="text-end nominal" data-order="{{ $gup['nominal'] }}">{{ $fmtRupiah($gup['nominal']) }}</td>
                             <td data-order="{{ $persenBayar }}">
@@ -169,8 +173,8 @@
                             </td>
                             <td class="text-nowrap">
                                 <button type="button" class="btn btn-sm btn-label-primary" data-bs-toggle="modal" data-bs-target="#modal-rincian-gup"
-                                    data-rincian="rincian-gup-{{ $gup['nomor'] }}"
-                                    data-judul="GUP ke-{{ $gup['nomor'] }} &middot; {{ $fmtTanggalPanjang($gup['tanggal']) }}">
+                                    data-rincian="rincian-gup-{{ $gup['id'] }}"
+                                    data-judul="{{ $gup['label'] }} &middot; {{ $fmtTanggalPanjang($gup['tanggal']) }}">
                                     <i class="ti ti-list-details ti-xs me-1"></i> Rincian
                                 </button>
                             </td>
@@ -183,7 +187,7 @@
 
     {{-- Isi rincian tiap GUP (dipindah ke modal saat tombol "Rincian" diklik) --}}
     @php
-        $kelompokRincian = $daftarGup->mapWithKeys(fn ($gup) => ['rincian-gup-' . $gup['nomor'] => $gup['spj']]);
+        $kelompokRincian = $daftarGup->mapWithKeys(fn ($gup) => ['rincian-gup-' . $gup['id'] => $gup['spj']]);
         if ($menunggu->isNotEmpty()) {
             $kelompokRincian['rincian-menunggu'] = $menunggu;
         }

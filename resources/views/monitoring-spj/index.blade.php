@@ -301,8 +301,10 @@
                             <td class="kolom-uraian">
                                 @if ($baris['rincian'])
                                     <span class="badge rounded-pill bg-label-info me-1" title="Diinput langsung oleh tim keuangan, di luar perjalanan dinas">Non-Perjadin</span>
+                                    {{ $baris['uraian'] }}
+                                @else
+                                    Biaya perjalanan dinas dalam rangka {{ $baris['uraian'] }}
                                 @endif
-                                {{ $baris['uraian'] }}
                             </td>
                             <td class="text-end text-nowrap" data-order="{{ $baris['nominal'] }}">{{ number_format($baris['nominal'], 0, ',', '.') }}</td>
                             <td>{{ $baris['penerima'] }}</td>
@@ -498,7 +500,7 @@
                             <label class="form-label" for="input-gup-baru-tanggal">Tanggal GUP</label>
                             <input type="date" id="input-gup-baru-tanggal" name="tanggal_gup" class="form-control">
                             <div class="form-text">
-                                Boleh dikosongkan dan diisi belakangan. Nomor "GUP ke-" dibuat otomatis menurut urutan tanggal dalam tahun yang sama.
+                                Boleh dikosongkan dan diisi belakangan. Nomor "GUP ke-" dibuat otomatis menurut urutan tanggal dalam bulan yang sama (mulai lagi dari 1 setiap bulan).
                                 SPJ yang sudah ada di GUP lain akan dipindahkan.
                             </div>
                         </div>
@@ -547,7 +549,7 @@
             </div>
         </div>
 
-        {{-- Ubah tanggal GUP (dari tombol di baris kepala GUP) --}}
+        {{-- Ubah data GUP: tanggal GUP, tanggal transfer, pajak (dari tombol di baris kepala GUP) --}}
         <div class="modal fade" id="modal-gup-tanggal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
@@ -556,15 +558,28 @@
                         @method('PUT')
                         <div class="modal-header">
                             <div>
-                                <h5 class="modal-title mb-0">Ubah Tanggal GUP</h5>
+                                <h5 class="modal-title mb-0">Ubah Data GUP</h5>
                                 <div class="text-muted small" id="gup-tanggal-label"></div>
                             </div>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                            <label class="form-label" for="input-gup-tanggal">Tanggal GUP</label>
-                            <input type="date" id="input-gup-tanggal" name="tanggal_gup" class="form-control">
-                            <div class="form-text">Tanggal GUP semua SPJ di dalam GUP ini ikut berubah.</div>
+                            <div class="mb-3">
+                                <label class="form-label" for="input-gup-tanggal">Tanggal GUP</label>
+                                <input type="date" id="input-gup-tanggal" name="tanggal_gup" class="form-control">
+                                <div class="form-text">Tanggal GUP semua SPJ di dalam GUP ini ikut berubah. Nomor "GUP ke-" mengikuti bulan tanggal ini.</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="input-gup-tanggal-transfer">Tanggal Transfer</label>
+                                <input type="date" id="input-gup-tanggal-transfer" name="tanggal_transfer" class="form-control">
+                            </div>
+                            <div>
+                                <label class="form-label" for="input-gup-pajak">Pajak (Rp)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="text" inputmode="numeric" id="input-gup-pajak" name="pajak" class="form-control" placeholder="0" autocomplete="off">
+                                </div>
+                            </div>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Batal</button>
@@ -772,7 +787,11 @@
             const tanpaGup = !info.id;
             const sub = tanpaGup
                 ? 'SPJ yang belum dikelompokkan ke GUP mana pun'
-                : (info.tanggal_teks ? 'Tanggal GUP: ' + esc(info.tanggal_teks) : '<span class="text-warning">Tanggal GUP belum diisi</span>');
+                : [
+                    info.tanggal_teks ? 'Tanggal GUP: ' + esc(info.tanggal_teks) : '<span class="text-warning">Tanggal GUP belum diisi</span>',
+                    info.tanggal_transfer_teks ? 'Transfer: ' + esc(info.tanggal_transfer_teks) : null,
+                    info.pajak !== null && info.pajak !== undefined ? 'Pajak: ' + fmtRupiah(info.pajak) : null,
+                ].filter(Boolean).join(' &middot; ');
             const cek = BISA_ISI
                 ? '<input type="checkbox" class="form-check-input cek-grup-spj" data-grup="' + esc(kunci) + '" title="Pilih semua SPJ di kelompok ini">'
                 : '';
@@ -781,7 +800,7 @@
                 ? '<div class="aksi-gup d-flex gap-1">' + tombolTambah + '</div>'
                 : '<div class="aksi-gup d-flex gap-1">'
                     + tombolTambah
-                    + '<button type="button" class="btn btn-sm btn-text-primary btn-ubah-gup" data-id="' + info.id + '" data-tanggal="' + esc(info.tanggal || '') + '" data-label="' + esc(info.label) + '" title="Ubah tanggal GUP"><i class="ti ti-calendar-event"></i></button>'
+                    + '<button type="button" class="btn btn-sm btn-text-primary btn-ubah-gup" data-kunci="' + esc(kunci) + '" title="Ubah tanggal GUP, tanggal transfer & pajak"><i class="ti ti-edit"></i></button>'
                     + '<button type="button" class="btn btn-sm btn-text-danger btn-hapus-gup" data-id="' + info.id + '" data-label="' + esc(info.label) + '" title="Hapus GUP"><i class="ti ti-trash"></i></button>'
                     + '</div>';
             const isi = '<div class="gup-kepala-isi">'
@@ -989,9 +1008,13 @@
                 });
 
                 $(document).on('click', '.btn-ubah-gup', function () {
-                    formTanggal.action = URL_GUP_UBAH.replace('__ID__', this.dataset.id);
-                    document.getElementById('gup-tanggal-label').textContent = this.dataset.label;
-                    document.getElementById('input-gup-tanggal').value = this.dataset.tanggal || '';
+                    const info = INFO_GUP[this.dataset.kunci] || {};
+                    formTanggal.action = URL_GUP_UBAH.replace('__ID__', info.id);
+                    document.getElementById('gup-tanggal-label').textContent = info.label || '';
+                    document.getElementById('input-gup-tanggal').value = info.tanggal || '';
+                    document.getElementById('input-gup-tanggal-transfer').value = info.tanggal_transfer || '';
+                    document.getElementById('input-gup-pajak').value = info.pajak !== null && info.pajak !== undefined
+                        ? Math.round(info.pajak).toLocaleString('id-ID') : '';
                     bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-gup-tanggal')).show();
                 });
                 $(document).on('click', '.btn-hapus-gup', function () {

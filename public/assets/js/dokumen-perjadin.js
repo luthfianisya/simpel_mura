@@ -833,13 +833,17 @@
                 <p>Demikian Laporan Perjalanan Dinas ini dibuat sebagai bahan Laporan.</p>
                 <table class="dokumen-table mt-3">
                     <tr>
+                        <td width="50%"></td>
+                        <td class="text-center">Puruk Cahu, ${fmtTanggalPanjang(data.tanggal_laporan || tambahHariKerja(data.tanggal_selesai, 1))}<br>&nbsp;</td>
+                    </tr>
+                    <tr>
                         <td width="50%" class="text-center">
                             Mengetahui :<br>Kepala BPS Kabupaten Murung Raya,<br><br><br><br>
                             <span class="fw-bold text-decoration-underline">${esc(penandatangan.nama) || '(...........................)'}</span><br>
                             NIP. ${esc(fmtNip(penandatangan.nip))}
                         </td>
                         <td class="text-center">
-                            Puruk Cahu, ${fmtTanggalPanjang(tambahHariKerja(data.tanggal_selesai, 1))}<br>Yang Melakukan Perjalanan Dinas,<br><br><br><br>
+                            <br>Yang Melakukan Perjalanan Dinas,<br><br><br><br>
                             <span class="fw-bold text-decoration-underline">${esc(pelaksana.nama) || '(...........................)'}</span><br>
                             NIP. ${esc(fmtNip(pelaksana.nip))}
                         </td>
@@ -1427,6 +1431,7 @@
         fmtNip: fmtNip,
         fmtTanggalPanjang: fmtTanggalPanjang,
         fmtRentangTanggal: fmtRentangTanggal,
+        tambahHariKerja: tambahHariKerja,
         hitungLamaHari: hitungLamaHari,
         fmtRupiah: fmtRupiah,
         terbilang: terbilang,

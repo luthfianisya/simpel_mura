@@ -34,7 +34,8 @@ class MonitoringSpjController extends Controller
         $daftarRincian = MonitoringSpj::rincianNonPerjadin()->latest()->get();
 
         $daftarGup = Gup::denganNomor()
-            ->sortBy(fn (Gup $gup) => [-$gup->tahun, -$gup->nomor])
+            // Terbaru di atas: tahun, lalu bulan, lalu GUP ke-n dalam bulan itu.
+            ->sortBy(fn (Gup $gup) => [-$gup->tahun, -$gup->bulan, -$gup->nomor])
             ->values();
 
         $kelompokGup = ['0000' => [
@@ -49,6 +50,9 @@ class MonitoringSpjController extends Controller
                 'label' => $gup->label,
                 'tanggal' => optional($gup->tanggal_gup)->format('Y-m-d'),
                 'tanggal_teks' => $gup->tanggal_gup ? $gup->tanggal_gup->locale('id')->translatedFormat('d F Y') : null,
+                'tanggal_transfer' => optional($gup->tanggal_transfer)->format('Y-m-d'),
+                'tanggal_transfer_teks' => $gup->tanggal_transfer ? $gup->tanggal_transfer->locale('id')->translatedFormat('d F Y') : null,
+                'pajak' => $gup->pajak !== null ? (float) $gup->pajak : null,
                 'jumlah' => 0,
                 'total' => 0,
             ];
