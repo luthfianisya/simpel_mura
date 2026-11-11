@@ -682,7 +682,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label" for="input-tanggal_laporan">Tanggal Laporan</label>
-                                            <input type="text" id="input-tanggal_laporan" name="tanggal_laporan" class="form-control" autocomplete="off" value="{{ old('tanggal_laporan') }}" placeholder="Otomatis">
+                                            <input type="text" id="input-tanggal_laporan" name="tanggal_laporan" class="form-control" autocomplete="off" value="{{ old('tanggal_laporan') }}" placeholder="dd-mm-yyyy">
                                         </div>
                                         <div class="col-md-12 mt-1 d-none" id="warning-tanggal_laporan">
                                             <div class="form-text text-warning">
