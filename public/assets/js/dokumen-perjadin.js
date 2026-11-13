@@ -312,6 +312,10 @@
         const pelaksana = data.pelaksana || pegawaiKosong();
         const ppk = data.ppk || pegawaiKosong();
         const lama = hitungLamaHari(data.tanggal_mulai, data.tanggal_selesai);
+        // Font dipasang langsung di tiap sel tabel: Word tidak meneruskan font dari div
+        // pembungkus ke dalam sel tabel saat membuka hasil export .doc.
+        const fontSpd = "font-family:'Bookman Old Style', serif;";
+        const gayaSel = fontSpd + ' font-size:11pt;';
         return `
             <div style="font-family:'Bookman Old Style', serif; font-size:11pt;">
             <!-- Kop pakai <table>, bukan flexbox: dompdf (export PDF di server) tidak mendukung
@@ -330,33 +334,27 @@
                     </td>
                 </tr>
             </table>
-            <table class="dokumen-table dokumen-rincian mt-3">
-                <tr><td colspan="3" class="text-center" style="font-size:18pt; font-weight:normal;">SURAT PERJALANAN DINAS</td></tr>
-                <tr><td width="5%">1</td><td width="40%">Pejabat Pembuat Komitmen</td><td>${esc(ppk.nama) || '...'}</td></tr>
-                    <tr><td>2</td><td>Nama/NIP Pegawai yang melaksanakan perjalanan dinas</td><td>${esc(pelaksana.nama) || '...'} / <br>NIP. ${esc(fmtNip(pelaksana.nip))}</td></tr>
-                    <tr><td rowspan="3">3</td><td>a. Pangkat/Golongan</td><td>${esc(pelaksana.pangkat) || '-'}${pelaksana.golongan ? ' / ' + esc(pelaksana.golongan) : ''}</td></tr>
-                    <tr><td>b. Jabatan</td><td>${esc(pelaksana.jabatan) || '-'}</td></tr>
-                    <tr><td>c. Tingkat Biaya Perjalanan Dinas</td><td>${esc(data.tingkat_biaya) || '-'}</td></tr>
-                    <tr><td>4</td><td>Maksud Perjalanan Dinas</td><td>${esc(data.perihal) || '...'}</td></tr>
-                    <tr><td>5</td><td>Alat angkutan yang digunakan</td><td>${esc(data.angkutan) || '...'}</td></tr>
-                    <tr><td rowspan="2">6</td><td>a. Tempat Berangkat</td><td>${esc(wilayahAsal(data)) || '...'}</td></tr>
-                    <tr><td>b. Tempat Tujuan</td><td>${esc(wilayahTujuan(data)) || '...'}</td></tr>
-                    <tr><td rowspan="3">7</td><td>a. Lamanya Perjalanan Dinas</td><td>${terbilangHari(lama)}</td></tr>
-                    <tr><td>b. Tanggal Berangkat</td><td>${fmtTanggalPanjang(data.tanggal_mulai)}</td></tr>
-                    <tr><td>c. Tanggal harus kembali</td><td>${fmtTanggalPanjang(data.tanggal_selesai)}</td></tr>
-                    <tr><td>8</td><td colspan="2">
-                        Pengikut :
-                        <table class="dokumen-table dokumen-rincian mt-1" style="font-size:0.75rem;">
-                            <thead><tr><th>Nama</th><th>Tanggal Lahir</th><th>Keterangan</th></tr></thead>
-                            <tbody>
-                            <tr><td>1. -</td><td>-</td><td>-</td></tr>
-                            <tr><td>2. -</td><td>-</td><td>-</td></tr>
-                            </tbody>
-                        </table>
-                    </td></tr>
-                    <tr><td rowspan="2">9</td><td>a. Instansi</td><td>Badan Pusat Statistik Kabupaten Murung Raya</td></tr>
-                    <tr><td>b. Program/Kegiatan/Output/(MAK)</td><td>${esc(data.pembebanan) || '...'}</td></tr>
-                    <tr><td>10</td><td>Keterangan Lain-Lain</td><td>Surat Tugas Nomor ${esc(data.no_surat_tugas) || '...'}<br>tanggal ${fmtTanggalPanjang(data.tanggal_surat_tugas)}</td></tr>
+            <table class="dokumen-table dokumen-rincian mt-3" style="${gayaSel}">
+                <colgroup><col width="5%"><col width="40%"><col width="16%"><col width="39%"></colgroup>
+                <tr><td colspan="4" class="text-center" style="${fontSpd} font-size:18pt; font-weight:normal;">SURAT PERJALANAN DINAS</td></tr>
+                <tr><td style="${gayaSel}">1</td><td style="${gayaSel}">Pejabat Pembuat Komitmen</td><td style="${gayaSel}" colspan="2">${esc(ppk.nama) || '...'}</td></tr>
+                    <tr><td style="${gayaSel}">2</td><td style="${gayaSel}">Nama/NIP Pegawai yang melaksanakan perjalanan dinas</td><td style="${gayaSel}" colspan="2">${esc(pelaksana.nama) || '...'} / <br>NIP. ${esc(fmtNip(pelaksana.nip))}</td></tr>
+                    <tr><td style="${gayaSel}" rowspan="3">3</td><td style="${gayaSel}">a. Pangkat/Golongan</td><td style="${gayaSel}" colspan="2">${esc(pelaksana.pangkat) || '-'}${pelaksana.golongan ? ' / ' + esc(pelaksana.golongan) : ''}</td></tr>
+                    <tr><td style="${gayaSel}">b. Jabatan</td><td style="${gayaSel}" colspan="2">${esc(pelaksana.jabatan) || '-'}</td></tr>
+                    <tr><td style="${gayaSel}">c. Tingkat Biaya Perjalanan Dinas</td><td style="${gayaSel}" colspan="2">${esc(data.tingkat_biaya) || '-'}</td></tr>
+                    <tr><td style="${gayaSel}">4</td><td style="${gayaSel}">Maksud Perjalanan Dinas</td><td style="${gayaSel}" colspan="2">${esc(data.perihal) || '...'}</td></tr>
+                    <tr><td style="${gayaSel}">5</td><td style="${gayaSel}">Alat angkutan yang digunakan</td><td style="${gayaSel}" colspan="2">${esc(data.angkutan) || '...'}</td></tr>
+                    <tr><td style="${gayaSel}" rowspan="2">6</td><td style="${gayaSel}">a. Tempat Berangkat</td><td style="${gayaSel}" colspan="2">${esc(wilayahAsal(data)) || '...'}</td></tr>
+                    <tr><td style="${gayaSel}">b. Tempat Tujuan</td><td style="${gayaSel}" colspan="2">${esc(wilayahTujuan(data)) || '...'}</td></tr>
+                    <tr><td style="${gayaSel}" rowspan="3">7</td><td style="${gayaSel}">a. Lamanya Perjalanan Dinas</td><td style="${gayaSel}" colspan="2">${terbilangHari(lama)}</td></tr>
+                    <tr><td style="${gayaSel}">b. Tanggal Berangkat</td><td style="${gayaSel}" colspan="2">${fmtTanggalPanjang(data.tanggal_mulai)}</td></tr>
+                    <tr><td style="${gayaSel}">c. Tanggal harus kembali</td><td style="${gayaSel}" colspan="2">${fmtTanggalPanjang(data.tanggal_selesai)}</td></tr>
+                    <tr><td style="${gayaSel}" rowspan="2">8</td><td style="${gayaSel}">Pengikut : Nama</td><td style="${gayaSel}" class="text-center">Tanggal Lahir</td><td style="${gayaSel}" class="text-center">Keterangan</td></tr>
+                    <tr><td style="${gayaSel}">1. -<br>2. -</td><td style="${gayaSel}">-<br>-</td><td style="${gayaSel}">-<br>-</td></tr>
+                    <tr><td style="${gayaSel}" rowspan="3">9</td><td style="${gayaSel}">Pembebanan anggaran :</td><td style="${gayaSel}" colspan="2"></td></tr>
+                    <tr><td style="${gayaSel}">a. Instansi</td><td style="${gayaSel}" colspan="2">Badan Pusat Statistik Kabupaten Murung Raya</td></tr>
+                    <tr><td style="${gayaSel}">b. Program/Kegiatan/Output/(MAK)</td><td style="${gayaSel}" colspan="2">${esc(data.pembebanan) || '...'}</td></tr>
+                    <tr><td style="${gayaSel}">10</td><td style="${gayaSel}">Keterangan Lain-Lain</td><td style="${gayaSel}" colspan="2">Surat Tugas Nomor ${esc(data.no_surat_tugas) || '...'}<br>tanggal ${fmtTanggalPanjang(data.tanggal_surat_tugas)}</td></tr>
             </table>
             <div class="ttd-block">
                 <div style="text-align:left;">
