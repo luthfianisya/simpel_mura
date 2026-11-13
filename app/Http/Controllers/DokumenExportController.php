@@ -28,10 +28,26 @@ class DokumenExportController extends Controller
         ]);
 
         try {
-            $pdf = Pdf::loadHTML($this->inlineLocalImages($validated['html']))
+            [$fontFace, $folderFont] = $this->fontFaceBookman();
+            $html = $this->inlineLocalImages($validated['html']);
+            if ($fontFace !== '') {
+                $gaya = '<style>' . $fontFace . '</style>';
+                $html = preg_match('/<head\b[^>]*>/i', $html)
+                    ? preg_replace('/<head\b[^>]*>/i', '$0' . $gaya, $html, 1)
+                    : $gaya . $html;
+            }
+
+            // Cache metrik font dompdf (lihat config/dompdf.php font_cache) — kalau foldernya
+            // belum ada, font custom gagal dimuat diam-diam dan jatuh ke Times.
+            if (! is_dir(storage_path('fonts'))) {
+                @mkdir(storage_path('fonts'), 0775, true);
+            }
+
+            $pdf = Pdf::loadHTML($html)
                 ->setOptions([
                     'isHtml5ParserEnabled' => true,
                     'isRemoteEnabled' => false,
+                    'chroot' => array_values(array_filter([realpath(base_path()), $folderFont])),
                     'defaultFont' => 'DejaVu Sans',
                     'dpi' => 96,
                     // dompdf defaultnya media type "screen" — tanpa ini, semua aturan
@@ -53,6 +69,38 @@ class DokumenExportController extends Controller
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
+    }
+
+    // dompdf hanya kenal font bawaannya, jadi "Bookman Old Style" (dipakai SPD, Surat
+    // Tugas) harus didaftarkan lewat @font-face ke file TTF-nya. Dicari di resources/fonts
+    // dulu (untuk server tanpa font ini, mis. hosting Linux), lalu di folder font Windows.
+    // Kalau tidak ketemu, dokumen tetap dibuat dengan font serif bawaan.
+    private function fontFaceBookman(): array
+    {
+        $varian = [
+            ['BOOKOS.TTF', 'normal', 'normal'],
+            ['BOOKOSB.TTF', 'normal', 'bold'],
+            ['BOOKOSI.TTF', 'italic', 'normal'],
+            ['BOOKOSBI.TTF', 'italic', 'bold'],
+        ];
+
+        foreach ([resource_path('fonts'), 'C:/Windows/Fonts'] as $folder) {
+            if (! is_file($folder . '/BOOKOS.TTF')) {
+                continue;
+            }
+            $folder = str_replace('\\', '/', realpath($folder));
+            $css = '';
+            foreach ($varian as [$file, $style, $weight]) {
+                if (is_file($folder . '/' . $file)) {
+                    $css .= "@font-face{font-family:'Bookman Old Style';font-style:{$style};font-weight:{$weight};"
+                        . "src:url('{$folder}/{$file}') format('truetype');}";
+                }
+            }
+
+            return [$css, $folder];
+        }
+
+        return ['', null];
     }
 
     // Ganti <img src="{...}/storage/{path}"> (foto Dokumentasi) ATAU
