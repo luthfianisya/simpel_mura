@@ -202,6 +202,28 @@
         return isNaN(hari) ? null : hari;
     }
 
+    // Total per komponen = rate x jumlah hari/malam. Jumlah hari kosong -> ikut lama
+    // perjalanan (penginapan: lama - 1 malam); diisi 0 -> totalnya 0. Dipakai bareng
+    // oleh Rincian Biaya & Kuitansi supaya angkanya selalu sama.
+    function hitungKomponenRincian(data) {
+        const lama = hitungLamaHari(data.tanggal_mulai, data.tanggal_selesai);
+        const malam = Math.max(lama - 1, 0);
+        const hariUangHarian = hariRincian(data, 'uang_harian') ?? lama;
+        const hariTransport = hariRincian(data, 'transport') ?? lama;
+        const malamPenginapan = hariRincian(data, 'penginapan') ?? malam;
+        const rateHarian = rateRincian(data, 'uang_harian');
+        const rateTransport = rateRincian(data, 'transport');
+        const rateMalam = rateRincian(data, 'penginapan');
+        return {
+            lama: lama, malam: malam,
+            hariUangHarian: hariUangHarian, hariTransport: hariTransport, malamPenginapan: malamPenginapan,
+            rateHarian: rateHarian, rateTransport: rateTransport, rateMalam: rateMalam,
+            uangHarian: rateHarian * hariUangHarian,
+            transport: rateTransport * hariTransport,
+            penginapan: rateMalam * malamPenginapan,
+        };
+    }
+
     function jumlahPengeluaran(data) {
         return (data.pengeluaran || []).reduce(function (sum, p) { return sum + (parseFloat(p.nominal) || 0); }, 0);
     }
@@ -355,25 +377,13 @@
         const pelaksana = data.pelaksana || pegawaiKosong();
         const ppk = data.ppk || pegawaiKosong();
         const bendahara = data.bendahara || pegawaiKosong();
-        const lama = hitungLamaHari(data.tanggal_mulai, data.tanggal_selesai);
-        const malam = Math.max(lama - 1, 0);
-
-        // Jumlah hari/malam per komponen bisa beda-beda dari lama perjalanan dinas total
-        // (mis. penginapan cuma 3 malam meski perjalanan 5 hari) — pakai yang diisi manual
-        // kalau ada, baru fallback ke hitungan otomatis dari tanggal_mulai/tanggal_selesai.
-        const hariUangHarian = hariRincian(data, 'uang_harian') ?? lama;
-        const hariTransport = hariRincian(data, 'transport') ?? lama;
-        const malamPenginapan = hariRincian(data, 'penginapan') ?? malam;
-
-        // Nominal yang diisi user = rate per hari/malam; totalnya dihitung di sini
-        // (rate x jumlah hari/malam), bukan diketik langsung sebagai angka jadi.
-        const rateHarian = rateRincian(data, 'uang_harian');
-        const rateTransport = rateRincian(data, 'transport');
-        const rateMalam = rateRincian(data, 'penginapan');
-
-        const uangHarian = rateHarian * hariUangHarian;
-        const transport = rateTransport * hariTransport;
-        const penginapan = rateMalam * malamPenginapan;
+        // Nominal yang diisi user = rate per hari/malam; totalnya rate x jumlah hari/malam
+        // (lihat hitungKomponenRincian, dipakai juga oleh Kuitansi).
+        const k = hitungKomponenRincian(data);
+        const lama = k.lama, malam = k.malam;
+        const hariUangHarian = k.hariUangHarian, hariTransport = k.hariTransport, malamPenginapan = k.malamPenginapan;
+        const rateHarian = k.rateHarian, rateTransport = k.rateTransport, rateMalam = k.rateMalam;
+        const uangHarian = k.uangHarian, transport = k.transport, penginapan = k.penginapan;
         const pengeluaranTotal = jumlahPengeluaran(data);
 
         const total = uangHarian + transport + penginapan + pengeluaranTotal;
@@ -536,7 +546,8 @@
         const pelaksana = data.pelaksana || pegawaiKosong();
         const ppk = data.ppk || pegawaiKosong();
         const bendahara = data.bendahara || pegawaiKosong();
-        const total = (data.rincian || []).reduce(function (sum, r) { return sum + (parseFloat(r.nominal) || 0); }, 0) + jumlahPengeluaran(data);
+        const k = hitungKomponenRincian(data);
+        const total = k.uangHarian + k.transport + k.penginapan + jumlahPengeluaran(data);
         const tahun = (data.tanggal_mulai || '').slice(0, 4) || '.....';
         return `
             <div style="font-family:Arial, sans-serif;">

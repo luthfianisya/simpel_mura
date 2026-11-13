@@ -23,7 +23,7 @@ function buatPerjadinSelesai(PegawaiMitra $pelaksana, PegawaiMitra $ppk, Pegawai
         'id_bendahara' => $bendahara->id_pegawai_mitra,
         'status_draft' => 'selesai',
     ]);
-    RincianBiaya::create(['id_perjalanan_dinas' => $pd->id_perjalanan_dinas, 'jenis_komponen' => 'uang_harian', 'nominal' => 80000]);
+    RincianBiaya::create(['id_perjalanan_dinas' => $pd->id_perjalanan_dinas, 'jenis_komponen' => 'uang_harian', 'jumlah_hari' => 1, 'nominal' => 80000]);
     Kuitansi::create(['id_perjalanan_dinas' => $pd->id_perjalanan_dinas, 'tanggal_kuitansi' => '2026-01-08']);
 
     return $pd;

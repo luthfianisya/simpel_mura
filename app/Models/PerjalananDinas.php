@@ -119,10 +119,25 @@ class PerjalananDinas extends Model
     /**
      * Total yang dibayarkan ke pelaksana — sama dengan "Jumlah Uang" di kuitansi
      * (rincian biaya + pengeluaran riil). Relasinya sebaiknya sudah di-eager load.
+     *
+     * Nominal rincian biaya = rate per hari/malam, jadi totalnya rate x jumlah hari/malam.
+     * Jumlah hari kosong -> ikut lama perjalanan (penginapan: lama - 1 malam); 0 -> total 0.
+     * Harus sama dengan hitungKomponenRincian() di public/assets/js/dokumen-perjadin.js.
      */
     public function getTotalBiayaAttribute(): float
     {
-        return (float) $this->rincianBiaya->sum('nominal') + (float) $this->pengeluaranRiil->sum('nominal');
+        $lama = ($this->tanggal_mulai && $this->tanggal_selesai)
+            ? max(1, (int) $this->tanggal_mulai->diffInDays($this->tanggal_selesai) + 1)
+            : 0;
+        $malam = max($lama - 1, 0);
+
+        $totalRincian = $this->rincianBiaya->sum(function ($r) use ($lama, $malam) {
+            $hari = $r->jumlah_hari ?? ($r->jenis_komponen === 'penginapan' ? $malam : $lama);
+
+            return (float) $r->nominal * (int) $hari;
+        });
+
+        return (float) $totalRincian + (float) $this->pengeluaranRiil->sum('nominal');
     }
 
     /**

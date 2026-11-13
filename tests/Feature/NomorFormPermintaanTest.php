@@ -49,7 +49,7 @@ test('nomor form permintaan tampil di rekap, monitoring spj, dan rincian monitor
         'no_form_permintaan' => 'FP-007/2026',
         'status_draft' => 'selesai',
     ]);
-    RincianBiaya::create(['id_perjalanan_dinas' => $pd->id_perjalanan_dinas, 'jenis_komponen' => 'uang_harian', 'nominal' => 100000]);
+    RincianBiaya::create(['id_perjalanan_dinas' => $pd->id_perjalanan_dinas, 'jenis_komponen' => 'uang_harian', 'jumlah_hari' => 1, 'nominal' => 100000]);
     $gup = Gup::create(['tanggal_gup' => '2026-03-11']);
     MonitoringSpj::create(['id_perjalanan_dinas' => $pd->id_perjalanan_dinas, 'id_gup' => $gup->id_gup, 'jenis_pembayaran' => 'GUP', 'tanggal_gup' => '2026-03-11']);
 
