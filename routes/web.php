@@ -31,6 +31,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/perjalanan-dinas/saya', [PerjalananDinasController::class, 'mine'])->name('perjalanan-dinas.saya');
     Route::get('/perjalanan-dinas/create', [PerjalananDinasController::class, 'create'])->name('perjalanan-dinas.create');
     Route::get('/perjalanan-dinas/nomor-spd-berikutnya', [PerjalananDinasController::class, 'nomorSpdBerikutnya'])->name('perjalanan-dinas.nomor-spd-berikutnya');
+    Route::get('/perjalanan-dinas/cek-nomor-spd', [PerjalananDinasController::class, 'cekNomorSpd'])->name('perjalanan-dinas.cek-nomor-spd');
     Route::post('/perjalanan-dinas/jenis-kegiatan', [PerjalananDinasController::class, 'tambahJenisKegiatan'])->name('perjalanan-dinas.jenis-kegiatan.store');
     Route::get('/perjalanan-dinas/import/template', [PerjalananDinasController::class, 'importTemplate'])->name('perjalanan-dinas.import-template');
     Route::post('/perjalanan-dinas/import', [PerjalananDinasController::class, 'import'])->name('perjalanan-dinas.import');

@@ -605,10 +605,15 @@
                                             <div class="col-md-6">
                                                 <label class="form-label">No. SPD<span class="required-mark">*</span></label>
                                                 <div class="input-group">
-                                                    <input type="text" id="input-no_spd" name="no_spd" class="form-control" value="{{ old('no_spd') }}" readonly placeholder="Klik Ambil Nomor" required>
+                                                    <input type="text" id="input-no_spd" name="no_spd" class="form-control" value="{{ old('no_spd') }}" placeholder="Ketik nomor atau klik Ambil Nomor" autocomplete="off" required>
                                                     <button type="button" id="btn-ambil-nomor-spd" class="btn btn-outline-primary">Ambil Nomor</button>
                                                 </div>
+                                                <input type="hidden" id="input-no_spd_sumber" name="no_spd_sumber" value="{{ old('no_spd_sumber') }}">
                                                 <div class="field-error" id="err-input-no_spd">Nomor SPD wajib diisi.</div>
+                                                <div class="field-error" id="err-no_spd-dipakai"></div>
+                                                @error('no_spd')
+                                                    <div class="field-error show">{{ $message }}</div>
+                                                @enderror
                                                 {{-- <div class="form-text">Nomor dikunci saat dokumen disimpan. Jika nomor ini keburu dipakai dokumen lain, otomatis diganti nomor berikutnya.</div> --}}
                                             </div>
                                             <div class="col-md-6">
@@ -1209,7 +1214,14 @@
                         .concat(jenisPerjadin === 'biasa' ? [] : ['input-desa_asal', 'input-desa_tujuan']),
                     extraOk: function () { return confirmedOk('input-perihal') && confirmedOk('input-pembebanan'); },
                 },
-                'step-spd': { fields: butuhSpd ? ['input-no_spd', 'input-tanggal_spd', 'input-angkutan'] : [] },
+                'step-spd': {
+                    fields: butuhSpd ? ['input-no_spd', 'input-tanggal_spd', 'input-angkutan'] : [],
+                    // Nomor SPD manual yang sudah dipakai dokumen lain -> step belum beres.
+                    extraOk: function () {
+                        const err = document.getElementById('err-no_spd-dipakai');
+                        return !(err && err.classList.contains('show'));
+                    },
+                },
                 'step-rincian': { fields: [], extraOk: rincianOk },
                 'step-pengeluaran': { fields: [], extraOk: pengeluaranOk },
                 // Kuitansi tidak punya field sendiri (Tanggal Kuitansi diisi di step Data
@@ -1547,16 +1559,52 @@
             const tanggalSpdInput = document.getElementById('input-tanggal_spd');
             const btnAmbilNomorSpd = document.getElementById('btn-ambil-nomor-spd');
 
-            // Dokumen yang sudah punya nomor SPD tidak bisa ambil nomor lagi — nomornya
-            // tetap milik dokumen ini (lihat tentukanNomorSpd di controller).
-            function kunciTombolAmbilNomor() {
-                if (btnAmbilNomorSpd && noSpdInput) {
-                    btnAmbilNomorSpd.disabled = noSpdInput.value.trim() !== '';
-                }
+            // Nomor SPD bisa diambil otomatis (tombol "Ambil Nomor") atau diketik sendiri.
+            // no_spd_sumber memberi tahu server asalnya: nomor manual dipakai apa adanya dan
+            // ditolak kalau sudah dipakai dokumen lain (lihat tentukanNomorSpd di controller).
+            const noSpdSumberInput = document.getElementById('input-no_spd_sumber');
+            const errNoSpdDipakai = document.getElementById('err-no_spd-dipakai');
+            const noSpdTersimpan = @json($perjalananDinas?->no_spd);
+            const idPerjalananDinasIni = @json($mode === 'edit' ? $perjalananDinas?->id_perjalanan_dinas : null);
+            let timerCekNoSpd = null;
+
+            function tampilkanNoSpdDipakai(pesan) {
+                if (!errNoSpdDipakai) return;
+                errNoSpdDipakai.textContent = pesan || '';
+                errNoSpdDipakai.classList.toggle('show', !!pesan);
+            }
+
+            function cekNoSpdManual() {
+                const nomor = noSpdInput.value.trim();
+                if (!nomor || nomor === noSpdTersimpan) { tampilkanNoSpdDipakai(''); updateStepperStatus(); return; }
+                const url = '{{ route('perjalanan-dinas.cek-nomor-spd') }}?no_spd=' + encodeURIComponent(nomor)
+                    + (idPerjalananDinasIni ? '&kecuali=' + idPerjalananDinasIni : '');
+                fetch(url, { headers: { 'Accept': 'application/json' } })
+                    .then(function (res) { return res.json(); })
+                    .then(function (data) {
+                        if (noSpdInput.value.trim() !== nomor) return; // sudah diketik ulang
+                        tampilkanNoSpdDipakai(data.dipakai
+                            ? 'Nomor SPD ' + nomor + ' sudah dipakai dokumen lain. Gunakan nomor lain atau klik Ambil Nomor.'
+                            : '');
+                        updateStepperStatus();
+                    })
+                    .catch(function () {});
+            }
+
+            if (noSpdInput && noSpdSumberInput) {
+                noSpdInput.addEventListener('input', function (e) {
+                    if (!e.isTrusted) return; // perubahan dari tombol Ambil Nomor
+                    noSpdSumberInput.value = 'manual';
+                    clearTimeout(timerCekNoSpd);
+                    timerCekNoSpd = setTimeout(cekNoSpdManual, 400);
+                });
+                if (noSpdSumberInput.value === 'manual') cekNoSpdManual();
             }
 
             if (btnAmbilNomorSpd) {
-                kunciTombolAmbilNomor();
+                // Dokumen yang sudah punya nomor tersimpan tidak bisa ambil nomor otomatis
+                // lagi (nomornya tetap milik dokumen ini); kalau mau ganti, ketik manual.
+                if (noSpdTersimpan) btnAmbilNomorSpd.disabled = true;
                 btnAmbilNomorSpd.addEventListener('click', function () {
                     const tahunSumber = (tanggalSpdInput && tanggalSpdInput.value) || document.getElementById('input-tanggal_mulai')?.value || '';
                     const tahun = tahunSumber.slice(0, 4);
@@ -1567,10 +1615,12 @@
                         .then(function (data) {
                             if (noSpdInput && data.no_spd) {
                                 noSpdInput.value = data.no_spd;
+                                if (noSpdSumberInput) noSpdSumberInput.value = 'otomatis';
+                                tampilkanNoSpdDipakai('');
                                 noSpdInput.dispatchEvent(new Event('input', { bubbles: true }));
                             }
                         })
-                        .finally(kunciTombolAmbilNomor);
+                        .finally(function () { btnAmbilNomorSpd.disabled = !!noSpdTersimpan; });
                 });
             }
 

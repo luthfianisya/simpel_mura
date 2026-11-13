@@ -104,3 +104,66 @@ test('orang kedua yang menyimpan nomor pratinjau yang sama mendapat nomor beriku
     simpanDraftSpd($this, $user, '272/62130/KU.340/2026')
         ->assertSessionHas('warning', fn ($pesan) => str_contains($pesan, '272/62130/KU.340/2026') && str_contains($pesan, '273/62130/KU.340/2026'));
 });
+
+test('nomor spd yang diketik manual dan belum dipakai disimpan apa adanya', function () {
+    $user = userPemohonSpd();
+
+    $this->actingAs($user)->post(route('perjalanan-dinas.store'), [
+        'jenis_perjadin' => 'biasa',
+        'status_draft' => 'draft_sesi1',
+        'tanggal_spd' => '2026-11-02',
+        'no_spd' => '500/62130/KU.340/2026',
+        'no_spd_sumber' => 'manual',
+    ])->assertSessionHasNoErrors();
+
+    expect(PerjalananDinas::first()->no_spd)->toBe('500/62130/KU.340/2026');
+});
+
+test('nomor spd manual yang sudah dipakai dokumen lain ditolak', function () {
+    $user = userPemohonSpd();
+    simpanDraftSpd($this, $user); // dapat 272
+
+    $this->actingAs($user)->post(route('perjalanan-dinas.store'), [
+        'jenis_perjadin' => 'biasa',
+        'status_draft' => 'draft_sesi1',
+        'tanggal_spd' => '2026-11-02',
+        'no_spd' => '272/62130/KU.340/2026',
+        'no_spd_sumber' => 'manual',
+    ])->assertSessionHasErrors('no_spd');
+
+    expect(PerjalananDinas::count())->toBe(1);
+});
+
+test('nomor spd bisa diganti manual saat edit selama belum dipakai', function () {
+    $user = userPemohonSpd();
+    simpanDraftSpd($this, $user); // 272
+    simpanDraftSpd($this, $user); // 273
+    $pd = PerjalananDinas::where('no_spd', '272/62130/KU.340/2026')->first();
+
+    $kirim = fn (string $nomor) => $this->actingAs($user)->put(route('perjalanan-dinas.update', $pd), [
+        'jenis_perjadin' => 'biasa',
+        'status_draft' => 'draft_sesi1',
+        'tanggal_spd' => '2026-11-02',
+        'no_spd' => $nomor,
+        'no_spd_sumber' => 'manual',
+    ]);
+
+    $kirim('273/62130/KU.340/2026')->assertSessionHasErrors('no_spd');
+    expect($pd->fresh()->no_spd)->toBe('272/62130/KU.340/2026');
+
+    $kirim('600/62130/KU.340/2026')->assertSessionHasNoErrors();
+    expect($pd->fresh()->no_spd)->toBe('600/62130/KU.340/2026');
+});
+
+test('cek nomor spd memberi tahu apakah nomor sudah dipakai', function () {
+    $user = userPemohonSpd();
+    simpanDraftSpd($this, $user); // 272
+    $pd = PerjalananDinas::first();
+
+    $this->actingAs($user)->getJson(route('perjalanan-dinas.cek-nomor-spd', ['no_spd' => '272/62130/KU.340/2026']))
+        ->assertJson(['dipakai' => true]);
+    $this->actingAs($user)->getJson(route('perjalanan-dinas.cek-nomor-spd', ['no_spd' => '272/62130/KU.340/2026', 'kecuali' => $pd->id_perjalanan_dinas]))
+        ->assertJson(['dipakai' => false]);
+    $this->actingAs($user)->getJson(route('perjalanan-dinas.cek-nomor-spd', ['no_spd' => '999/62130/KU.340/2026']))
+        ->assertJson(['dipakai' => false]);
+});

@@ -432,13 +432,13 @@
                     <td colspan="3" style="border-left:none; border-top:none; border-bottom:none;"><div style="margin-left:auto; width:60%;">Telah menerima jumlah uang sebesar:<br><span class="fst-italic">${fmtRupiah(total)}</span></div></td>
                 </tr>
                 <tr>
-                    <td colspan="3" class="text-center" style="border-right:none; border-top:none;">
+                    <td colspan="3" class="text-center" style="border-right:none; border-top:none; border-bottom:none;">
                         Lunas pada tanggal:<br><br>
                         Bendahara Pengeluaran/PUMC<br>BPS Kabupaten Murung Raya<br><br><br><br>
                         <span class="fw-bold text-decoration-underline">${esc(bendahara.nama) || '(...........................)'}</span><br>
                         NIP. ${esc(fmtNip(bendahara.nip))}
                     </td>
-                    <td colspan="3" style="border-left:none; border-top:none;">
+                    <td colspan="3" style="border-left:none; border-top:none; border-bottom:none;">
                         <div style="margin-left:auto; width:60%; text-align:center;">
                             <br><br>Yang Menerima,<br><br><br><br><br>
                             <span class="fw-bold text-decoration-underline">${esc(pelaksana.nama) || '(...........................)'}</span><br>
@@ -446,23 +446,23 @@
                         </div>
                     </td>
                 </tr>
-                <tr><td colspan="6" class="text-center fw-bold" style="border-bottom:none;">PERHITUNGAN SPD RAMPUNG</td></tr>
+                <tr><td colspan="6" class="text-center fw-bold" style="border-top:none; border-bottom:none;">PERHITUNGAN SPD RAMPUNG</td></tr>
                 <tr>
-                    <td colspan="3" style="border-right:none; border-top:none;">
+                    <td colspan="3" style="border-right:none; border-top:none; border-bottom:none;">
                         <span style="display:inline-block; width:170px;">Ditetapkan sejumlah</span>:<br>
                         <span style="display:inline-block; width:170px;">Yang telah dibayar semula</span>:<br>
                         <span style="display:inline-block; width:170px;">Sisa kurang / lebih</span>:
                     </td>
-                    <td class="text-end" style="border-left:none; border-right:none; border-top:none;">
+                    <td class="text-end" style="border-left:none; border-right:none; border-top:none; border-bottom:none;">
                         ${fmtRupiah(total)}<br>
                         Rp. 0,-<br>
                         <span style="display:block; border-top:1px solid #000; padding-top:2px;">${fmtRupiah(total)}</span>
                     </td>
-                    <td colspan="2" style="border-left:none; border-top:none;"></td>
+                    <td colspan="2" style="border-left:none; border-top:none; border-bottom:none;"></td>
                 </tr>
                 <tr>
-                    <td colspan="4"></td>
-                    <td colspan="2" class="text-center">
+                    <td colspan="4" style="border-top:none; border-right:none;"></td>
+                    <td colspan="2" class="text-center" style="border-top:none; border-left:none;">
                         Pejabat Pembuat Komitmen<br>BPS Kabupaten Murung Raya<br><br><br><br>
                         <span class="fw-bold text-decoration-underline">${esc(ppk.nama) || '(...........................)'}</span><br>
                         NIP. ${esc(fmtNip(ppk.nip))}
@@ -515,7 +515,7 @@
                         <thead><tr><th width="5%">No</th><th>Uraian</th><th width="20%">Jumlah</th></tr></thead>
                         <tbody>
                         ${bodyRows}
-                        <tr><td colspan="2" class="text-end fw-bold">Jumlah</td><td class="text-end fw-bold">${fmtRupiah(total)}</td></tr>
+                        <tr><td colspan="2" class="text-center fw-bold">Jumlah</td><td class="text-end fw-bold">${fmtRupiah(total)}</td></tr>
                         </tbody>
                     </table>
                 </li>

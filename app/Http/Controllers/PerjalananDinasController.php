@@ -21,6 +21,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -364,6 +365,23 @@ class PerjalananDinasController extends Controller
     }
 
     /**
+     * Cek apakah nomor SPD yang diketik manual sudah dipakai dokumen lain (selain
+     * dokumen yang sedang diedit). Hanya untuk umpan balik di form; penentu akhirnya
+     * tetap tentukanNomorSpd saat disimpan.
+     */
+    public function cekNomorSpd(Request $request)
+    {
+        $validated = $request->validate([
+            'no_spd' => 'required|string|max:255',
+            'kecuali' => 'nullable|integer',
+        ]);
+
+        return response()->json([
+            'dipakai' => PenomoranSpd::sudahDipakai($validated['no_spd'], $validated['kecuali'] ?? null),
+        ]);
+    }
+
+    /**
      * Nomor SPD yang disimpan untuk sebuah perjalanan dinas. Dipanggil di dalam
      * DB::transaction() penyimpanan supaya kunci penomoran (PenomoranSpd::ambil) bertahan
      * sampai nomornya tersimpan.
@@ -397,6 +415,20 @@ class PerjalananDinasController extends Controller
         }
 
         $diminta = trim((string) ($validated['no_spd'] ?? ''));
+
+        // Nomor diketik sendiri: dipakai apa adanya selama belum dipakai dokumen lain.
+        // Dicek di dalam transaksi penyimpanan; ValidationException me-rollback transaksinya.
+        if (!$selaluAmbil && $diminta !== '' && ($validated['no_spd_sumber'] ?? null) === 'manual'
+            && $diminta !== $perjalananDinas?->no_spd) {
+            if (PenomoranSpd::sudahDipakai($diminta, $perjalananDinas?->id_perjalanan_dinas)) {
+                throw ValidationException::withMessages([
+                    'no_spd' => "Nomor SPD {$diminta} sudah dipakai dokumen lain. Gunakan nomor lain atau klik Ambil Nomor.",
+                ]);
+            }
+
+            return $diminta;
+        }
+
         if ($perjalananDinas?->no_spd) {
             return $perjalananDinas->no_spd;
         }
@@ -465,9 +497,11 @@ class PerjalananDinasController extends Controller
             'id_ppk' => 'nullable|exists:pegawai_mitra,id_pegawai_mitra',
             'id_bendahara' => 'nullable|exists:pegawai_mitra,id_pegawai_mitra',
 
-            // Nomor SPD selalu ditetapkan server (tentukanNomorSpd) — kalau kosong saat
-            // "Selesai & Simpan", nomornya diambilkan otomatis.
+            // Nomor SPD ditetapkan server (tentukanNomorSpd): dari "Ambil Nomor" (otomatis) atau
+            // diketik sendiri (manual, ditolak kalau sudah dipakai). Kosong saat "Selesai &
+            // Simpan" -> nomornya diambilkan otomatis.
             'no_spd' => 'nullable|string|max:255',
+            'no_spd_sumber' => 'nullable|in:otomatis,manual',
             'tanggal_spd' => $isDraft ? 'nullable|date' : ($butuhSpd ? 'required|date' : 'nullable|date'),
             'angkutan' => 'nullable|string|max:255',
 
