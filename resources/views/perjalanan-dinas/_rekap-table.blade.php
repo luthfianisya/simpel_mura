@@ -4,6 +4,9 @@
     <link rel="stylesheet" href="{{ asset('assets/vendor/libs/datatables-fixedcolumns-bs5/fixedcolumns.bootstrap5.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/css/dokumen-perjadin.css') }}?v={{ filemtime(public_path('assets/css/dokumen-perjadin.css')) }}" />
     <style>
+        /* Kolom Aksi menempel (sticky) — sel yang dropdown "⋮"-nya terbuka dinaikkan supaya
+           menunya tidak tertutup sel Aksi baris di bawahnya. */
+        #table-rekap-perjadin td:has(.dropdown-menu.show) { z-index: 10 !important; }
         #table-rekap-perjadin_wrapper .dataTables_filter input {
             min-width: 220px;
         }
@@ -30,7 +33,7 @@
         #table-rekap-perjadin .kol-12 { min-width: 150px; }
         #table-rekap-perjadin .kol-13 { min-width: 150px; }
         #table-rekap-perjadin .kol-14 { min-width: 150px; }
-        #table-rekap-perjadin .kol-15 { min-width: 150px; }
+        #table-rekap-perjadin .kol-15 { min-width: 120px; }
 
         #table-rekap-perjadin thead th {
             text-transform: uppercase;
@@ -208,6 +211,8 @@
                                 $bisaUbah = $item->bisaDiubahOleh(auth()->user()->id_pegawai_mitra ?? null);
                                 $bisaBukaKembali = !$bisaUbah && $item->status_draft === 'selesai' && $item->dimilikiOleh(auth()->user()->id_pegawai_mitra ?? null);
                             @endphp
+                            {{-- Selalu 3 tombol: Lihat, 1 aksi utama (Edit kalau bisa diedit, selain itu Copy),
+                                 dan "⋮" berisi aksi sisanya. --}}
                             <div class="d-inline-flex align-items-center gap-1">
                                 {{-- Lihat = modal pratinjau dokumen (sekaligus tempat unduh/cetak). --}}
                                 <button type="button" class="btn btn-icon btn-sm btn-text-primary rounded-pill" title="Lihat" data-bs-toggle="tooltip"
@@ -218,31 +223,53 @@
                                     <a href="{{ route('perjalanan-dinas.edit', $item) }}" class="btn btn-icon btn-sm btn-text-warning rounded-pill" title="Edit" data-bs-toggle="tooltip">
                                         <i class="ti ti-edit ti-sm"></i>
                                     </a>
-                                @elseif ($bisaBukaKembali)
-                                    {{-- Data selesai: "Edit" = buka kembali jadi draft dulu. --}}
-                                    <form action="{{ route('perjalanan-dinas.buka-kembali', $item) }}" method="POST" class="d-inline"
-                                        onsubmit="return confirmSubmit(this, 'Buka kembali perjalanan dinas ini untuk diedit? Status akan kembali jadi draft.', { icon: 'question', confirmButtonColor: '#2563eb' });">
-                                        @csrf
-                                        @method('PATCH')
-                                        <button type="submit" class="btn btn-icon btn-sm btn-text-warning rounded-pill" title="Buka Kembali untuk Diedit" data-bs-toggle="tooltip">
-                                            <i class="ti ti-lock-open ti-sm"></i>
-                                        </button>
-                                    </form>
+                                @else
+                                    <a href="{{ route('perjalanan-dinas.create', ['jenis' => $item->jenis_perjadin, 'from' => $item->id_perjalanan_dinas]) }}"
+                                        class="btn btn-icon btn-sm btn-text-info rounded-pill" title="Copy sebagai Draft" data-bs-toggle="tooltip">
+                                        <i class="ti ti-copy ti-sm"></i>
+                                    </a>
                                 @endif
-                                <a href="{{ route('perjalanan-dinas.create', ['jenis' => $item->jenis_perjadin, 'from' => $item->id_perjalanan_dinas]) }}"
-                                    class="btn btn-icon btn-sm btn-text-info rounded-pill" title="Copy sebagai Draft" data-bs-toggle="tooltip">
-                                    <i class="ti ti-copy ti-sm"></i>
-                                </a>
-                                @if ($bisaUbah)
-                                    <form action="{{ route('perjalanan-dinas.destroy', $item) }}" method="POST" class="d-inline"
-                                        onsubmit="return confirmSubmit(this, 'Hapus draft perjalanan dinas ini? Tindakan ini tidak bisa dibatalkan.');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-icon btn-sm btn-text-danger rounded-pill" title="Hapus" data-bs-toggle="tooltip">
-                                            <i class="ti ti-trash ti-sm"></i>
-                                        </button>
-                                    </form>
-                                @endif
+                                <div class="dropdown d-inline-block">
+                                    <button type="button" class="btn btn-icon btn-sm btn-text-secondary rounded-pill" data-bs-toggle="dropdown"
+                                        data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false" title="Aksi lainnya"
+                                        @unless ($bisaUbah || $bisaBukaKembali) disabled @endunless>
+                                        <i class="ti ti-dots-vertical ti-sm"></i>
+                                    </button>
+                                    @if ($bisaUbah || $bisaBukaKembali)
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            @if ($bisaUbah)
+                                                <li>
+                                                    <a class="dropdown-item" href="{{ route('perjalanan-dinas.create', ['jenis' => $item->jenis_perjadin, 'from' => $item->id_perjalanan_dinas]) }}">
+                                                        <i class="ti ti-copy me-2"></i> Copy sebagai Draft
+                                                    </a>
+                                                </li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <form action="{{ route('perjalanan-dinas.destroy', $item) }}" method="POST"
+                                                        onsubmit="return confirmSubmit(this, 'Hapus draft perjalanan dinas ini? Tindakan ini tidak bisa dibatalkan.');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="dropdown-item text-danger">
+                                                            <i class="ti ti-trash me-2"></i> Hapus
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            @else
+                                                {{-- Data selesai: buka kembali jadi draft dulu supaya bisa diedit. --}}
+                                                <li>
+                                                    <form action="{{ route('perjalanan-dinas.buka-kembali', $item) }}" method="POST"
+                                                        onsubmit="return confirmSubmit(this, 'Buka kembali perjalanan dinas ini untuk diedit? Status akan kembali jadi draft.', { icon: 'question', confirmButtonColor: '#2563eb' });">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit" class="dropdown-item">
+                                                            <i class="ti ti-lock-open me-2"></i> Buka Kembali untuk Diedit
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            @endif
+                                        </ul>
+                                    @endif
+                                </div>
                             </div>
                         </td>
                     </tr>
