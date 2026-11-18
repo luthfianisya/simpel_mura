@@ -362,7 +362,7 @@
                     <tr><td style="${gayaSel}">1. -<br>2. -</td><td style="${gayaSel}">-<br>-</td><td style="${gayaSel}">-<br>-</td></tr>
                     <tr><td style="${gayaSel}" rowspan="3">9</td><td style="${selAtas}">Pembebanan anggaran :</td><td style="${selAtas}" colspan="2"></td></tr>
                     <tr><td style="${selTengah}">a. Instansi</td><td style="${selTengah}" colspan="2">Badan Pusat Statistik Kabupaten Murung Raya</td></tr>
-                    <tr><td style="${selBawah}">b. Program/Kegiatan/Output/(MAK)</td><td style="${selBawah}" colspan="2">${esc(data.pembebanan) || '...'}</td></tr>
+                    <tr><td style="${selBawah}">b. Program/Kegiatan/Output/MAK</td><td style="${selBawah}" colspan="2">${esc(data.pembebanan) || '...'}</td></tr>
                     <tr><td style="${gayaSel}">10</td><td style="${gayaSel}">Keterangan Lain-Lain</td><td style="${gayaSel}" colspan="2">Surat Tugas Nomor ${esc(data.no_surat_tugas) || '...'}<br>tanggal ${fmtTanggalPanjang(data.tanggal_surat_tugas)}</td></tr>
             </table>
             <div class="ttd-block">
@@ -372,6 +372,7 @@
                 </div>
                 <br>
                 <div>Pejabat Pembuat Komitmen,</div>
+                <div>&nbsp;</div>
                 <div class="mt-5 fw-bold text-decoration-underline">${esc(ppk.nama) || '(...........................)'}</div>
                 <div>NIP. ${esc(fmtNip(ppk.nip))}</div>
             </div>
@@ -1448,6 +1449,60 @@
         downloadBlob(blob, title + '.pdf');
     }
 
+    // Popup pilih dokumen yang mau diekspor (checkbox per dokumen + "Pilih semua").
+    // docs = { key: { label, html } }. Surat Tugas tidak ditawarkan (tidak diunduh).
+    // Mengembalikan Promise<array key> — kosong kalau dibatalkan.
+    function pilihDokumenExport(docs) {
+        const keys = Object.keys(docs).filter(function (k) { return k !== 'surat-tugas'; });
+        const daftar = keys.map(function (k) {
+            return '<div class="form-check mb-2">'
+                + '<input class="form-check-input pilih-dokumen-export" type="checkbox" id="pilih-export-' + k + '" value="' + k + '" checked>'
+                + '<label class="form-check-label" for="pilih-export-' + k + '">' + esc(docs[k].label) + '</label>'
+                + '</div>';
+        }).join('');
+
+        return Swal.fire({
+            title: 'Export Dokumen',
+            html: '<div class="text-start px-2">'
+                + '<div class="form-check mb-2 pb-2 border-bottom">'
+                + '<input class="form-check-input" type="checkbox" id="pilih-export-semua" checked>'
+                + '<label class="form-check-label fw-semibold" for="pilih-export-semua">Pilih semua</label>'
+                + '</div>' + daftar
+                + '<div class="small text-muted mt-2">Tiap dokumen diunduh sebagai file PDF terpisah.</div>'
+                + '</div>',
+            showCancelButton: true,
+            confirmButtonText: 'Export',
+            cancelButtonText: 'Batal',
+            reverseButtons: true,
+            focusConfirm: false,
+            didOpen: function (popup) {
+                const semua = popup.querySelector('#pilih-export-semua');
+                const satuan = Array.from(popup.querySelectorAll('.pilih-dokumen-export'));
+                function sinkron() {
+                    const jumlah = satuan.filter(function (c) { return c.checked; }).length;
+                    semua.checked = jumlah === satuan.length;
+                    semua.indeterminate = jumlah > 0 && jumlah < satuan.length;
+                }
+                semua.addEventListener('change', function () {
+                    satuan.forEach(function (c) { c.checked = semua.checked; });
+                    semua.indeterminate = false;
+                });
+                satuan.forEach(function (c) { c.addEventListener('change', sinkron); });
+            },
+            preConfirm: function () {
+                const dipilih = Array.from(Swal.getPopup().querySelectorAll('.pilih-dokumen-export:checked'))
+                    .map(function (c) { return c.value; });
+                if (!dipilih.length) {
+                    Swal.showValidationMessage('Pilih minimal satu dokumen.');
+                    return false;
+                }
+                return dipilih;
+            },
+        }).then(function (hasil) {
+            return hasil.isConfirmed ? hasil.value : [];
+        });
+    }
+
     window.DokumenPerjadin = {
         komponenLabel: komponenLabel,
         kondisiLabel: kondisiLabel,
@@ -1474,5 +1529,6 @@
         exportAsExcel: exportAsExcel,
         exportAsPdf: exportAsPdf,
         exportAsPdfHd: exportAsPdfHd,
+        pilihDokumenExport: pilihDokumenExport,
     };
 })(window);

@@ -337,7 +337,7 @@ class PerjalananDinasController extends Controller
 
     /**
      * Kebalikan dari formatDaftarDenganDan() di wizard.blade.php — memecah string
-     * "Desa A, Desa B, dan Kelurahan C" kembali jadi array per item.
+     * "Desa A, Desa B dan Kelurahan C" kembali jadi array per item.
      */
     private function pisahDaftarDenganDan(?string $str): array
     {

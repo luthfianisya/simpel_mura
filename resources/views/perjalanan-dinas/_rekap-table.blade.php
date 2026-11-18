@@ -4,9 +4,6 @@
     <link rel="stylesheet" href="{{ asset('assets/vendor/libs/datatables-fixedcolumns-bs5/fixedcolumns.bootstrap5.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/css/dokumen-perjadin.css') }}?v={{ filemtime(public_path('assets/css/dokumen-perjadin.css')) }}" />
     <style>
-        /* Kolom Aksi menempel (sticky) — sel yang dropdown "⋮"-nya terbuka dinaikkan supaya
-           menunya tidak tertutup sel Aksi baris di bawahnya. */
-        #table-rekap-perjadin td:has(.dropdown-menu.show) { z-index: 10 !important; }
         #table-rekap-perjadin_wrapper .dataTables_filter input {
             min-width: 220px;
         }
@@ -15,10 +12,25 @@
             margin-bottom: 0.75rem;
         }
 
-        #table-rekap-perjadin td:nth-child(7),
-        #table-rekap-perjadin th:nth-child(7) {
-            min-width: 350px;
-        }
+        /* Lebar minimum tiap kolom menempel ke kolomnya sendiri (kelas kol-{index asli},
+           dipasang lewat columnDefs), bukan ke urutan tampil (nth-child) — jadi saat ada
+           kolom yang disembunyikan lewat "Atur Kolom", kolom lain tetap selebar aslinya. */
+        #table-rekap-perjadin .kol-0 { min-width: 50px; }
+        #table-rekap-perjadin .kol-1 { min-width: 90px; }
+        #table-rekap-perjadin .kol-2 { min-width: 120px; }
+        #table-rekap-perjadin .kol-3 { min-width: 140px; }
+        #table-rekap-perjadin .kol-4 { min-width: 90px; }
+        #table-rekap-perjadin .kol-5 { min-width: 140px; }
+        #table-rekap-perjadin .kol-6 { min-width: 350px; }
+        #table-rekap-perjadin .kol-7 { min-width: 120px; }
+        #table-rekap-perjadin .kol-8 { min-width: 130px; }
+        #table-rekap-perjadin .kol-9 { min-width: 100px; }
+        #table-rekap-perjadin .kol-10 { min-width: 140px; }
+        #table-rekap-perjadin .kol-11 { min-width: 160px; }
+        #table-rekap-perjadin .kol-12 { min-width: 150px; }
+        #table-rekap-perjadin .kol-13 { min-width: 150px; }
+        #table-rekap-perjadin .kol-14 { min-width: 150px; }
+        #table-rekap-perjadin .kol-15 { min-width: 150px; }
 
         #table-rekap-perjadin thead th {
             text-transform: uppercase;
@@ -217,32 +229,20 @@
                                         </button>
                                     </form>
                                 @endif
-                                <div class="dropdown d-inline-block">
-                                    <button type="button" class="btn btn-icon btn-sm btn-text-secondary rounded-pill" data-bs-toggle="dropdown"
-                                        data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false" title="Aksi lainnya">
-                                        <i class="ti ti-dots-vertical ti-sm"></i>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end">
-                                        <li>
-                                            <a class="dropdown-item" href="{{ route('perjalanan-dinas.create', ['jenis' => $item->jenis_perjadin, 'from' => $item->id_perjalanan_dinas]) }}">
-                                                <i class="ti ti-copy me-2"></i> Copy jadi Draft Baru
-                                            </a>
-                                        </li>
-                                        @if ($bisaUbah)
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li>
-                                                <form action="{{ route('perjalanan-dinas.destroy', $item) }}" method="POST"
-                                                    onsubmit="return confirmSubmit(this, 'Hapus draft perjalanan dinas ini? Tindakan ini tidak bisa dibatalkan.');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="dropdown-item text-danger">
-                                                        <i class="ti ti-trash me-2"></i> Hapus
-                                                    </button>
-                                                </form>
-                                            </li>
-                                        @endif
-                                    </ul>
-                                </div>
+                                <a href="{{ route('perjalanan-dinas.create', ['jenis' => $item->jenis_perjadin, 'from' => $item->id_perjalanan_dinas]) }}"
+                                    class="btn btn-icon btn-sm btn-text-info rounded-pill" title="Copy sebagai Draft" data-bs-toggle="tooltip">
+                                    <i class="ti ti-copy ti-sm"></i>
+                                </a>
+                                @if ($bisaUbah)
+                                    <form action="{{ route('perjalanan-dinas.destroy', $item) }}" method="POST" class="d-inline"
+                                        onsubmit="return confirmSubmit(this, 'Hapus draft perjalanan dinas ini? Tindakan ini tidak bisa dibatalkan.');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-icon btn-sm btn-text-danger rounded-pill" title="Hapus" data-bs-toggle="tooltip">
+                                            <i class="ti ti-trash ti-sm"></i>
+                                        </button>
+                                    </form>
+                                @endif
                             </div>
                         </td>
                     </tr>
@@ -264,18 +264,13 @@
             <div class="px-4 py-3 border-bottom">
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                     <div class="d-flex align-items-center flex-wrap gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="btn-preview-semua">
+                            <i class="ti ti-stack-2 me-1"></i> Preview All
+                        </button>
                         <ul class="nav nav-pills mb-0" id="dokumen-tabs" role="tablist"></ul>
-                        <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-sm btn-label-primary" id="btn-export-pdf-satu">
-                                <i class="ti ti-file-type-pdf me-1"></i> Export
-                            </button>
-                            <button type="button" class="btn btn-sm btn-primary" id="btn-export-pdf-semua">
-                                <i class="ti ti-files me-1"></i> Export All
-                            </button>
-                        </div>
                     </div>
-                    <button type="button" class="btn btn-sm btn-outline-primary" id="btn-preview-semua">
-                        <i class="ti ti-stack-2 me-1"></i> Preview All
+                    <button type="button" class="btn btn-primary" id="btn-export-pdf">
+                        <i class="ti ti-file-export me-1"></i> Export
                     </button>
                 </div>
             </div>
@@ -348,7 +343,22 @@
                 order: [[0, 'desc']],
                 columnDefs: [
                     { orderable: false, targets: -1 },
-                    { width: '350px', targets: 6 },
+                    { className: 'kol-0', targets: 0 },
+                    { className: 'kol-1', targets: 1 },
+                    { className: 'kol-2', targets: 2 },
+                    { className: 'kol-3', targets: 3 },
+                    { className: 'kol-4', targets: 4 },
+                    { className: 'kol-5', targets: 5 },
+                    { className: 'kol-6', targets: 6 },
+                    { className: 'kol-7', targets: 7 },
+                    { className: 'kol-8', targets: 8 },
+                    { className: 'kol-9', targets: 9 },
+                    { className: 'kol-10', targets: 10 },
+                    { className: 'kol-11', targets: 11 },
+                    { className: 'kol-12', targets: 12 },
+                    { className: 'kol-13', targets: 13 },
+                    { className: 'kol-14', targets: 14 },
+                    { className: 'kol-15', targets: 15 },
                 ],
                 language: {
                     search: '',
@@ -435,7 +445,6 @@
             const contentEl = document.getElementById('dokumen-tab-content');
             const previewAllEl = document.getElementById('dokumen-preview-all');
             const btnPreviewSemua = document.getElementById('btn-preview-semua');
-            const btnExportPdfSatu = document.getElementById('btn-export-pdf-satu');
             let currentDocs = {};
             let currentActiveKey = null;
             let currentData = null;
@@ -485,7 +494,6 @@
                     DokumenPerjadin.applyPageMinHeights(pane);
                 }
                 currentActiveKey = key;
-                btnExportPdfSatu.disabled = false;
             }
 
             function tampilkanPreviewSemua() {
@@ -498,7 +506,6 @@
                 previewAllEl.classList.remove('d-none');
                 DokumenPerjadin.applyPageMinHeights(previewAllEl);
                 currentActiveKey = null;
-                btnExportPdfSatu.disabled = true;
             }
 
             window.openDokumenModal = function (id) {
@@ -551,7 +558,6 @@
                 });
 
                 currentActiveKey = Object.keys(currentDocs)[0];
-                btnExportPdfSatu.disabled = false;
                 document.getElementById('modal-dokumen-title').textContent = 'Dokumen — ' + (data.no_surat_tugas || data.perihal || '-');
 
                 dokumenModal.show();
@@ -570,23 +576,10 @@
                 }
             });
 
-            const btnExportPdfSemua = document.getElementById('btn-export-pdf-semua');
+            const btnExportPdf = document.getElementById('btn-export-pdf');
             const cssUrlDokumen = '{{ asset("assets/css/dokumen-perjadin.css") }}?v={{ filemtime(public_path("assets/css/dokumen-perjadin.css")) }}';
             const exportPdfUrl = '{{ route("dokumen.export-pdf") }}';
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-            // Kunci kedua tombol Export + kasih spinner selagi PDF-nya digenerate di
-            // server (Chrome headless butuh beberapa detik per dokumen), supaya tidak
-            // diklik dobel dan user tahu prosesnya lagi jalan.
-            function kunciTombolExport(tombolAktif) {
-                [btnExportPdfSatu, btnExportPdfSemua].forEach(function (b) { b.disabled = true; });
-                const labelAsli = tombolAktif.innerHTML;
-                tombolAktif.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengekspor...';
-                return function selesai() {
-                    [btnExportPdfSatu, btnExportPdfSemua].forEach(function (b) { b.disabled = false; });
-                    tombolAktif.innerHTML = labelAsli;
-                };
-            }
 
             async function eksporSatuDokumen(key) {
                 const doc = currentDocs[key];
@@ -597,35 +590,24 @@
                 );
             }
 
-            // "Export" — PDF dokumen di tab yang lagi aktif saja (nonaktif saat mode
-            // Preview All, karena tidak ada 1 dokumen tunggal yang aktif). HD (dibikin
-            // Chrome headless di server, bukan capture), langsung ke-download tanpa
-            // dialog print.
-            btnExportPdfSatu.addEventListener('click', async function () {
-                const selesai = kunciTombolExport(btnExportPdfSatu);
+            // "Export" — buka popup pilih dokumen (Surat Tugas tidak ditawarkan), lalu
+            // tiap dokumen yang dicentang diekspor satu-satu (berurutan, biar server tidak
+            // kebanjiran) sebagai PDF terpisah, TANPA dibundel jadi zip.
+            btnExportPdf.addEventListener('click', async function () {
+                const dipilih = await DokumenPerjadin.pilihDokumenExport(currentDocs);
+                if (!dipilih.length) return;
+                const labelAsli = btnExportPdf.innerHTML;
+                btnExportPdf.disabled = true;
+                btnExportPdf.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengekspor...';
                 try {
-                    await eksporSatuDokumen(currentActiveKey);
-                } catch (e) {
-                    swalError('Gagal export PDF: ' + e.message);
-                } finally {
-                    selesai();
-                }
-            });
-
-            // "Export All" — tiap dokumen di-export satu-satu (berurutan, bukan
-            // paralel, biar server headless-nya tidak kebanjiran) lalu langsung
-            // ke-download sebagai PDF terpisah, TANPA dibundel jadi zip.
-            btnExportPdfSemua.addEventListener('click', async function () {
-                const selesai = kunciTombolExport(btnExportPdfSemua);
-                try {
-                    // Surat Tugas tidak ikut Export All (tetap bisa diekspor sendiri lewat tab-nya).
-                    for (const key of Object.keys(currentDocs).filter(function (k) { return k !== 'surat-tugas'; })) {
+                    for (const key of dipilih) {
                         await eksporSatuDokumen(key);
                     }
                 } catch (e) {
                     swalError('Gagal export PDF: ' + e.message);
                 } finally {
-                    selesai();
+                    btnExportPdf.disabled = false;
+                    btnExportPdf.innerHTML = labelAsli;
                 }
             });
         });

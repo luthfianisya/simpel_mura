@@ -237,7 +237,7 @@
         @include('components.navbar')
 
         <div class="content-wrapper">
-          <div class="container-xxl flex-grow-1 container-p-y">
+          <div class="container-fluid flex-grow-1 container-p-y">
             {{-- Dashboard adalah halaman awal, tidak perlu breadcrumb. --}}
             @unless (request()->routeIs('dashboard'))
               @include('components.breadcrumb')

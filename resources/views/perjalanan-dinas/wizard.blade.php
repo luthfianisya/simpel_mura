@@ -902,18 +902,13 @@
                         <h6 class="text-muted mb-3">Preview Dokumen</h6>
                         <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                             <div class="d-flex align-items-center flex-wrap gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="btn-review-preview-semua">
+                                    <i class="ti ti-stack-2 me-1"></i> Preview All
+                                </button>
                                 <ul class="nav nav-pills mb-0" id="modal-review-tabs" role="tablist"></ul>
-                                <div class="d-flex gap-2">
-                                    <button type="button" class="btn btn-sm btn-label-primary" id="btn-review-export-satu">
-                                        <i class="ti ti-file-type-pdf me-1"></i> Export
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-primary" id="btn-review-export-semua">
-                                        <i class="ti ti-files me-1"></i> Export All
-                                    </button>
-                                </div>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-primary" id="btn-review-preview-semua">
-                                <i class="ti ti-stack-2 me-1"></i> Preview All
+                            <button type="button" class="btn btn-primary" id="btn-review-export">
+                                <i class="ti ti-file-export me-1"></i> Export
                             </button>
                         </div>
                     </div>
@@ -1307,12 +1302,12 @@
             });
 
             // ----- Desa/Kel. Asal & Tujuan: dropdown multi-select per kecamatan (select2,
-            // lihat forms-selects.js) — hasil pilihan digabung "a, b, dan c" ke input
+            // lihat forms-selects.js) — hasil pilihan digabung "a, b dan c" ke input
             // hidden desa_asal/desa_tujuan yang sebenarnya dikirim ke server. -----
             function formatDaftarDenganDan(items) {
                 if (!items || items.length === 0) return '';
                 if (items.length === 1) return items[0];
-                return items.slice(0, -1).join(', ') + ', dan ' + items[items.length - 1];
+                return items.slice(0, -1).join(', ') + ' dan ' + items[items.length - 1];
             }
 
             function parseDaftarDenganDan(str) {
@@ -2196,8 +2191,7 @@
                 return '';
             }
 
-            const btnReviewExportSatu = document.getElementById('btn-review-export-satu');
-            const btnReviewExportSemua = document.getElementById('btn-review-export-semua');
+            const btnReviewExport = document.getElementById('btn-review-export');
             const btnReviewPreviewSemua = document.getElementById('btn-review-preview-semua');
 
             function tampilkanTabReview(key) {
@@ -2215,7 +2209,6 @@
                     DokumenPerjadin.applyPageMinHeights(pane);
                 }
                 reviewActiveKey = key;
-                btnReviewExportSatu.disabled = false;
             }
 
             function tampilkanPreviewSemuaReview() {
@@ -2231,7 +2224,6 @@
                 previewAllEl.classList.remove('d-none');
                 DokumenPerjadin.applyPageMinHeights(previewAllEl);
                 reviewActiveKey = null;
-                btnReviewExportSatu.disabled = true;
             }
 
             function renderModalReviewDocuments() {
@@ -2281,7 +2273,6 @@
                 });
 
                 reviewActiveKey = Object.keys(reviewDocs)[0];
-                btnReviewExportSatu.disabled = false;
             }
             if (reviewModalEl) {
                 reviewModalEl.addEventListener('shown.bs.modal', renderModalReviewDocuments);
@@ -2310,16 +2301,6 @@
                 return (nomor + '-' + namaPelaksana + '-' + labelDokumen).replace(/[\\/:*?"<>|]/g, '-').trim();
             }
 
-            function kunciTombolExportReview(tombolAktif) {
-                [btnReviewExportSatu, btnReviewExportSemua].forEach(function (b) { b.disabled = true; });
-                const labelAsli = tombolAktif.innerHTML;
-                tombolAktif.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengekspor...';
-                return function selesai() {
-                    [btnReviewExportSatu, btnReviewExportSemua].forEach(function (b) { b.disabled = false; });
-                    tombolAktif.innerHTML = labelAsli;
-                };
-            }
-
             async function eksporSatuDokumenReview(key) {
                 const doc = reviewDocs[key];
                 if (!doc) return;
@@ -2329,27 +2310,22 @@
                 );
             }
 
-            btnReviewExportSatu.addEventListener('click', async function () {
-                const selesai = kunciTombolExportReview(btnReviewExportSatu);
+            // Export: pilih dokumen dulu (Surat Tugas tidak ditawarkan), tiap dokumen jadi PDF terpisah.
+            btnReviewExport.addEventListener('click', async function () {
+                const dipilih = await DokumenPerjadin.pilihDokumenExport(reviewDocs);
+                if (!dipilih.length) return;
+                const labelAsli = btnReviewExport.innerHTML;
+                btnReviewExport.disabled = true;
+                btnReviewExport.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengekspor...';
                 try {
-                    await eksporSatuDokumenReview(reviewActiveKey);
-                } catch (e) {
-                    swalError('Gagal export PDF: ' + e.message);
-                } finally {
-                    selesai();
-                }
-            });
-
-            btnReviewExportSemua.addEventListener('click', async function () {
-                const selesai = kunciTombolExportReview(btnReviewExportSemua);
-                try {
-                    for (const key of Object.keys(reviewDocs)) {
+                    for (const key of dipilih) {
                         await eksporSatuDokumenReview(key);
                     }
                 } catch (e) {
                     swalError('Gagal export PDF: ' + e.message);
                 } finally {
-                    selesai();
+                    btnReviewExport.disabled = false;
+                    btnReviewExport.innerHTML = labelAsli;
                 }
             });
 
