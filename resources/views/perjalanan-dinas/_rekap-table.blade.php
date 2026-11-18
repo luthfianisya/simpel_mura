@@ -197,9 +197,11 @@
                                 $bisaBukaKembali = !$bisaUbah && $item->status_draft === 'selesai' && $item->dimilikiOleh(auth()->user()->id_pegawai_mitra ?? null);
                             @endphp
                             <div class="d-inline-flex align-items-center gap-1">
-                                <a href="{{ route('perjalanan-dinas.show', $item) }}" class="btn btn-icon btn-sm btn-text-primary rounded-pill" title="Lihat" data-bs-toggle="tooltip">
+                                {{-- Lihat = modal pratinjau dokumen (sekaligus tempat unduh/cetak). --}}
+                                <button type="button" class="btn btn-icon btn-sm btn-text-primary rounded-pill" title="Lihat" data-bs-toggle="tooltip"
+                                    onclick="openDokumenModal({{ $item->id_perjalanan_dinas }})">
                                     <i class="ti ti-eye ti-sm"></i>
-                                </a>
+                                </button>
                                 @if ($bisaUbah)
                                     <a href="{{ route('perjalanan-dinas.edit', $item) }}" class="btn btn-icon btn-sm btn-text-warning rounded-pill" title="Edit" data-bs-toggle="tooltip">
                                         <i class="ti ti-edit ti-sm"></i>
@@ -225,11 +227,6 @@
                                             <a class="dropdown-item" href="{{ route('perjalanan-dinas.create', ['jenis' => $item->jenis_perjadin, 'from' => $item->id_perjalanan_dinas]) }}">
                                                 <i class="ti ti-copy me-2"></i> Copy jadi Draft Baru
                                             </a>
-                                        </li>
-                                        <li>
-                                            <button type="button" class="dropdown-item" onclick="openDokumenModal({{ $item->id_perjalanan_dinas }})">
-                                                <i class="ti ti-download me-2"></i> Unduh Dokumen
-                                            </button>
                                         </li>
                                         @if ($bisaUbah)
                                             <li><hr class="dropdown-divider"></li>
@@ -263,8 +260,9 @@
                 <h5 class="modal-title mb-0" id="modal-dokumen-title">Dokumen Perjalanan Dinas</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+            {{-- Toolbar di luar .modal-body supaya tetap di atas (tidak ikut ter-scroll) saat pratinjau di-scroll. --}}
+            <div class="px-4 py-3 border-bottom">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                     <div class="d-flex align-items-center flex-wrap gap-2">
                         <ul class="nav nav-pills mb-0" id="dokumen-tabs" role="tablist"></ul>
                         <div class="d-flex gap-2">
@@ -280,6 +278,8 @@
                         <i class="ti ti-stack-2 me-1"></i> Preview All
                     </button>
                 </div>
+            </div>
+            <div class="modal-body">
                 <div id="dokumen-tab-content"></div>
                 <div id="dokumen-preview-all" class="dokumen-preview-pages d-none"></div>
             </div>
@@ -618,7 +618,8 @@
             btnExportPdfSemua.addEventListener('click', async function () {
                 const selesai = kunciTombolExport(btnExportPdfSemua);
                 try {
-                    for (const key of Object.keys(currentDocs)) {
+                    // Surat Tugas tidak ikut Export All (tetap bisa diekspor sendiri lewat tab-nya).
+                    for (const key of Object.keys(currentDocs).filter(function (k) { return k !== 'surat-tugas'; })) {
                         await eksporSatuDokumen(key);
                     }
                 } catch (e) {

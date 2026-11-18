@@ -103,6 +103,11 @@
         return div.innerHTML;
     }
 
+    // Teks dari textarea: di-escape lalu tiap Enter jadi <br> (juga kebaca di PDF & Word).
+    function teksBerbaris(str) {
+        return esc(String(str || '').replace(/\r\n?/g, '\n').trim()).replace(/ *\n */g, '<br>');
+    }
+
     function fmtNip(nip) {
         return nip ? nip : '-';
     }
@@ -288,7 +293,7 @@
                 <tr>
                     <td>Untuk</td>
                     <td>:</td>
-                    <td>${esc(data.perihal) || '...........................'}${wilayahTujuan(data) ? ' di ' + esc(wilayahTujuan(data)) : ''}, tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}</td>
+                    <td style="text-align:justify;">${esc(data.perihal) || '...........................'}${wilayahTujuan(data) ? ' di ' + esc(wilayahTujuan(data)) : ''}, tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}</td>
                 </tr>
                 <tr>
                     <td>Pembebanan</td>
@@ -401,29 +406,29 @@
             <table class="dokumen-table dokumen-rincian">
                 <thead>
                 <tr>
-                    <th width="4%">No</th>
-                    <th colspan="3">Perincian Biaya</th>
-                    <th width="18%">Jumlah</th>
-                    <th width="13%">Keterangan</th>
+                    <th width="4%" class="text-center">No</th>
+                    <th colspan="3" class="text-center">Perincian Biaya</th>
+                    <th width="18%" class="text-center">Jumlah</th>
+                    <th width="13%" class="text-center">Keterangan</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr>
-                    <td rowspan="4">1</td>
-                    <td width="27%" class="bd-r-none">a. Nama yang bertugas</td>
-                    <td width="1%" class="bd-l-none bd-r-none">:</td>
-                    <td class="bd-l-none">${esc(pelaksana.nama) || '...'}</td>
-                    <td></td>
+                    <td rowspan="4" style="border-top:none; border-bottom:none;">1</td>
+                    <td width="27%" class="bd-r-none" style="border-top:none; border-bottom:none;">a. Nama yang bertugas</td>
+                    <td width="1%" class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td>
+                    <td class="bd-l-none" style="border-top:none; border-bottom:none;">${esc(pelaksana.nama) || '...'}</td>
+                    <td style="border-top:none; border-bottom:none;"></td>
                     <td rowspan="9"></td>
                 </tr>
-                <tr><td class="bd-r-none">b. Pangkat/Gol</td><td class="bd-l-none bd-r-none">:</td><td class="bd-l-none">${esc(pelaksana.pangkat) || '-'}${pelaksana.golongan ? ' / ' + esc(pelaksana.golongan) : ''}</td><td></td></tr>
-                <tr><td class="bd-r-none">c. Tujuan tugas</td><td class="bd-l-none bd-r-none">:</td><td class="bd-l-none">${esc(data.kabupaten_tujuan) || '...'}</td><td></td></tr>
-                <tr><td class="bd-r-none">d. Lamanya tugas</td><td class="bd-l-none bd-r-none">:</td><td class="bd-l-none">${terbilangHari(lama)}</td><td></td></tr>
-                <tr><td>2</td><td class="bd-r-none">Transport</td><td class="bd-l-none bd-r-none">:</td><td class="bd-l-none">${terbilangHari(hariTransport)}, dari ${esc(wilayahAsal(data)) || '...'} ke ${esc(formatTujuanTransport(wilayahTujuan(data)))}</td><td class="text-end">${transport > 0 ? fmtRupiah(transport) : 'Rp. -'}</td></tr>
-                <tr><td>3</td><td class="bd-r-none">Uang harian perjadin</td><td class="bd-l-none bd-r-none">:</td><td class="bd-l-none">${terbilangHari(hariUangHarian)} x ${fmtRupiah(rateHarian)},-</td><td class="text-end">${uangHarian > 0 ? fmtRupiah(uangHarian) : 'Rp. -'}</td></tr>
-                <tr><td>4</td><td class="bd-r-none">Penginapan</td><td class="bd-l-none bd-r-none">:</td><td class="bd-l-none">${malamPenginapan} (${terbilang(malamPenginapan)}) malam x ${fmtRupiah(rateMalam)},-</td><td class="text-end">${penginapan > 0 ? fmtRupiah(penginapan) : 'Rp. -'}</td></tr>
-                <tr><td>5</td><td class="bd-r-none">Pengeluaran Rill</td><td class="bd-l-none bd-r-none">:</td><td class="bd-l-none"></td><td class="text-end">${pengeluaranTotal > 0 ? fmtRupiah(pengeluaranTotal) : 'Rp. -'}</td></tr>
-                <tr><td></td><td class="bd-r-none"></td><td class="bd-l-none bd-r-none"></td><td class="bd-l-none fw-bold">JUMLAH</td><td class="text-end fw-bold">${fmtRupiah(total)}</td></tr>
+                <tr><td class="bd-r-none" style="border-top:none; border-bottom:none;">b. Pangkat/Gol</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none;">${esc(pelaksana.pangkat) || '-'}${pelaksana.golongan ? ' / ' + esc(pelaksana.golongan) : ''}</td><td style="border-top:none; border-bottom:none;"></td></tr>
+                <tr><td class="bd-r-none" style="border-top:none; border-bottom:none;">c. Tujuan tugas</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none;">${esc(data.kabupaten_tujuan) || '...'}</td><td style="border-top:none; border-bottom:none;"></td></tr>
+                <tr><td class="bd-r-none" style="border-top:none; border-bottom:none;">d. Lamanya tugas</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none;">${terbilangHari(lama)}</td><td style="border-top:none; border-bottom:none;"></td></tr>
+                <tr><td style="border-top:none; border-bottom:none;">2</td><td class="bd-r-none" style="border-top:none; border-bottom:none;">Transport</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none;">${terbilangHari(hariTransport)}, dari ${esc(wilayahAsal(data)) || '...'} ke ${esc(formatTujuanTransport(wilayahTujuan(data)))}</td><td class="text-end" style="border-top:none; border-bottom:none;">${transport > 0 ? fmtRupiah(transport) : 'Rp. -'}</td></tr>
+                <tr><td style="border-top:none; border-bottom:none;">3</td><td class="bd-r-none" style="border-top:none; border-bottom:none;">Uang harian perjadin</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none;">${terbilangHari(hariUangHarian)} x ${fmtRupiah(rateHarian)},-</td><td class="text-end" style="border-top:none; border-bottom:none;">${uangHarian > 0 ? fmtRupiah(uangHarian) : 'Rp. -'}</td></tr>
+                <tr><td style="border-top:none; border-bottom:none;">4</td><td class="bd-r-none" style="border-top:none; border-bottom:none;">Penginapan</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none;">${malamPenginapan} (${terbilang(malamPenginapan)}) malam x ${fmtRupiah(rateMalam)},-</td><td class="text-end" style="border-top:none; border-bottom:none;">${penginapan > 0 ? fmtRupiah(penginapan) : 'Rp. -'}</td></tr>
+                <tr><td style="border-top:none; border-bottom:none;">5</td><td class="bd-r-none" style="border-top:none; border-bottom:none;">Pengeluaran Rill</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none;"></td><td class="text-end" style="border-top:none; border-bottom:none;">${pengeluaranTotal > 0 ? fmtRupiah(pengeluaranTotal) : 'Rp. -'}</td></tr>
+                <tr><td style="border-top:none;"></td><td class="bd-r-none" style="border-top:none;"></td><td class="bd-l-none bd-r-none" style="border-top:none;"></td><td class="bd-l-none fw-bold" style="border-top:none;">JUMLAH</td><td class="text-end fw-bold" style="border-top:none;">${fmtRupiah(total)}</td></tr>
                 <tr><td></td><td colspan="5" class="text-center fw-bold fst-italic">** ${terbilangRupiah(total)} **</td></tr>
                 <tr>
                     <td colspan="3" style="border-right:none; border-bottom:none;"></td>
@@ -463,11 +468,13 @@
                     <td colspan="2" style="border-left:none; border-top:none; border-bottom:none;"></td>
                 </tr>
                 <tr>
-                    <td colspan="4" style="border-top:none; border-right:none;"></td>
-                    <td colspan="2" class="text-center" style="border-top:none; border-left:none;">
-                        Pejabat Pembuat Komitmen<br>BPS Kabupaten Murung Raya<br><br><br><br>
-                        <span class="fw-bold text-decoration-underline">${esc(ppk.nama) || '(...........................)'}</span><br>
-                        NIP. ${esc(fmtNip(ppk.nip))}
+                    <td colspan="3" style="border-top:none; border-right:none;"></td>
+                    <td colspan="3" style="border-top:none; border-left:none;">
+                        <div style="margin-left:auto; width:60%; text-align:center;">
+                            <br>Pejabat Pembuat Komitmen<br>BPS Kabupaten Murung Raya<br><br><br><br>
+                            <span class="fw-bold text-decoration-underline">${esc(ppk.nama) || '(...........................)'}</span><br>
+                            NIP. ${esc(fmtNip(ppk.nip))}
+                        </div>
                     </td>
                 </tr>
                 </tbody>
@@ -514,7 +521,7 @@
             <ol class="dokumen-list">
                 <li>Biaya transport pegawai dan/atau biaya penginapan dibawah ini yang tidak dapat diperoleh bukti-buktinya, meliputi:
                     <table class="dokumen-table dokumen-rincian mt-1">
-                        <thead><tr><th width="5%">No</th><th>Uraian</th><th width="20%">Jumlah</th></tr></thead>
+                        <thead><tr><th width="5%" class="text-center">No</th><th class="text-center">Uraian</th><th width="20%" class="text-center">Jumlah</th></tr></thead>
                         <tbody>
                         ${bodyRows}
                         <tr><td colspan="2" class="text-center fw-bold">Jumlah</td><td class="text-end fw-bold">${fmtRupiah(total)}</td></tr>
@@ -562,10 +569,10 @@
             </table>
             <div class="dokumen-title" style="font-size:16px;">Kuitansi/Bukti Pembayaran</div>
             <table class="dokumen-table mt-3">
-                <tr><td width="20%">Sudah terima dari</td><td>: Pejabat Pembuat Komitmen BPS Kabupaten Murung Raya</td></tr>
-                <tr><td>Jumlah Uang</td><td>: <strong>${fmtRupiah(total)},-</strong></td></tr>
-                <tr><td>Terbilang</td><td>: <span class="fw-bold fst-italic">** ${terbilangRupiah(total)} **</span></td></tr>
-                <tr><td>Untuk pembayaran</td><td>: Biaya perjalanan dinas dalam rangka ${esc(data.perihal) || '...........................'}${wilayahTujuan(data) ? ' di ' + esc(wilayahTujuan(data)) : ''}, tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}, sesuai dengan:<br><br>
+                <tr><td width="20%" style="vertical-align:top;">Sudah terima dari</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td>Pejabat Pembuat Komitmen BPS Kabupaten Murung Raya</td></tr>
+                <tr><td style="vertical-align:top;">Jumlah Uang</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td><strong>${fmtRupiah(total)},-</strong></td></tr>
+                <tr><td style="vertical-align:top;">Terbilang</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td><span class="fw-bold fst-italic">** ${terbilangRupiah(total)} **</span></td></tr>
+                <tr><td style="vertical-align:top;">Untuk pembayaran</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td style="text-align:justify;">Biaya perjalanan dinas dalam rangka ${esc(data.perihal) || '...........................'}${wilayahTujuan(data) ? ' di ' + esc(wilayahTujuan(data)) : ''}, tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}, sesuai dengan:<br><br>
                     Surat Tugas Nomor: ${esc(data.no_surat_tugas) || '...........................'} tanggal ${fmtTanggalPanjang(data.tanggal_surat_tugas)}<br>
                     ${data.no_spd ? 'SPD Nomor: ' + esc(data.no_spd) + ' tanggal ' + fmtTanggalPanjang(data.tanggal_spd) : ''}
                 </td></tr>
@@ -713,7 +720,7 @@
                 <table class="dokumen-table">
                     <tr><td width="26%">a. Nomor Surat Tugas</td><td width="1%">:</td><td>${esc(data.no_surat_tugas) || '...........................'}, tanggal ${fmtTanggalPanjang(data.tanggal_surat_tugas)}</td></tr>
                     <tr><td>b. Nomor SPD</td><td>:</td><td>${data.no_spd ? esc(data.no_spd) + ', tanggal ' + fmtTanggalPanjang(data.tanggal_spd) : '-'}</td></tr>
-                    <tr><td>c. Tujuan</td><td>:</td><td>${esc(data.perihal) || '...........................'}${wilayahTujuan(data) ? ' di ' + esc(wilayahTujuan(data)) : ''} selama ${terbilangHari(hitungLamaHari(data.tanggal_mulai, data.tanggal_selesai))} pada tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}</td></tr>
+                    <tr><td style="vertical-align:top;">c. Tujuan</td><td style="vertical-align:top;">:</td><td style="text-align:justify;">${esc(data.perihal) || '...........................'}${wilayahTujuan(data) ? ' di ' + esc(wilayahTujuan(data)) : ''} selama ${terbilangHari(hitungLamaHari(data.tanggal_mulai, data.tanggal_selesai))} pada tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}</td></tr>
                 </table>
                 <p>Adalah benar dilaksanakan lebih dari 8 jam.</p>
                 <p>Demikian pernyataan ini dibuat dengan sebenar-benarnya, dan saya sanggup menerima konsekuensi jika pernyataan ini tidak benar.</p>
@@ -811,27 +818,27 @@
             <div class="dokumen-title">LAPORAN HASIL PERJALANAN DINAS</div>
             <table class="dokumen-table mt-3">
                 <tr><td width="16%" style="vertical-align:top;">Kepada Yth</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td>Kepala Badan Pusat Statistik Kabupaten Murung Raya</td></tr>
-                <tr><td style="vertical-align:top;">Perihal</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td>Laporan Perjalanan Dinas dalam rangka ${esc(data.perihal) || '...........................'}</td></tr>
+                <tr><td style="vertical-align:top;">Perihal</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="text-align:justify;">Laporan Perjalanan Dinas dalam rangka ${esc(data.perihal) || '...........................'}</td></tr>
             </table>
             <table class="dokumen-table mt-3">
-                <tr><td width="4%" style="vertical-align:top;">I.</td><td width="27%" style="vertical-align:top;">Pelaksana Perjalanan</td><td style="vertical-align:top;">
+                <tr><td width="4%" style="vertical-align:top;">I.</td><td width="27%" style="vertical-align:top;">Pelaksana Perjalanan</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="vertical-align:top;">
                     <table class="dokumen-table">
                         <tr><td width="18%">Nama</td><td>: ${esc(pelaksana.nama) || '...........................'}</td></tr>
                         <tr><td>NIP</td><td>: ${esc(fmtNip(pelaksana.nip))}</td></tr>
                         <tr><td>Jabatan</td><td>: ${esc(pelaksana.jabatan) || '-'}</td></tr>
                     </table>
                 </td></tr>
-                <tr><td style="vertical-align:top;">II.</td><td style="vertical-align:top;">Dasar Pelaksanaan</td><td style="vertical-align:top;">${dasar}</td></tr>
-                <tr><td style="vertical-align:top;">III.</td><td style="vertical-align:top;">Tujuan Perjalanan Dinas</td><td style="vertical-align:top;">${esc(data.perihal) || '...........................'}</td></tr>
-                <tr><td style="vertical-align:top;">IV.</td><td style="vertical-align:top;">Daerah Tujuan/Instansi</td><td style="vertical-align:top;">${data.desa_tujuan ? esc(data.desa_tujuan) + (data.kabupaten_tujuan ? ', ' + esc(data.kabupaten_tujuan) : '') : (esc(data.kabupaten_tujuan) || '...........................')}</td></tr>
-                <tr><td style="vertical-align:top;">V.</td><td style="vertical-align:top;">Waktu Pelaksanaan</td><td style="vertical-align:top;">${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}</td></tr>
+                <tr><td style="vertical-align:top;">II.</td><td style="vertical-align:top;">Dasar Pelaksanaan</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="vertical-align:top;">${dasar}</td></tr>
+                <tr><td style="vertical-align:top;">III.</td><td style="vertical-align:top;">Tujuan Perjalanan Dinas</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="vertical-align:top; text-align:justify;">${esc(data.perihal) || '...........................'}</td></tr>
+                <tr><td style="vertical-align:top;">IV.</td><td style="vertical-align:top;">Daerah Tujuan/Instansi</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="vertical-align:top;">${data.desa_tujuan ? esc(data.desa_tujuan) + (data.kabupaten_tujuan ? ', ' + esc(data.kabupaten_tujuan) : '') : (esc(data.kabupaten_tujuan) || '...........................')}</td></tr>
+                <tr><td style="vertical-align:top;">V.</td><td style="vertical-align:top;">Waktu Pelaksanaan</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="vertical-align:top;">${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}</td></tr>
             </table>
             </div>
 
             <table class="dokumen-table" data-blok="teks">
                 <tr><td width="4%" class="alir-label" style="vertical-align:top;">VI.</td><td style="vertical-align:top;">
                     <span class="alir-judul">Kesimpulan Hasil Kegiatan :<br></span>
-                    <span class="alir-isi" style="text-align:justify;display:block;">${esc(data.kesimpulan_hasil_kegiatan) || '-'}</span>
+                    <span class="alir-isi" style="text-align:justify;display:block;">${teksBerbaris(data.kesimpulan_hasil_kegiatan) || '-'}</span>
                 </td></tr>
             </table>
 
@@ -1234,10 +1241,14 @@
 
             const jenis = blok.dataset.blok || 'utuh';
             if (jenis === 'teks') {
-                const kata = blok.querySelector('.alir-isi').textContent.trim().split(/\s+/);
+                // Ganti <br> jadi "\n" dulu supaya baris baru (Enter) dari input user tetap
+                // terbawa saat teksnya dipotong per kata.
+                const sumber = blok.querySelector('.alir-isi').cloneNode(true);
+                sumber.querySelectorAll('br').forEach(function (br) { br.replaceWith('\n'); });
+                const kata = sumber.textContent.replace(/\r/g, '').trim().split(/[ \t]+/);
                 taruhBertahap(blok, kata.length, function (el, dari, sampai) {
                     const isiEl = el.querySelector('.alir-isi');
-                    isiEl.textContent = kata.slice(dari, sampai).join(' ');
+                    isiEl.innerHTML = teksBerbaris(kata.slice(dari, sampai).join(' '));
                     // Baris terakhir potongan yang masih bersambung ikut rata kiri-kanan.
                     isiEl.classList.toggle('alir-rata-penuh', sampai < kata.length);
                 });

@@ -382,6 +382,9 @@
 
 /* Utility class dipakai render function (dokumen-perjadin.js). Di-scope di sini karena
    jendela export PDF/Word tidak memuat Bootstrap, cuma file CSS ini. */
+/* Header kolom tabel dokumen selalu rata tengah (Bootstrap reboot membuat th rata kiri). */
+.dokumen-preview table th { text-align: center; vertical-align: middle; }
+
 .dokumen-preview .text-center { text-align: center; }
 .dokumen-preview .text-end { text-align: right; }
 .dokumen-preview .text-muted { color: #000; }
