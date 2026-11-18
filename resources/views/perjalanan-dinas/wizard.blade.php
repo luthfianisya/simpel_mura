@@ -212,6 +212,19 @@
         </div>
     </div>
 
+    @if (session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="ti ti-circle-check me-1"></i> {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+    @if (session('warning'))
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            {{ session('warning') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
     @if ($errors->any())
         <div class="alert alert-danger">
             <div class="fw-semibold mb-1">Periksa kembali data yang diisi:</div>
@@ -245,6 +258,9 @@
         @endif
         <input type="hidden" name="jenis_perjadin" value="{{ $jenis }}">
         <input type="hidden" id="input-status_draft" name="status_draft" value="draft_sesi1">
+        {{-- Diisi tombol "Simpan" per step: setelah tersimpan kembali ke form ini, di step yang sama. --}}
+        <input type="hidden" id="input-tetap_di_form" name="tetap_di_form" value="0">
+        <input type="hidden" id="input-step_aktif" name="step_aktif" value="">
 
         <div class="bs-stepper wizard-numbered" id="wizard-stepper">
             <div class="bs-stepper-header" role="tablist">
@@ -577,7 +593,10 @@
                                         </div>
                                     </div>
                                     <div class="d-flex justify-content-end mt-4">
-                                        <button type="button" class="btn btn-primary btn-wizard-next">Lanjut <i class="ti ti-arrow-right ti-sm ms-1"></i></button>
+                                        <div class="d-flex gap-2">
+                                            @if ($mode !== 'view')<button type="button" class="btn btn-outline-warning btn-simpan-step" title="Simpan sebagai draft dan tetap di halaman ini"><i class="ti ti-device-floppy ti-sm me-1"></i> Simpan</button>@endif
+                                            <button type="button" class="btn btn-primary btn-wizard-next">Lanjut <i class="ti ti-arrow-right ti-sm ms-1"></i></button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -650,7 +669,10 @@
                                         </div>
                                         <div class="d-flex justify-content-between mt-4">
                                             <button type="button" class="btn btn-outline-primary btn-wizard-prev"><i class="ti ti-arrow-left ti-sm me-1"></i> Kembali</button>
-                                            <button type="button" class="btn btn-primary btn-wizard-next">Lanjut <i class="ti ti-arrow-right ti-sm ms-1"></i></button>
+                                            <div class="d-flex gap-2">
+                                                @if ($mode !== 'view')<button type="button" class="btn btn-outline-warning btn-simpan-step" title="Simpan sebagai draft dan tetap di halaman ini"><i class="ti ti-device-floppy ti-sm me-1"></i> Simpan</button>@endif
+                                                <button type="button" class="btn btn-primary btn-wizard-next">Lanjut <i class="ti ti-arrow-right ti-sm ms-1"></i></button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -704,7 +726,10 @@
                             </div>
                             <div class="d-flex justify-content-between mt-4">
                                 <button type="button" class="btn btn-outline-primary btn-wizard-prev"><i class="ti ti-arrow-left ti-sm me-1"></i> Kembali</button>
-                                <button type="button" class="btn btn-primary btn-wizard-next">Lanjut <i class="ti ti-arrow-right ti-sm ms-1"></i></button>
+                                <div class="d-flex gap-2">
+                                    @if ($mode !== 'view')<button type="button" class="btn btn-outline-warning btn-simpan-step" title="Simpan sebagai draft dan tetap di halaman ini"><i class="ti ti-device-floppy ti-sm me-1"></i> Simpan</button>@endif
+                                    <button type="button" class="btn btn-primary btn-wizard-next">Lanjut <i class="ti ti-arrow-right ti-sm ms-1"></i></button>
+                                </div>
                             </div>
                         </div>
                         <div class="col-lg-6">
@@ -756,7 +781,10 @@
                             </div>
                             <div class="d-flex justify-content-between mt-4">
                                 <button type="button" class="btn btn-outline-primary btn-wizard-prev"><i class="ti ti-arrow-left ti-sm me-1"></i> Kembali</button>
-                                <button type="button" class="btn btn-primary btn-wizard-next">Lanjut <i class="ti ti-arrow-right ti-sm ms-1"></i></button>
+                                <div class="d-flex gap-2">
+                                    @if ($mode !== 'view')<button type="button" class="btn btn-outline-warning btn-simpan-step" title="Simpan sebagai draft dan tetap di halaman ini"><i class="ti ti-device-floppy ti-sm me-1"></i> Simpan</button>@endif
+                                    <button type="button" class="btn btn-primary btn-wizard-next">Lanjut <i class="ti ti-arrow-right ti-sm ms-1"></i></button>
+                                </div>
                             </div>
                         </div>
                         <div class="col-lg-6">
@@ -790,7 +818,10 @@
                             </div>
                             <div class="d-flex justify-content-between mt-4">
                                 <button type="button" class="btn btn-outline-primary btn-wizard-prev"><i class="ti ti-arrow-left ti-sm me-1"></i> Kembali</button>
-                                <button type="button" class="btn btn-primary btn-wizard-next">Lanjut <i class="ti ti-arrow-right ti-sm ms-1"></i></button>
+                                <div class="d-flex gap-2">
+                                    @if ($mode !== 'view')<button type="button" class="btn btn-outline-warning btn-simpan-step" title="Simpan sebagai draft dan tetap di halaman ini"><i class="ti ti-device-floppy ti-sm me-1"></i> Simpan</button>@endif
+                                    <button type="button" class="btn btn-primary btn-wizard-next">Lanjut <i class="ti ti-arrow-right ti-sm ms-1"></i></button>
+                                </div>
                             </div>
                         </div>
                         <div class="col-lg-6">
@@ -845,7 +876,10 @@
                             </div>
                             <div class="d-flex justify-content-between mt-4">
                                 <button type="button" class="btn btn-outline-primary btn-wizard-prev"><i class="ti ti-arrow-left ti-sm me-1"></i> Kembali</button>
-                                <button type="button" class="btn btn-primary btn-wizard-next">Lanjut <i class="ti ti-arrow-right ti-sm ms-1"></i></button>
+                                <div class="d-flex gap-2">
+                                    @if ($mode !== 'view')<button type="button" class="btn btn-outline-warning btn-simpan-step" title="Simpan sebagai draft dan tetap di halaman ini"><i class="ti ti-device-floppy ti-sm me-1"></i> Simpan</button>@endif
+                                    <button type="button" class="btn btn-primary btn-wizard-next">Lanjut <i class="ti ti-arrow-right ti-sm ms-1"></i></button>
+                                </div>
                             </div>
                         </div>
                         <div class="col-lg-6">
@@ -868,6 +902,7 @@
                             </div>
                             <div class="d-flex justify-content-between mt-4">
                                 <button type="button" class="btn btn-outline-primary btn-wizard-prev"><i class="ti ti-arrow-left ti-sm me-1"></i> Kembali</button>
+                                @if ($mode !== 'view')<button type="button" class="btn btn-outline-warning btn-simpan-step" title="Simpan sebagai draft dan tetap di halaman ini"><i class="ti ti-device-floppy ti-sm me-1"></i> Simpan</button>@endif
                             </div>
                         </div>
                         <div class="col-lg-6">
@@ -979,6 +1014,28 @@
             document.querySelectorAll('.btn-wizard-prev').forEach(function (btn) {
                 btn.addEventListener('click', function () {
                     stepper.previous();
+                });
+            });
+
+            // Setelah "Simpan" per step, halaman dibuka lagi di step yang sama (?step=step-xxx).
+            const daftarStep = Array.from(stepperEl.querySelectorAll('.bs-stepper-header .step'))
+                .map(function (el) { return el.dataset.target.replace('#', ''); });
+            const stepAwal = new URLSearchParams(window.location.search).get('step');
+            if (stepAwal && daftarStep.indexOf(stepAwal) > 0) {
+                stepper.to(daftarStep.indexOf(stepAwal) + 1);
+            }
+
+            // "Simpan" per step: simpan sebagai draft tanpa modal review, lalu tetap di form
+            // ini (step yang sama) — bukan balik ke tabel — supaya bisa lanjut mengecek/mengubah.
+            document.querySelectorAll('.btn-simpan-step').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    const aktif = stepperEl.querySelector('.bs-stepper-content .content.active');
+                    document.getElementById('input-tetap_di_form').value = '1';
+                    document.getElementById('input-step_aktif').value = aktif ? aktif.id : '';
+                    document.getElementById('input-status_draft').value = 'draft_sesi1';
+                    document.querySelectorAll('.btn-simpan-step').forEach(function (b) { b.disabled = true; });
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...';
+                    form.requestSubmit ? form.requestSubmit() : form.submit();
                 });
             });
 

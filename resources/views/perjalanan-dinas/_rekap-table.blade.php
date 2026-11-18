@@ -4,6 +4,12 @@
     <link rel="stylesheet" href="{{ asset('assets/vendor/libs/datatables-fixedcolumns-bs5/fixedcolumns.bootstrap5.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/css/dokumen-perjadin.css') }}?v={{ filemtime(public_path('assets/css/dokumen-perjadin.css')) }}" />
     <style>
+        /* Badge jenis perjadin: sengaja bukan kuning/hijau supaya tidak tertukar dengan badge
+           status (Draft = kuning, Selesai = hijau). */
+        .badge-jenis-biasa { background-color: #e0f5f3; color: #0f8f84; }
+        .badge-jenis-kurang { background-color: #efe9fb; color: #6f42c1; }
+        .badge-jenis-lebih { background-color: #fde8f1; color: #c2185b; }
+        .badge-jenis-lain { background-color: #eceef1; color: #6f6b7d; }
         /* Kolom Aksi menempel (sticky) — sel yang dropdown "⋮"-nya terbuka dinaikkan supaya
            menunya tidak tertutup sel Aksi baris di bawahnya. */
         #table-rekap-perjadin td:has(.dropdown-menu.show) { z-index: 10 !important; }
@@ -159,7 +165,7 @@
                             @endif
                         </td>
                         <td>
-                            <span class="badge rounded-pill bg-label-{{ ['biasa' => 'info', 'dalam_kota_kurang_8_jam' => 'warning', 'dalam_kota_lebih_8_jam' => 'primary'][$item->jenis_perjadin] ?? 'secondary' }}">
+                            <span class="badge rounded-pill badge-jenis-{{ ['biasa' => 'biasa', 'dalam_kota_kurang_8_jam' => 'kurang', 'dalam_kota_lebih_8_jam' => 'lebih'][$item->jenis_perjadin] ?? 'lain' }}">
                                 {{ $item->jenis_perjadin_label }}
                             </span>
                         </td>

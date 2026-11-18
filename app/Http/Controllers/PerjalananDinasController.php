@@ -691,7 +691,7 @@ class PerjalananDinasController extends Controller
         $isDraft = $request->input('status_draft') !== 'selesai';
         $validated = $request->validate($this->validationRules($butuhSpd, $isDraft, (string) $request->input('jenis_perjadin')));
 
-        $noSpd = DB::transaction(function () use ($validated, $request, $pemohonId) {
+        $perjalananDinas = DB::transaction(function () use ($validated, $request, $pemohonId) {
             $validated['no_spd'] = $this->tentukanNomorSpd($validated);
             $perjalananDinas = PerjalananDinas::create(array_merge(
                 $this->perjalananDinasAttributes($validated),
@@ -701,12 +701,31 @@ class PerjalananDinasController extends Controller
             $this->simpanDataTerkait($perjalananDinas, $validated, $request);
             $this->catatPemilihanWilayah($validated);
 
-            return $perjalananDinas->no_spd;
+            return $perjalananDinas;
         });
+        $noSpd = $perjalananDinas->no_spd;
 
-        return redirect()->route('dashboard')
+        return $this->redirectSetelahSimpan($request, $perjalananDinas)
             ->with('success', 'Perjalanan dinas berhasil disimpan.' . ($noSpd ? " Nomor SPD: {$noSpd}." : ''))
             ->with('warning', $this->peringatanNomorSpdBerubah($request, $noSpd));
+    }
+
+    /**
+     * Tombol "Simpan" per step di form (tetap_di_form=1) kembali ke form edit di step
+     * yang sama; "Simpan Draft"/"Selesai" di atas tetap kembali ke dashboard.
+     */
+    private function redirectSetelahSimpan(Request $request, PerjalananDinas $perjalananDinas)
+    {
+        if ($request->boolean('tetap_di_form') && $perjalananDinas->status_draft !== 'selesai') {
+            $step = (string) $request->input('step_aktif');
+
+            return redirect()->route('perjalanan-dinas.edit', array_filter([
+                'perjalananDinas' => $perjalananDinas,
+                'step' => preg_match('/^step-[a-z]+$/', $step) ? $step : null,
+            ]));
+        }
+
+        return redirect()->route('dashboard');
     }
 
     public function update(Request $request, PerjalananDinas $perjalananDinas)
@@ -732,7 +751,7 @@ class PerjalananDinasController extends Controller
             $this->simpanDataTerkait($perjalananDinas, $validated, $request);
         });
 
-        return redirect()->route('dashboard')
+        return $this->redirectSetelahSimpan($request, $perjalananDinas)
             ->with('success', 'Perjalanan dinas berhasil diperbarui.' . ($perjalananDinas->no_spd ? " Nomor SPD: {$perjalananDinas->no_spd}." : ''))
             ->with('warning', $this->peringatanNomorSpdBerubah($request, $perjalananDinas->no_spd));
     }

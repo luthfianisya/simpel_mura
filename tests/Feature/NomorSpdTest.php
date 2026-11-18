@@ -167,3 +167,33 @@ test('cek nomor spd memberi tahu apakah nomor sudah dipakai', function () {
     $this->actingAs($user)->getJson(route('perjalanan-dinas.cek-nomor-spd', ['no_spd' => '999/62130/KU.340/2026']))
         ->assertJson(['dipakai' => false]);
 });
+
+test('tombol simpan per step menyimpan draft lalu kembali ke form edit di step yang sama', function () {
+    $user = userPemohonSpd();
+
+    $respon = $this->actingAs($user)->post(route('perjalanan-dinas.store'), [
+        'jenis_perjadin' => 'biasa',
+        'status_draft' => 'draft_sesi1',
+        'tanggal_spd' => '2026-11-02',
+        'tetap_di_form' => '1',
+        'step_aktif' => 'step-laporan',
+    ]);
+
+    $pd = PerjalananDinas::first();
+    $respon->assertRedirect(route('perjalanan-dinas.edit', ['perjalananDinas' => $pd, 'step' => 'step-laporan']));
+
+    $this->actingAs($user)->put(route('perjalanan-dinas.update', $pd), [
+        'jenis_perjadin' => 'biasa',
+        'status_draft' => 'draft_sesi1',
+        'tanggal_spd' => '2026-11-02',
+        'tetap_di_form' => '1',
+        'step_aktif' => 'step-rincian',
+    ])->assertRedirect(route('perjalanan-dinas.edit', ['perjalananDinas' => $pd, 'step' => 'step-rincian']));
+
+    // Tanpa penanda, tetap kembali ke dashboard seperti biasa.
+    $this->actingAs($user)->put(route('perjalanan-dinas.update', $pd), [
+        'jenis_perjadin' => 'biasa',
+        'status_draft' => 'draft_sesi1',
+        'tanggal_spd' => '2026-11-02',
+    ])->assertRedirect(route('dashboard'));
+});

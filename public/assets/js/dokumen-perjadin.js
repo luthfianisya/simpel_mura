@@ -786,10 +786,21 @@
                 + '<td style="padding-left:0;">' + isi + '</td></tr>';
         }).join('') + '</table>';
 
-        // Tindak Lanjut: satu poin per baris di textarea input -> daftar bernomor.
-        const tindakLanjutItems = String(data.tindak_lanjut || '').split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
+        // Tindak Lanjut: satu poin per baris di textarea input -> daftar bernomor. Baris
+        // kosong (Enter tanpa teks) di antara poin dipertahankan sebagai jarak tanpa nomor;
+        // nomor poinnya dipasang eksplisit (value) supaya tetap urut 1, 2, 3, ...
+        const tindakLanjutBaris = String(data.tindak_lanjut || '').replace(/\r\n?/g, '\n')
+            .split('\n').map(function (s) { return s.trim(); });
+        while (tindakLanjutBaris.length && !tindakLanjutBaris[0]) tindakLanjutBaris.shift();
+        while (tindakLanjutBaris.length && !tindakLanjutBaris[tindakLanjutBaris.length - 1]) tindakLanjutBaris.pop();
+        const tindakLanjutItems = tindakLanjutBaris;
+        let nomorTindakLanjut = 0;
         const tindakLanjutHtml = tindakLanjutItems.length
-            ? '<ol class="dokumen-list alir-isi">' + tindakLanjutItems.map(function (item) { return '<li>' + esc(item) + '</li>'; }).join('') + '</ol>'
+            ? '<ol class="dokumen-list alir-isi">' + tindakLanjutItems.map(function (item) {
+                return item
+                    ? '<li value="' + (++nomorTindakLanjut) + '">' + esc(item) + '</li>'
+                    : '<li style="list-style:none;">&nbsp;</li>';
+            }).join('') + '</ol>'
             : '-';
 
         // Pakai <table> (bukan CSS grid) supaya susunan 2 kolomnya juga kebaca benar
@@ -818,7 +829,8 @@
         // Laporan dialirkan seperti dokumen biasa (lihat alirkanHalaman): tiap anak
         // langsung div[data-alir-halaman] adalah 1 "blok" — "utuh" tidak boleh terpotong,
         // "teks" dipotong per kata, "daftar" per butir, "tabel" per baris. Penutup + ttd
-        // minimal di halaman 2 (data-halaman-baru="bukan-pertama"), Dokumentasi selalu
+        // ("Demikian ..." s.d. ttd) satu blok utuh: ikut di halaman yang sama kalau masih muat,
+        // kalau tidak pindah utuh ke halaman berikutnya. Dokumentasi selalu
         // mulai di halaman baru.
         return `
             <div style="font-family:Arial, sans-serif;" data-alir-halaman>
@@ -857,7 +869,7 @@
                 </td></tr>
             </table>
 
-            <div data-blok="utuh" data-halaman-baru="bukan-pertama" class="alir-penutup">
+            <div data-blok="utuh" class="alir-penutup">
                 <p>Demikian Laporan Perjalanan Dinas ini dibuat sebagai bahan Laporan.</p>
                 <table class="dokumen-table mt-3">
                     <tr>
