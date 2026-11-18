@@ -108,6 +108,13 @@
         return esc(String(str || '').replace(/\r\n?/g, '\n').trim()).replace(/ *\n */g, '<br>');
     }
 
+    // "Melakukan Pendataan" -> "melakukan Pendataan" saat disambung di tengah kalimat;
+    // singkatan seperti "BPS ..." / "SE2026" dibiarkan (huruf kedua bukan huruf kecil).
+    function hurufAwalKecil(str) {
+        str = String(str || '');
+        return /^[A-Z][a-z]/.test(str) ? str.charAt(0).toLowerCase() + str.slice(1) : str;
+    }
+
     function fmtNip(nip) {
         return nip ? nip : '-';
     }
@@ -293,7 +300,7 @@
                 <tr>
                     <td>Untuk</td>
                     <td>:</td>
-                    <td style="text-align:justify;">${esc(data.perihal) || '...........................'}${wilayahTujuan(data) ? ' di ' + esc(wilayahTujuan(data)) : ''}, tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}</td>
+                    <td style="text-align:justify;">Perjalanan dinas dalam rangka ${esc(hurufAwalKecil(data.perihal)) || '...........................'}${wilayahTujuan(data) ? ' di ' + esc(wilayahTujuan(data)) : ''}, tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}</td>
                 </tr>
                 <tr>
                     <td>Pembebanan</td>
@@ -561,12 +568,12 @@
         const tahun = (data.tanggal_mulai || '').slice(0, 4) || '.....';
         return `
             <div style="font-family:Arial, sans-serif;">
-            <table class="ms-auto" style="width:auto; max-width:65%; word-wrap:break-word; font-size:0.75rem; margin-bottom:1rem;">
-                <tr><td class="pe-2">Tahun Anggaran</td><td>: ${tahun}</td></tr>
-                <tr><td class="pe-2">Nomor Bukti</td><td>:</td></tr>
-                <tr><td class="pe-2">Akun</td><td>: ${esc(data.pembebanan) || '...........................'}</td></tr>
-                <tr><td class="pe-2">Kepada</td><td>: ${esc(pelaksana.nama) || '...........................'}</td></tr>
-                <tr><td class="pe-2">Satker</td><td>: ${satkerLabel}</td></tr>
+            <table style="width:45%; margin-left:auto; font-size:0.75rem; margin-bottom:1rem; border-collapse:collapse;">
+                <tr><td style="width:30%; padding-right:6px; vertical-align:top; white-space:nowrap;">Tahun Anggaran</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td>${tahun}</td></tr>
+                <tr><td style="width:30%; padding-right:6px; vertical-align:top; white-space:nowrap;">Nomor Bukti</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td></td></tr>
+                <tr><td style="width:30%; padding-right:6px; vertical-align:top; white-space:nowrap;">Akun</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td>${esc(data.pembebanan) || '...........................'}</td></tr>
+                <tr><td style="width:30%; padding-right:6px; vertical-align:top; white-space:nowrap;">Kepada</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td>${esc(pelaksana.nama) || '...........................'}</td></tr>
+                <tr><td style="width:30%; padding-right:6px; vertical-align:top; white-space:nowrap;">Satker</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td>${satkerLabel}</td></tr>
             </table>
             <div class="dokumen-title" style="font-size:16px;">Kuitansi/Bukti Pembayaran</div>
             <table class="dokumen-table mt-3">
