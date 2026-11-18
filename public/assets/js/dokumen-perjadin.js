@@ -1449,48 +1449,101 @@
         downloadBlob(blob, title + '.pdf');
     }
 
-    // Popup pilih dokumen yang mau diekspor (checkbox per dokumen + "Pilih semua").
+    // Popup pilih dokumen yang mau diekspor (kartu per dokumen + "Pilih semua").
     // docs = { key: { label, html } }. Surat Tugas tidak ditawarkan (tidak diunduh).
     // Mengembalikan Promise<array key> — kosong kalau dibatalkan.
     function pilihDokumenExport(docs) {
+        const ikon = {
+            'spd': 'ti-plane',
+            'rincian': 'ti-report-money',
+            'pengeluaran': 'ti-cash',
+            'kuitansi': 'ti-receipt',
+            'pernyataan': 'ti-writing',
+            'laporan': 'ti-clipboard-text',
+        };
         const keys = Object.keys(docs).filter(function (k) { return k !== 'surat-tugas'; });
-        const daftar = keys.map(function (k) {
-            return '<div class="form-check mb-2">'
-                + '<input class="form-check-input pilih-dokumen-export" type="checkbox" id="pilih-export-' + k + '" value="' + k + '" checked>'
-                + '<label class="form-check-label" for="pilih-export-' + k + '">' + esc(docs[k].label) + '</label>'
-                + '</div>';
+        const kartu = keys.map(function (k) {
+            return '<label class="pde-kartu terpilih" for="pde-' + k + '">'
+                + '<input type="checkbox" class="pde-cek" id="pde-' + k + '" value="' + k + '" checked>'
+                + '<span class="pde-ikon"><i class="ti ' + (ikon[k] || 'ti-file-text') + '"></i></span>'
+                + '<span class="pde-nama">' + esc(docs[k].label) + '</span>'
+                + '<span class="pde-tanda"><i class="ti ti-check"></i></span>'
+                + '</label>';
         }).join('');
 
+        const gaya = '<style>'
+            + '.pde-popup{border-radius:14px!important;padding:1.5rem 1.5rem 1.25rem!important;}'
+            + '.pde-popup .swal2-title{font-size:1.25rem;padding:0;text-align:left;}'
+            + '.pde-popup .swal2-html-container{margin:.75rem 0 0!important;text-align:left;}'
+            + '.pde-sub{color:#6f6b7d;font-size:.875rem;margin-bottom:1rem;}'
+            + '.pde-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;}'
+            + '.pde-bar .form-check{margin:0;}'
+            + '.pde-hitung{font-size:.8125rem;color:#1B449C;background:#eef2fb;border-radius:999px;padding:.2rem .7rem;font-weight:600;}'
+            + '.pde-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem;}'
+            + '@media (max-width:480px){.pde-grid{grid-template-columns:1fr;}}'
+            + '.pde-kartu{position:relative;display:flex;align-items:center;gap:.7rem;padding:.7rem .85rem;margin:0;'
+            + 'border:1.5px solid #e3e1e8;border-radius:10px;cursor:pointer;user-select:none;transition:all .15s;background:#fff;}'
+            + '.pde-kartu:hover{border-color:#9db3e3;background:#f8f9fd;}'
+            + '.pde-kartu.terpilih{border-color:#1B449C;background:#f3f6fc;}'
+            + '.pde-cek{position:absolute;opacity:0;pointer-events:none;}'
+            + '.pde-ikon{flex:0 0 auto;width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;'
+            + 'background:#eef0f4;color:#6f6b7d;font-size:1.2rem;transition:all .15s;}'
+            + '.pde-kartu.terpilih .pde-ikon{background:#1B449C;color:#fff;}'
+            + '.pde-nama{flex:1 1 auto;font-weight:500;color:#4b465c;font-size:.9rem;}'
+            + '.pde-tanda{flex:0 0 auto;width:20px;height:20px;border-radius:50%;border:1.5px solid #c9c6d1;display:flex;'
+            + 'align-items:center;justify-content:center;font-size:.75rem;color:transparent;transition:all .15s;}'
+            + '.pde-kartu.terpilih .pde-tanda{background:#1B449C;border-color:#1B449C;color:#fff;}'
+            + '.pde-catatan{display:flex;gap:.4rem;align-items:flex-start;margin-top:1rem;font-size:.8rem;color:#6f6b7d;}'
+            + '.pde-popup .swal2-actions{width:100%;justify-content:flex-end;margin-top:1.25rem;gap:.5rem;}'
+            + '.pde-popup .swal2-actions .btn{margin:0;}'
+            + '</style>';
+
         return Swal.fire({
-            title: 'Export Dokumen',
-            html: '<div class="text-start px-2">'
-                + '<div class="form-check mb-2 pb-2 border-bottom">'
-                + '<input class="form-check-input" type="checkbox" id="pilih-export-semua" checked>'
-                + '<label class="form-check-label fw-semibold" for="pilih-export-semua">Pilih semua</label>'
-                + '</div>' + daftar
-                + '<div class="small text-muted mt-2">Tiap dokumen diunduh sebagai file PDF terpisah.</div>'
-                + '</div>',
+            title: '<i class="ti ti-file-export me-2" style="color:#1B449C;"></i>Export Dokumen',
+            html: gaya
+                + '<div class="pde-sub">Pilih dokumen yang ingin diunduh. Setiap dokumen diunduh sebagai file PDF terpisah.</div>'
+                + '<div class="pde-bar">'
+                + '<div class="form-check"><input class="form-check-input" type="checkbox" id="pde-semua" checked>'
+                + '<label class="form-check-label fw-semibold" for="pde-semua">Pilih semua</label></div>'
+                + '<span class="pde-hitung"></span>'
+                + '</div>'
+                + '<div class="pde-grid">' + kartu + '</div>'
+                + '<div class="pde-catatan"><i class="ti ti-info-circle"></i><span>Surat Tugas tidak termasuk dalam export.</span></div>',
+            width: 560,
             showCancelButton: true,
-            confirmButtonText: 'Export',
+            confirmButtonText: '<i class="ti ti-download me-1"></i> Export',
             cancelButtonText: 'Batal',
             reverseButtons: true,
             focusConfirm: false,
+            buttonsStyling: false,
+            customClass: {
+                popup: 'pde-popup',
+                confirmButton: 'btn btn-primary',
+                cancelButton: 'btn btn-label-secondary',
+            },
             didOpen: function (popup) {
-                const semua = popup.querySelector('#pilih-export-semua');
-                const satuan = Array.from(popup.querySelectorAll('.pilih-dokumen-export'));
+                const semua = popup.querySelector('#pde-semua');
+                const satuan = Array.from(popup.querySelectorAll('.pde-cek'));
+                const hitung = popup.querySelector('.pde-hitung');
+                const tombol = Swal.getConfirmButton();
                 function sinkron() {
                     const jumlah = satuan.filter(function (c) { return c.checked; }).length;
+                    satuan.forEach(function (c) { c.closest('.pde-kartu').classList.toggle('terpilih', c.checked); });
                     semua.checked = jumlah === satuan.length;
                     semua.indeterminate = jumlah > 0 && jumlah < satuan.length;
+                    hitung.textContent = jumlah + ' dari ' + satuan.length + ' dipilih';
+                    tombol.disabled = jumlah === 0;
+                    tombol.innerHTML = '<i class="ti ti-download me-1"></i> Export' + (jumlah ? ' (' + jumlah + ')' : '');
                 }
                 semua.addEventListener('change', function () {
                     satuan.forEach(function (c) { c.checked = semua.checked; });
-                    semua.indeterminate = false;
+                    sinkron();
                 });
                 satuan.forEach(function (c) { c.addEventListener('change', sinkron); });
+                sinkron();
             },
             preConfirm: function () {
-                const dipilih = Array.from(Swal.getPopup().querySelectorAll('.pilih-dokumen-export:checked'))
+                const dipilih = Array.from(Swal.getPopup().querySelectorAll('.pde-cek:checked'))
                     .map(function (c) { return c.value; });
                 if (!dipilih.length) {
                     Swal.showValidationMessage('Pilih minimal satu dokumen.');

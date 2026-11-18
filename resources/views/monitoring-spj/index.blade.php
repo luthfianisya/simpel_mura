@@ -303,7 +303,7 @@
                                     <span class="badge rounded-pill bg-label-info me-1" title="Diinput langsung oleh tim keuangan, di luar perjalanan dinas">Non-Perjadin</span>
                                     {{ $baris['uraian'] }}
                                 @else
-                                    Biaya perjalanan dinas dalam rangka {{ $baris['uraian'] }}
+                                    Biaya {{ $baris['uraian'] }}
                                 @endif
                             </td>
                             <td class="text-end text-nowrap" data-order="{{ $baris['nominal'] }}">{{ number_format($baris['nominal'], 0, ',', '.') }}</td>
