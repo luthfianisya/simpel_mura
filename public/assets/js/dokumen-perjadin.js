@@ -516,7 +516,7 @@
             const skLabel = skPengeluaranLabel[row.jenis] || skPengeluaranLabel.transportasi;
             bodyRows += `<tr>
                 <td>${i + 1}</td>
-                <td>${esc(row.uraian) || '-'}<br><span class="fst-italic" style="font-size:0.68rem;">${skLabel} ${tahun}</span></td>
+                <td style="text-align:justify;">${esc(row.uraian) || '-'}<br><span class="fst-italic" style="font-size:0.68rem;">${skLabel} ${tahun}</span></td>
                 <td class="text-end">${fmtRupiah(nominal)}</td>
             </tr>`;
         });
