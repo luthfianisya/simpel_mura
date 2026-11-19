@@ -260,7 +260,7 @@
   <script src="{{ asset('assets/vendor/libs/hammer/hammer.js') }}"></script>
   <script src="{{ asset('assets/vendor/libs/typeahead-js/typeahead.js') }}"></script>
   <script src="{{ asset('assets/vendor/libs/sweetalert2/sweetalert2.js') }}"></script>
-  <script src="{{ asset('assets/js/sweetalert-helpers.js') }}"></script>
+  <script src="{{ asset('assets/js/sweetalert-helpers.js') }}?v={{ filemtime(public_path('assets/js/sweetalert-helpers.js')) }}"></script>
   @if (session('alert_simpan'))
     <script>
       document.addEventListener('DOMContentLoaded', function () {

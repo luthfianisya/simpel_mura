@@ -190,12 +190,12 @@ test('tombol simpan per step menyimpan draft lalu kembali ke form edit di step y
         'step_aktif' => 'step-rincian',
     ])->assertRedirect(route('perjalanan-dinas.edit', ['perjalananDinas' => $pd, 'step' => 'step-rincian']));
 
-    // Simpan Draft biasa juga tetap di form; baru "Selesai" yang keluar ke dashboard.
+    // "Simpan Draft" dari tombol atas (tanpa penanda) kembali ke tabel dengan notifikasi.
     $this->actingAs($user)->put(route('perjalanan-dinas.update', $pd), [
         'jenis_perjadin' => 'biasa',
         'status_draft' => 'draft_sesi1',
         'tanggal_spd' => '2026-11-02',
-    ])->assertRedirect(route('perjalanan-dinas.edit', $pd))->assertSessionHas('alert_simpan');
+    ])->assertRedirect(route('dashboard'))->assertSessionHas('alert_simpan');
 });
 
 test('simpan draft lewat ajax mengembalikan json tanpa redirect', function () {

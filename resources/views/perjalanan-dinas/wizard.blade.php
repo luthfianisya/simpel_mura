@@ -842,7 +842,7 @@
                                         <div class="col-5"><label class="form-label mb-0 small text-muted" for="input-rincian-uang_harian">Rate per Hari/Malam (Rp)</label></div>
                                     </div>
                                     <div class="row g-2 align-items-center mb-1">
-                                        <div class="col-4"><label class="form-label mb-0" for="input-rincian-uang_harian">Uang Harian<span class="required-mark">*</span></label></div>
+                                        <div class="col-4"><label class="form-label mb-0" for="input-rincian-uang_harian">Uang Harian{!! $jenis !== 'dalam_kota_kurang_8_jam' ? '<span class="required-mark">*</span>' : '' !!}</label></div>
                                         <div class="col-3"><input type="number" min="0" step="1" id="input-rincian_hari-uang_harian" name="rincian_hari[uang_harian]" class="form-control rincian-input" value="{{ old('rincian_hari.uang_harian', '') }}"></div>
                                         <div class="col-5"><input type="number" min="0" step="1000" id="input-rincian-uang_harian" name="rincian[uang_harian]" class="form-control rincian-input" value="{{ old('rincian.uang_harian', 0) }}"></div>
                                     </div>
@@ -1029,6 +1029,10 @@
             // form disesuaikan dengan hasil simpan (draft baru -> mode edit, nomor SPD final,
             // file dokumentasi baru jadi file tersimpan) supaya simpan berikutnya tidak dobel.
             let sedangMenyimpan = false;
+            function toastSimpan(judul, ikon, durasi) {
+                if (typeof swalToast === 'function') return swalToast(judul, ikon, durasi);
+                return Swal.fire({ toast: true, position: 'top-end', icon: ikon || 'success', title: judul, showConfirmButton: false, timer: durasi || 2500 });
+            }
             async function simpanDraftAjax(tombol) {
                 if (sedangMenyimpan) return;
                 sedangMenyimpan = true;
@@ -1047,7 +1051,7 @@
                     const data = await res.json().catch(function () { return {}; });
                     if (!res.ok) {
                         const pesan = data.errors ? Object.values(data.errors).flat()[0] : (data.message || 'Gagal menyimpan draft.');
-                        swalToast(pesan, 'error', 4000);
+                        toastSimpan(pesan, 'error', 4000);
                         return;
                     }
 
@@ -1083,10 +1087,11 @@
                     renderAllPreviews();
                     updateStepperStatus();
 
-                    swalToast(data.pesan || 'Draft tersimpan');
-                    if (data.peringatan) setTimeout(function () { swalToast(data.peringatan, 'warning', 6000); }, 2600);
+                    toastSimpan(data.pesan || 'Draft tersimpan');
+                    if (data.peringatan) setTimeout(function () { toastSimpan(data.peringatan, 'warning', 6000); }, 2600);
                 } catch (e) {
-                    swalToast('Gagal menyimpan draft. Periksa koneksi lalu coba lagi.', 'error', 4000);
+                    console.error(e);
+                    toastSimpan('Gagal menyimpan draft. Periksa koneksi lalu coba lagi.', 'error', 4000);
                 } finally {
                     sedangMenyimpan = false;
                     if (tombol) {
@@ -1146,13 +1151,12 @@
 
             const modalReviewConfirm = document.getElementById('modal-review-confirm');
             if (modalReviewConfirm) {
+                // "Simpan Draft"/"Selesai" dari tombol atas: submit biasa lalu kembali ke tabel.
+                // (Tombol "Simpan" di bawah tiap step yang menyimpan di tempat, lihat simpanDraftAjax.)
                 modalReviewConfirm.addEventListener('click', function () {
                     if (reviewModal) reviewModal.hide();
-                    if (pendingStatusDraft !== 'selesai') {
-                        simpanDraftAjax(btnSimpanDraft);
-                        return;
-                    }
                     statusDraftInput.value = pendingStatusDraft;
+                    document.getElementById('input-tetap_di_form').value = '0';
                     form.requestSubmit ? form.requestSubmit() : form.submit();
                 });
             }
@@ -1245,6 +1249,46 @@
                 });
             })();
 
+            // ----- Jumlah hari Rincian Biaya: default otomatis dari tanggal pelaksanaan
+            // (uang harian & transport = lama hari, penginapan = lama - 1 malam). Begitu
+            // user mengetik sendiri di kotak itu, nilainya tidak ditimpa lagi saat tanggal
+            // diubah. Kotak yang sudah berisi nilai tersimpan (mode edit) juga dibiarkan.
+            (function defaultJumlahHariRincian() {
+                const kotak = {
+                    uang_harian: document.getElementById('input-rincian_hari-uang_harian'),
+                    transport: document.getElementById('input-rincian_hari-transport'),
+                    penginapan: document.getElementById('input-rincian_hari-penginapan'),
+                };
+                Object.keys(kotak).forEach(function (k) {
+                    const el = kotak[k];
+                    if (!el) return;
+                    if (el.value !== '') el.dataset.manual = '1';
+                    el.addEventListener('input', function (e) {
+                        if (e.isTrusted) el.dataset.manual = el.value === '' ? '' : '1';
+                    });
+                });
+
+                function isiDefault() {
+                    const mulai = val('input-tanggal_mulai');
+                    const selesai = val('input-tanggal_selesai');
+                    if (!mulai || !selesai) return;
+                    const lama = DokumenPerjadin.hitungLamaHari(mulai, selesai);
+                    const nilai = { uang_harian: lama, transport: lama, penginapan: Math.max(lama - 1, 0) };
+                    Object.keys(kotak).forEach(function (k) {
+                        const el = kotak[k];
+                        if (!el || el.dataset.manual === '1') return;
+                        el.value = nilai[k];
+                        el.dispatchEvent(new Event('input', { bubbles: true }));
+                    });
+                }
+
+                ['input-tanggal_mulai', 'input-tanggal_selesai'].forEach(function (id) {
+                    const el = document.getElementById(id);
+                    if (el) el.addEventListener('input', isiDefault);
+                });
+                isiDefault();
+            })();
+
             // ----- Validasi real-time per step: tandai bulatan step di stepper jadi
             // hijau + centang begitu semua field wajibnya lengkap, dan tampilkan pesan
             // error di bawah field yang masih kosong (baru muncul setelah field-nya
@@ -1283,7 +1327,10 @@
 
             // Rincian Biaya: cuma Uang Harian yang wajib — Transport & Penginapan boleh
             // kosong (mis. perjalanan dalam kota yang tidak butuh keduanya).
+            // Dalam Kota <= 8 Jam boleh tanpa uang harian/transport/penginapan sama sekali,
+            // jadi step Rincian Biaya-nya selalu dianggap lengkap.
             function rincianOk() {
+                if (@json($jenis) === 'dalam_kota_kurang_8_jam') return true;
                 return (parseFloat(val('input-rincian-uang_harian')) || 0) > 0;
             }
 

@@ -12,7 +12,7 @@ test('nomor form permintaan tersimpan dari data umum perjalanan dinas', function
         'jenis_perjadin' => 'biasa',
         'status_draft' => 'draft_sesi1',
         'no_form_permintaan' => 'FP-031/2026',
-    ])->assertRedirect(route('perjalanan-dinas.edit', PerjalananDinas::first()));
+    ])->assertRedirect(route('dashboard'));
 
     $pd = PerjalananDinas::latest('id_perjalanan_dinas')->first();
     expect($pd->no_form_permintaan)->toBe('FP-031/2026');

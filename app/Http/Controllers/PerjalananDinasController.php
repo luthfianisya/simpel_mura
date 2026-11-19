@@ -742,13 +742,14 @@ class PerjalananDinasController extends Controller
     }
 
     /**
-     * Simpan sebagai draft (tombol "Simpan Draft" maupun "Simpan" per step) tetap di form
-     * edit, di step yang sedang dibuka. "Selesai" baru keluar ke tabel (dashboard).
-     * Keduanya memunculkan popup notifikasi (flash "alert_simpan", lihat layouts/app).
+     * "Simpan Draft"/"Selesai" dari tombol atas form kembali ke tabel (dashboard) dengan
+     * notifikasi kecil (flash "alert_simpan", lihat layouts/app). Tombol "Simpan" di bawah
+     * tiap step menyimpan lewat AJAX (responsSimpanDraft) jadi tidak lewat sini; penanda
+     * tetap_di_form hanya cadangan kalau AJAX tidak dipakai.
      */
     private function redirectSetelahSimpan(Request $request, PerjalananDinas $perjalananDinas)
     {
-        if ($perjalananDinas->status_draft !== 'selesai') {
+        if ($request->boolean('tetap_di_form') && $perjalananDinas->status_draft !== 'selesai') {
             $step = (string) $request->input('step_aktif');
 
             return redirect()->route('perjalanan-dinas.edit', array_filter([
@@ -758,7 +759,9 @@ class PerjalananDinasController extends Controller
         }
 
         return redirect()->route('dashboard')
-            ->with('alert_simpan', ['judul' => 'Perjalanan dinas selesai disimpan']);
+            ->with('alert_simpan', ['judul' => $perjalananDinas->status_draft === 'selesai'
+                ? 'Perjalanan dinas selesai disimpan'
+                : 'Draft tersimpan']);
     }
 
     public function update(Request $request, PerjalananDinas $perjalananDinas)
