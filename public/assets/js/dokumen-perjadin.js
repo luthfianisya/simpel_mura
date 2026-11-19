@@ -762,7 +762,11 @@
             `;
         }
 
-        rows.forEach(function (row) {
+        // Urutan surat pernyataan mengikuti Kelengkapan Dokumen di menu Bantuan.
+        const urutanKondisi = Object.keys(kondisiLabel);
+        rows.slice().sort(function (a, b) {
+            return urutanKondisi.indexOf(a.jenis_kondisi) - urutanKondisi.indexOf(b.jenis_kondisi);
+        }).forEach(function (row) {
             blocks.push(suratPernyataanBlock(data, row.jenis_kondisi, row.keterangan));
         });
 
@@ -1474,7 +1478,7 @@
 
     // Urutan berkas SPJ (sama dengan "Kelengkapan Dokumen" di menu Bantuan): dipakai untuk
     // urutan daftar di popup export dan urutan halaman saat digabung jadi 1 PDF.
-    const URUTAN_BERKAS = ['spd', 'laporan', 'pernyataan', 'pengeluaran', 'rincian', 'kuitansi'];
+    const URUTAN_BERKAS = ['kuitansi', 'rincian', 'pengeluaran', 'pernyataan', 'laporan', 'spd'];
 
     function urutkanBerkas(keys) {
         return keys.slice().sort(function (a, b) {
