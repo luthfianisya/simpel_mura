@@ -48,8 +48,26 @@ function swalError(message) {
     });
 }
 
-/** Notifikasi kecil di kanan atas yang hilang sendiri (tidak menutupi halaman). */
+/**
+ * Notifikasi kecil di kanan atas yang hilang sendiri (toastr bawaan tema). icon: success |
+ * error | warning | info. Kalau toastr belum termuat, jatuh ke toast SweetAlert.
+ */
 function swalToast(title, icon, timer) {
+    if (window.toastr) {
+        const jenis = { success: 'success', error: 'error', warning: 'warning', info: 'info' }[icon] || 'success';
+        const judul = { success: 'Berhasil', error: 'Gagal', warning: 'Perhatian', info: 'Info' }[jenis];
+        return toastr[jenis](title, judul, {
+            closeButton: true,
+            progressBar: true,
+            newestOnTop: true,
+            preventDuplicates: true,
+            positionClass: 'toast-top-right',
+            timeOut: timer || 3000,
+            extendedTimeOut: 1000,
+            showMethod: 'fadeIn',
+            hideMethod: 'fadeOut',
+        });
+    }
     return Swal.fire({
         toast: true,
         position: 'top-end',
