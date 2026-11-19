@@ -48,6 +48,19 @@ function swalError(message) {
     });
 }
 
+/** Notifikasi kecil di kanan atas yang hilang sendiri (tidak menutupi halaman). */
+function swalToast(title, icon, timer) {
+    return Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: icon || 'success',
+        title: title,
+        showConfirmButton: false,
+        timer: timer || 2500,
+        timerProgressBar: false,
+    });
+}
+
 /** Pengganti alert() untuk pesan sukses. */
 function swalSuccess(message) {
     return Swal.fire({

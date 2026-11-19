@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use setasign\Fpdi\Fpdi;
+use setasign\Fpdi\PdfParser\StreamReader;
 use Throwable;
 
 class DokumenExportController extends Controller
@@ -28,47 +30,90 @@ class DokumenExportController extends Controller
         ]);
 
         try {
-            [$fontFace, $folderFont] = $this->fontFaceBookman();
-            $html = $this->inlineLocalImages($validated['html']);
-            if ($fontFace !== '') {
-                $gaya = '<style>' . $fontFace . '</style>';
-                $html = preg_match('/<head\b[^>]*>/i', $html)
-                    ? preg_replace('/<head\b[^>]*>/i', '$0' . $gaya, $html, 1)
-                    : $gaya . $html;
-            }
-
-            // Cache metrik font dompdf (lihat config/dompdf.php font_cache) — kalau foldernya
-            // belum ada, font custom gagal dimuat diam-diam dan jatuh ke Times.
-            if (! is_dir(storage_path('fonts'))) {
-                @mkdir(storage_path('fonts'), 0775, true);
-            }
-
-            $pdf = Pdf::loadHTML($html)
-                ->setOptions([
-                    'isHtml5ParserEnabled' => true,
-                    'isRemoteEnabled' => false,
-                    'chroot' => array_values(array_filter([realpath(base_path()), $folderFont])),
-                    'defaultFont' => 'DejaVu Sans',
-                    'dpi' => 96,
-                    // dompdf defaultnya media type "screen" — tanpa ini, semua aturan
-                    // @media print di dokumen-perjadin.css (yang me-reset min-height
-                    // preview-layar 297mm/330mm supaya dokumennya tidak nge-generate
-                    // halaman ke-2 kosong) TIDAK PERNAH kepakai sama sekali.
-                    'defaultMediaType' => 'print',
-                ])
-                ->output();
+            $pdf = $this->renderPdf($validated['html']);
         } catch (Throwable $e) {
             Log::error('Gagal generate PDF dokumen: ' . $e->getMessage());
 
             return response()->json(['message' => 'Gagal membuat PDF di server. Coba lagi atau hubungi admin.'], 500);
         }
 
-        $filename = preg_replace('/[\\\\\/:*?"<>|]/', '-', $validated['filename']) . '.pdf';
+        return $this->unduhPdf($pdf, $validated['filename']);
+    }
+
+    // Beberapa dokumen digabung jadi SATU file PDF, berurutan sesuai array "dokumen".
+    // Tiap dokumen tetap dirender sendiri-sendiri (ukuran kertasnya bisa beda: SPD F4,
+    // lainnya A4 — dompdf tidak bisa mencampur ukuran kertas dalam 1 render), lalu
+    // halaman-halamannya disatukan dengan FPDI tanpa mengubah ukuran tiap halaman.
+    public function pdfGabung(Request $request): Response|JsonResponse
+    {
+        $validated = $request->validate([
+            'dokumen' => 'required|array|min:1|max:20',
+            'dokumen.*' => 'required|string',
+            'filename' => 'required|string|max:255',
+        ]);
+
+        try {
+            $gabungan = new Fpdi();
+            foreach ($validated['dokumen'] as $html) {
+                $jumlahHalaman = $gabungan->setSourceFile(StreamReader::createByString($this->renderPdf($html)));
+                for ($i = 1; $i <= $jumlahHalaman; $i++) {
+                    $templat = $gabungan->importPage($i);
+                    $ukuran = $gabungan->getTemplateSize($templat);
+                    $gabungan->AddPage($ukuran['orientation'], [$ukuran['width'], $ukuran['height']]);
+                    $gabungan->useTemplate($templat);
+                }
+            }
+            $pdf = $gabungan->Output('S');
+        } catch (Throwable $e) {
+            Log::error('Gagal menggabungkan PDF dokumen: ' . $e->getMessage());
+
+            return response()->json(['message' => 'Gagal membuat PDF gabungan di server. Coba lagi atau hubungi admin.'], 500);
+        }
+
+        return $this->unduhPdf($pdf, $validated['filename']);
+    }
+
+    private function unduhPdf(string $pdf, string $namaFile): Response
+    {
+        $filename = preg_replace('/[\\\\\/:*?"<>|]/', '-', $namaFile) . '.pdf';
 
         return response($pdf, 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
+    }
+
+    private function renderPdf(string $html): string
+    {
+        [$fontFace, $folderFont] = $this->fontFaceBookman();
+        $html = $this->inlineLocalImages($html);
+        if ($fontFace !== '') {
+            $gaya = '<style>' . $fontFace . '</style>';
+            $html = preg_match('/<head\b[^>]*>/i', $html)
+                ? preg_replace('/<head\b[^>]*>/i', '$0' . $gaya, $html, 1)
+                : $gaya . $html;
+        }
+
+        // Cache metrik font dompdf (lihat config/dompdf.php font_cache) — kalau foldernya
+        // belum ada, font custom gagal dimuat diam-diam dan jatuh ke Times.
+        if (! is_dir(storage_path('fonts'))) {
+            @mkdir(storage_path('fonts'), 0775, true);
+        }
+
+        return Pdf::loadHTML($html)
+            ->setOptions([
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled' => false,
+                'chroot' => array_values(array_filter([realpath(base_path()), $folderFont])),
+                'defaultFont' => 'DejaVu Sans',
+                'dpi' => 96,
+                // dompdf defaultnya media type "screen" — tanpa ini, semua aturan
+                // @media print di dokumen-perjadin.css (yang me-reset min-height
+                // preview-layar 297mm/330mm supaya dokumennya tidak nge-generate
+                // halaman ke-2 kosong) TIDAK PERNAH kepakai sama sekali.
+                'defaultMediaType' => 'print',
+            ])
+            ->output();
     }
 
     // dompdf hanya kenal font bawaannya, jadi "Bookman Old Style" (dipakai SPD, Surat

@@ -261,6 +261,13 @@
   <script src="{{ asset('assets/vendor/libs/typeahead-js/typeahead.js') }}"></script>
   <script src="{{ asset('assets/vendor/libs/sweetalert2/sweetalert2.js') }}"></script>
   <script src="{{ asset('assets/js/sweetalert-helpers.js') }}"></script>
+  @if (session('alert_simpan'))
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        swalToast(@json(session('alert_simpan')['judul'] ?? 'Berhasil'));
+      });
+    </script>
+  @endif
   {{-- DataTables inti dimuat global; ekstensi (buttons, fixedcolumns) dimuat per halaman yang butuh. --}}
   <script src="{{ asset('assets/vendor/libs/datatables/jquery.dataTables.js') }}"></script>
   <script src="{{ asset('assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js') }}"></script>

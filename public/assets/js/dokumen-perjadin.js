@@ -240,10 +240,14 @@
         return (data.pengeluaran || []).reduce(function (sum, p) { return sum + (parseFloat(p.nominal) || 0); }, 0);
     }
 
+    // Rujukan lampiran: jenis yang punya SPD (Biasa, Dalam Kota > 8 Jam) merujuk ke SPD,
+    // Dalam Kota <= 8 Jam (tanpa SPD) merujuk ke Surat Tugas (ST).
     function spdAtauSt(data) {
+        const pakaiSt = data.jenis_perjadin === 'dalam_kota_kurang_8_jam';
         return {
-            nomor: data.no_spd || data.no_surat_tugas || '...........................',
-            tanggal: data.no_spd ? data.tanggal_spd : data.tanggal_surat_tugas,
+            label: pakaiSt ? 'ST' : 'SPD',
+            nomor: (pakaiSt ? data.no_surat_tugas : data.no_spd) || '...........................',
+            tanggal: pakaiSt ? data.tanggal_surat_tugas : data.tanggal_spd,
         };
     }
 
@@ -408,7 +412,7 @@
             <div style="font-family:Arial, sans-serif; font-size:9.5pt;">
             <div class="dokumen-title" style="text-decoration:none; font-size:14pt; font-weight:normal;">PERINCIAN PERHITUNGAN BIAYA PERJALANAN DINAS</div>
             <table class="dokumen-table mt-3">
-                <tr><td width="28%">Lampiran SPD Nomor</td><td>: ${esc(ref.nomor)}</td></tr>
+                <tr><td width="28%">Lampiran ${ref.label} Nomor</td><td>: ${esc(ref.nomor)}</td></tr>
                 <tr><td>Tanggal</td><td>: ${fmtTanggalPanjang(ref.tanggal)}</td></tr>
             </table>
             <table class="dokumen-table dokumen-rincian">
@@ -1468,69 +1472,62 @@
         downloadBlob(blob, title + '.pdf');
     }
 
-    // Popup pilih dokumen yang mau diekspor (kartu per dokumen + "Pilih semua").
+    // Urutan berkas SPJ (sama dengan "Kelengkapan Dokumen" di menu Bantuan): dipakai untuk
+    // urutan daftar di popup export dan urutan halaman saat digabung jadi 1 PDF.
+    const URUTAN_BERKAS = ['spd', 'laporan', 'pernyataan', 'pengeluaran', 'rincian', 'kuitansi'];
+
+    function urutkanBerkas(keys) {
+        return keys.slice().sort(function (a, b) {
+            const ia = URUTAN_BERKAS.indexOf(a), ib = URUTAN_BERKAS.indexOf(b);
+            return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+        });
+    }
+
+    // Popup pilih dokumen yang mau diekspor + cara unduhnya (file terpisah / digabung).
     // docs = { key: { label, html } }. Surat Tugas tidak ditawarkan (tidak diunduh).
-    // Mengembalikan Promise<array key> — kosong kalau dibatalkan.
+    // Mengembalikan Promise<{ keys: [...] (sudah berurutan), gabung: bool } | null>.
     function pilihDokumenExport(docs) {
-        const ikon = {
-            'spd': 'ti-plane',
-            'rincian': 'ti-report-money',
-            'pengeluaran': 'ti-cash',
-            'kuitansi': 'ti-receipt',
-            'pernyataan': 'ti-writing',
-            'laporan': 'ti-clipboard-text',
-        };
-        const keys = Object.keys(docs).filter(function (k) { return k !== 'surat-tugas'; });
-        const kartu = keys.map(function (k) {
-            return '<label class="pde-kartu terpilih" for="pde-' + k + '">'
-                + '<input type="checkbox" class="pde-cek" id="pde-' + k + '" value="' + k + '" checked>'
-                + '<span class="pde-ikon"><i class="ti ' + (ikon[k] || 'ti-file-text') + '"></i></span>'
-                + '<span class="pde-nama">' + esc(docs[k].label) + '</span>'
-                + '<span class="pde-tanda"><i class="ti ti-check"></i></span>'
-                + '</label>';
+        const keys = urutkanBerkas(Object.keys(docs).filter(function (k) { return k !== 'surat-tugas'; }));
+        const daftar = keys.map(function (k) {
+            return '<label class="pde-baris"><input class="form-check-input pde-cek" type="checkbox" value="' + k + '" checked>'
+                + '<span>' + esc(docs[k].label) + '</span></label>';
         }).join('');
 
         const gaya = '<style>'
-            + '.pde-popup{border-radius:14px!important;padding:1.5rem 1.5rem 1.25rem!important;}'
-            + '.pde-popup .swal2-title{font-size:1.25rem;padding:0;text-align:left;}'
-            + '.pde-popup .swal2-html-container{margin:.75rem 0 0!important;text-align:left;}'
-            + '.pde-sub{color:#6f6b7d;font-size:.875rem;margin-bottom:1rem;}'
-            + '.pde-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;}'
-            + '.pde-bar .form-check{margin:0;}'
-            + '.pde-hitung{font-size:.8125rem;color:#1B449C;background:#eef2fb;border-radius:999px;padding:.2rem .7rem;font-weight:600;}'
-            + '.pde-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem;}'
-            + '@media (max-width:480px){.pde-grid{grid-template-columns:1fr;}}'
-            + '.pde-kartu{position:relative;display:flex;align-items:center;gap:.7rem;padding:.7rem .85rem;margin:0;'
-            + 'border:1.5px solid #e3e1e8;border-radius:10px;cursor:pointer;user-select:none;transition:all .15s;background:#fff;}'
-            + '.pde-kartu:hover{border-color:#9db3e3;background:#f8f9fd;}'
-            + '.pde-kartu.terpilih{border-color:#1B449C;background:#f3f6fc;}'
-            + '.pde-cek{position:absolute;opacity:0;pointer-events:none;}'
-            + '.pde-ikon{flex:0 0 auto;width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;'
-            + 'background:#eef0f4;color:#6f6b7d;font-size:1.2rem;transition:all .15s;}'
-            + '.pde-kartu.terpilih .pde-ikon{background:#1B449C;color:#fff;}'
-            + '.pde-nama{flex:1 1 auto;font-weight:500;color:#4b465c;font-size:.9rem;}'
-            + '.pde-tanda{flex:0 0 auto;width:20px;height:20px;border-radius:50%;border:1.5px solid #c9c6d1;display:flex;'
-            + 'align-items:center;justify-content:center;font-size:.75rem;color:transparent;transition:all .15s;}'
-            + '.pde-kartu.terpilih .pde-tanda{background:#1B449C;border-color:#1B449C;color:#fff;}'
-            + '.pde-catatan{display:flex;gap:.4rem;align-items:flex-start;margin-top:1rem;font-size:.8rem;color:#6f6b7d;}'
-            + '.pde-popup .swal2-actions{width:100%;justify-content:flex-end;margin-top:1.25rem;gap:.5rem;}'
+            + '.pde-popup{padding:1.25rem 1.25rem 1rem!important;border-radius:10px!important;}'
+            + '.pde-popup .swal2-title{font-size:1.125rem;font-weight:600;padding:0;text-align:left;}'
+            + '.pde-popup .swal2-html-container{margin:1rem 0 0!important;text-align:left;font-size:.9375rem;}'
+            + '.pde-label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:#8a8d93;margin-bottom:.4rem;}'
+            + '.pde-daftar{border:1px solid #e6e6e8;border-radius:8px;}'
+            + '.pde-baris{display:flex;align-items:center;gap:.6rem;padding:.55rem .8rem;margin:0;cursor:pointer;border-top:1px solid #f0f0f2;}'
+            + '.pde-baris:first-child{border-top:0;}'
+            + '.pde-baris:hover{background:#f8f9fb;}'
+            + '.pde-baris .form-check-input{margin:0;flex:0 0 auto;}'
+            + '.pde-semua{font-weight:600;background:#fafafb;}'
+            + '.pde-mode{display:flex;gap:.5rem;}'
+            + '.pde-mode label{flex:1;display:flex;align-items:center;gap:.5rem;padding:.55rem .8rem;margin:0;border:1px solid #e6e6e8;border-radius:8px;cursor:pointer;}'
+            + '.pde-mode label:has(input:checked){border-color:#1B449C;background:#f4f7fc;}'
+            + '.pde-mode .form-check-input{margin:0;}'
+            + '.pde-popup .swal2-actions{width:100%;justify-content:flex-end;gap:.5rem;margin-top:1.25rem;}'
             + '.pde-popup .swal2-actions .btn{margin:0;}'
             + '</style>';
 
         return Swal.fire({
-            title: '<i class="ti ti-file-export me-2" style="color:#1B449C;"></i>Export Dokumen',
+            title: 'Export Dokumen',
             html: gaya
-                + '<div class="pde-sub">Pilih dokumen yang ingin diunduh. Setiap dokumen diunduh sebagai file PDF terpisah.</div>'
-                + '<div class="pde-bar">'
-                + '<div class="form-check"><input class="form-check-input" type="checkbox" id="pde-semua" checked>'
-                + '<label class="form-check-label fw-semibold" for="pde-semua">Pilih semua</label></div>'
-                + '<span class="pde-hitung"></span>'
+                + '<div class="pde-label">Dokumen</div>'
+                + '<div class="pde-daftar mb-3">'
+                + '<label class="pde-baris pde-semua"><input class="form-check-input" type="checkbox" id="pde-semua" checked><span>Pilih semua</span></label>'
+                + daftar
                 + '</div>'
-                + '<div class="pde-grid">' + kartu + '</div>'
-                + '<div class="pde-catatan"><i class="ti ti-info-circle"></i><span>Surat Tugas tidak termasuk dalam export.</span></div>',
-            width: 560,
+                + '<div class="pde-label">Format unduhan</div>'
+                + '<div class="pde-mode">'
+                + '<label><input class="form-check-input" type="radio" name="pde-mode" value="pisah" checked><span>File terpisah</span></label>'
+                + '<label><input class="form-check-input" type="radio" name="pde-mode" value="gabung"><span>Gabung jadi 1 PDF</span></label>'
+                + '</div>',
+            width: 440,
             showCancelButton: true,
-            confirmButtonText: '<i class="ti ti-download me-1"></i> Export',
+            confirmButtonText: 'Export',
             cancelButtonText: 'Batal',
             reverseButtons: true,
             focusConfirm: false,
@@ -1543,16 +1540,12 @@
             didOpen: function (popup) {
                 const semua = popup.querySelector('#pde-semua');
                 const satuan = Array.from(popup.querySelectorAll('.pde-cek'));
-                const hitung = popup.querySelector('.pde-hitung');
                 const tombol = Swal.getConfirmButton();
                 function sinkron() {
                     const jumlah = satuan.filter(function (c) { return c.checked; }).length;
-                    satuan.forEach(function (c) { c.closest('.pde-kartu').classList.toggle('terpilih', c.checked); });
                     semua.checked = jumlah === satuan.length;
                     semua.indeterminate = jumlah > 0 && jumlah < satuan.length;
-                    hitung.textContent = jumlah + ' dari ' + satuan.length + ' dipilih';
                     tombol.disabled = jumlah === 0;
-                    tombol.innerHTML = '<i class="ti ti-download me-1"></i> Export' + (jumlah ? ' (' + jumlah + ')' : '');
                 }
                 semua.addEventListener('change', function () {
                     satuan.forEach(function (c) { c.checked = semua.checked; });
@@ -1562,17 +1555,49 @@
                 sinkron();
             },
             preConfirm: function () {
-                const dipilih = Array.from(Swal.getPopup().querySelectorAll('.pde-cek:checked'))
-                    .map(function (c) { return c.value; });
+                const popup = Swal.getPopup();
+                const dipilih = Array.from(popup.querySelectorAll('.pde-cek:checked')).map(function (c) { return c.value; });
                 if (!dipilih.length) {
                     Swal.showValidationMessage('Pilih minimal satu dokumen.');
                     return false;
                 }
-                return dipilih;
+                return { keys: dipilih, gabung: popup.querySelector('input[name="pde-mode"]:checked').value === 'gabung' };
             },
         }).then(function (hasil) {
-            return hasil.isConfirmed ? hasil.value : [];
+            return hasil.isConfirmed ? hasil.value : null;
         });
+    }
+
+    // Beberapa dokumen jadi SATU PDF (lihat DokumenExportController::pdfGabung): tiap
+    // dokumen dibangun lengkap dengan ukuran kertasnya sendiri, server yang menyatukan.
+    // items = [{ html, paperSize, extraClass }] sesuai urutan halaman.
+    async function exportGabunganPdfHd(items, title, cssUrl, exportUrl, csrfToken) {
+        let cssOverride = null;
+        try {
+            const cssRes = await fetch(cssUrl);
+            if (cssRes.ok) cssOverride = await cssRes.text();
+        } catch (e) {
+            // fallback ke getDokumenCss() di buildDokumenHtmlDocument
+        }
+        const dokumen = items.map(function (it) {
+            return buildDokumenHtmlDocument(it.html, title, cssUrl, it.paperSize, it.extraClass, true, cssOverride);
+        });
+        const response = await fetch(exportUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+            body: JSON.stringify({ dokumen: dokumen, filename: title }),
+        });
+        if (!response.ok) {
+            let message = 'Gagal membuat PDF gabungan (status ' + response.status + ').';
+            try {
+                const data = await response.json();
+                if (data.message) message = data.message;
+            } catch (e) {
+                // bukan JSON
+            }
+            throw new Error(message);
+        }
+        downloadBlob(await response.blob(), title + '.pdf');
     }
 
     window.DokumenPerjadin = {
@@ -1602,5 +1627,6 @@
         exportAsPdf: exportAsPdf,
         exportAsPdfHd: exportAsPdfHd,
         pilihDokumenExport: pilihDokumenExport,
+        exportGabunganPdfHd: exportGabunganPdfHd,
     };
 })(window);

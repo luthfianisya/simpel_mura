@@ -612,6 +612,7 @@
             const btnExportPdf = document.getElementById('btn-export-pdf');
             const cssUrlDokumen = '{{ asset("assets/css/dokumen-perjadin.css") }}?v={{ filemtime(public_path("assets/css/dokumen-perjadin.css")) }}';
             const exportPdfUrl = '{{ route("dokumen.export-pdf") }}';
+            const exportPdfGabungUrl = '{{ route("dokumen.export-pdf-gabung") }}';
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
             async function eksporSatuDokumen(key) {
@@ -627,14 +628,20 @@
             // tiap dokumen yang dicentang diekspor satu-satu (berurutan, biar server tidak
             // kebanjiran) sebagai PDF terpisah, TANPA dibundel jadi zip.
             btnExportPdf.addEventListener('click', async function () {
-                const dipilih = await DokumenPerjadin.pilihDokumenExport(currentDocs);
-                if (!dipilih.length) return;
+                const pilihan = await DokumenPerjadin.pilihDokumenExport(currentDocs);
+                if (!pilihan) return;
                 const labelAsli = btnExportPdf.innerHTML;
                 btnExportPdf.disabled = true;
                 btnExportPdf.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengekspor...';
                 try {
-                    for (const key of dipilih) {
-                        await eksporSatuDokumen(key);
+                    if (pilihan.gabung) {
+                        await DokumenPerjadin.exportGabunganPdfHd(pilihan.keys.map(function (key) {
+                            return { html: currentDocs[key].html, paperSize: paperSizeFor(key), extraClass: extraClassFor(key) };
+                        }), namaFileDokumen('Dokumen Lengkap'), cssUrlDokumen, exportPdfGabungUrl, csrfToken);
+                    } else {
+                        for (const key of pilihan.keys) {
+                            await eksporSatuDokumen(key);
+                        }
                     }
                 } catch (e) {
                     swalError('Gagal export PDF: ' + e.message);

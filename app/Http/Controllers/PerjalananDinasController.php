@@ -705,27 +705,60 @@ class PerjalananDinasController extends Controller
         });
         $noSpd = $perjalananDinas->no_spd;
 
+        if ($request->expectsJson()) {
+            return $this->responsSimpanDraft($request, $perjalananDinas);
+        }
+
         return $this->redirectSetelahSimpan($request, $perjalananDinas)
             ->with('success', 'Perjalanan dinas berhasil disimpan.' . ($noSpd ? " Nomor SPD: {$noSpd}." : ''))
             ->with('warning', $this->peringatanNomorSpdBerubah($request, $noSpd));
     }
 
     /**
-     * Tombol "Simpan" per step di form (tetap_di_form=1) kembali ke form edit di step
-     * yang sama; "Simpan Draft"/"Selesai" di atas tetap kembali ke dashboard.
+     * Simpan draft lewat AJAX (form tidak di-reload): kirim balik data yang dibutuhkan form
+     * supaya bisa lanjut diedit — URL update (draft baru jadi mode edit), nomor SPD final,
+     * dan daftar dokumentasi yang sekarang sudah tersimpan (file baru jadi file "lama").
+     */
+    private function responsSimpanDraft(Request $request, PerjalananDinas $perjalananDinas)
+    {
+        $perjalananDinas->load('dokumentasi');
+
+        return response()->json([
+            'pesan' => 'Draft tersimpan',
+            'peringatan' => $this->peringatanNomorSpdBerubah($request, $perjalananDinas->no_spd),
+            'id' => $perjalananDinas->id_perjalanan_dinas,
+            'no_spd' => $perjalananDinas->no_spd,
+            'update_url' => route('perjalanan-dinas.update', $perjalananDinas),
+            'edit_url' => route('perjalanan-dinas.edit', $perjalananDinas),
+            'dokumentasi_destroy_url' => route('perjalanan-dinas.dokumentasi.destroy', [$perjalananDinas, '__ID__']),
+            'dokumentasi_caption_url' => route('perjalanan-dinas.dokumentasi.caption', [$perjalananDinas, '__ID__']),
+            'dokumentasi' => $perjalananDinas->dokumentasi->map(fn ($d) => [
+                'id' => $d->id_dokumentasi,
+                'nama_file' => $d->nama_file,
+                'caption' => $d->caption,
+                'url' => Storage::disk('public')->url($d->path_file),
+            ])->values()->all(),
+        ]);
+    }
+
+    /**
+     * Simpan sebagai draft (tombol "Simpan Draft" maupun "Simpan" per step) tetap di form
+     * edit, di step yang sedang dibuka. "Selesai" baru keluar ke tabel (dashboard).
+     * Keduanya memunculkan popup notifikasi (flash "alert_simpan", lihat layouts/app).
      */
     private function redirectSetelahSimpan(Request $request, PerjalananDinas $perjalananDinas)
     {
-        if ($request->boolean('tetap_di_form') && $perjalananDinas->status_draft !== 'selesai') {
+        if ($perjalananDinas->status_draft !== 'selesai') {
             $step = (string) $request->input('step_aktif');
 
             return redirect()->route('perjalanan-dinas.edit', array_filter([
                 'perjalananDinas' => $perjalananDinas,
                 'step' => preg_match('/^step-[a-z]+$/', $step) ? $step : null,
-            ]));
+            ]))->with('alert_simpan', ['judul' => 'Draft tersimpan']);
         }
 
-        return redirect()->route('dashboard');
+        return redirect()->route('dashboard')
+            ->with('alert_simpan', ['judul' => 'Perjalanan dinas selesai disimpan']);
     }
 
     public function update(Request $request, PerjalananDinas $perjalananDinas)
@@ -750,6 +783,10 @@ class PerjalananDinasController extends Controller
 
             $this->simpanDataTerkait($perjalananDinas, $validated, $request);
         });
+
+        if ($request->expectsJson()) {
+            return $this->responsSimpanDraft($request, $perjalananDinas);
+        }
 
         return $this->redirectSetelahSimpan($request, $perjalananDinas)
             ->with('success', 'Perjalanan dinas berhasil diperbarui.' . ($perjalananDinas->no_spd ? " Nomor SPD: {$perjalananDinas->no_spd}." : ''))

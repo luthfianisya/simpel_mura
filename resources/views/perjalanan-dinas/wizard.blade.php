@@ -212,12 +212,6 @@
         </div>
     </div>
 
-    @if (session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="ti ti-circle-check me-1"></i> {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
     @if (session('warning'))
         <div class="alert alert-warning alert-dismissible fade show" role="alert">
             {{ session('warning') }}
@@ -1028,16 +1022,79 @@
             // "Simpan" per step: simpan sebagai draft tanpa modal review, lalu tetap di form
             // ini (step yang sama) — bukan balik ke tabel — supaya bisa lanjut mengecek/mengubah.
             document.querySelectorAll('.btn-simpan-step').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    const aktif = stepperEl.querySelector('.bs-stepper-content .content.active');
-                    document.getElementById('input-tetap_di_form').value = '1';
-                    document.getElementById('input-step_aktif').value = aktif ? aktif.id : '';
-                    document.getElementById('input-status_draft').value = 'draft_sesi1';
-                    document.querySelectorAll('.btn-simpan-step').forEach(function (b) { b.disabled = true; });
-                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...';
-                    form.requestSubmit ? form.requestSubmit() : form.submit();
-                });
+                btn.addEventListener('click', function () { simpanDraftAjax(btn); });
             });
+
+            // Simpan sebagai draft TANPA reload halaman: form dikirim lewat fetch, lalu state
+            // form disesuaikan dengan hasil simpan (draft baru -> mode edit, nomor SPD final,
+            // file dokumentasi baru jadi file tersimpan) supaya simpan berikutnya tidak dobel.
+            let sedangMenyimpan = false;
+            async function simpanDraftAjax(tombol) {
+                if (sedangMenyimpan) return;
+                sedangMenyimpan = true;
+                const labelAsli = tombol ? tombol.innerHTML : '';
+                if (tombol) {
+                    tombol.disabled = true;
+                    tombol.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...';
+                }
+                statusDraftInput.value = 'draft_sesi1';
+                try {
+                    const res = await fetch(form.action, {
+                        method: 'POST',
+                        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                        body: new FormData(form),
+                    });
+                    const data = await res.json().catch(function () { return {}; });
+                    if (!res.ok) {
+                        const pesan = data.errors ? Object.values(data.errors).flat()[0] : (data.message || 'Gagal menyimpan draft.');
+                        swalToast(pesan, 'error', 4000);
+                        return;
+                    }
+
+                    if (form.dataset.mode !== 'edit') {
+                        form.dataset.mode = 'edit';
+                        if (!form.querySelector('input[name="_method"]')) {
+                            const m = document.createElement('input');
+                            m.type = 'hidden';
+                            m.name = '_method';
+                            m.value = 'PUT';
+                            form.appendChild(m);
+                        }
+                    }
+                    form.action = data.update_url;
+                    if (data.edit_url) history.replaceState(null, '', data.edit_url + window.location.hash);
+                    idPerjalananDinasIni = data.id;
+
+                    if (typeof noSpdInput !== 'undefined' && noSpdInput) {
+                        noSpdTersimpan = data.no_spd || null;
+                        noSpdInput.value = data.no_spd || '';
+                        if (noSpdSumberInput) noSpdSumberInput.value = '';
+                        if (btnAmbilNomorSpd) btnAmbilNomorSpd.disabled = !!noSpdTersimpan;
+                        tampilkanNoSpdDipakai('');
+                    }
+
+                    dokumentasiDestroyUrlTemplate = data.dokumentasi_destroy_url;
+                    dokumentasiCaptionUrlTemplate = data.dokumentasi_caption_url;
+                    daftarDokumentasi = (data.dokumentasi || []).map(function (d) {
+                        return { lama: true, id: d.id, nama_file: d.nama_file, url: d.url, caption: d.caption };
+                    });
+                    sinkronDokumentasiKeForm();
+                    renderDokumentasiList();
+                    renderAllPreviews();
+                    updateStepperStatus();
+
+                    swalToast(data.pesan || 'Draft tersimpan');
+                    if (data.peringatan) setTimeout(function () { swalToast(data.peringatan, 'warning', 6000); }, 2600);
+                } catch (e) {
+                    swalToast('Gagal menyimpan draft. Periksa koneksi lalu coba lagi.', 'error', 4000);
+                } finally {
+                    sedangMenyimpan = false;
+                    if (tombol) {
+                        tombol.disabled = false;
+                        tombol.innerHTML = labelAsli;
+                    }
+                }
+            }
 
             // Sengaja tombolnya bertipe button biasa (bukan submit) supaya form ini tidak
             // punya elemen submit sama sekali — kalau ada, browser bisa submit form secara
@@ -1090,8 +1147,12 @@
             const modalReviewConfirm = document.getElementById('modal-review-confirm');
             if (modalReviewConfirm) {
                 modalReviewConfirm.addEventListener('click', function () {
-                    statusDraftInput.value = pendingStatusDraft;
                     if (reviewModal) reviewModal.hide();
+                    if (pendingStatusDraft !== 'selesai') {
+                        simpanDraftAjax(btnSimpanDraft);
+                        return;
+                    }
+                    statusDraftInput.value = pendingStatusDraft;
                     form.requestSubmit ? form.requestSubmit() : form.submit();
                 });
             }
@@ -1616,8 +1677,9 @@
             // ditolak kalau sudah dipakai dokumen lain (lihat tentukanNomorSpd di controller).
             const noSpdSumberInput = document.getElementById('input-no_spd_sumber');
             const errNoSpdDipakai = document.getElementById('err-no_spd-dipakai');
-            const noSpdTersimpan = @json($perjalananDinas?->no_spd);
-            const idPerjalananDinasIni = @json($mode === 'edit' ? $perjalananDinas?->id_perjalanan_dinas : null);
+            // let: diperbarui setelah simpan draft lewat AJAX (lihat simpanDraftAjax).
+            let noSpdTersimpan = @json($perjalananDinas?->no_spd);
+            let idPerjalananDinasIni = @json($mode === 'edit' ? $perjalananDinas?->id_perjalanan_dinas : null);
             let timerCekNoSpd = null;
 
             function tampilkanNoSpdDipakai(pesan) {
@@ -1947,10 +2009,10 @@
             const dokumentasiInput = document.getElementById('input-dokumentasi');
             const dokumentasiList = document.getElementById('dokumentasi-preview-list');
             const dokumentasiCsrfToken = form.querySelector('input[name="_token"]').value;
-            const dokumentasiDestroyUrlTemplate = @json($perjalananDinas
+            let dokumentasiDestroyUrlTemplate = @json($perjalananDinas
                 ? route('perjalanan-dinas.dokumentasi.destroy', [$perjalananDinas, '__ID__'])
                 : null);
-            const dokumentasiCaptionUrlTemplate = @json($perjalananDinas
+            let dokumentasiCaptionUrlTemplate = @json($perjalananDinas
                 ? route('perjalanan-dinas.dokumentasi.caption', [$perjalananDinas, '__ID__'])
                 : null);
 
@@ -2348,6 +2410,7 @@
             // di-render (sama seperti preview di atas), bukan id record dari database. -----
             const cssUrlDokumenReview = '{{ asset("assets/css/dokumen-perjadin.css") }}?v={{ filemtime(public_path("assets/css/dokumen-perjadin.css")) }}';
             const exportPdfUrlReview = '{{ route("dokumen.export-pdf") }}';
+            const exportPdfGabungUrlReview = '{{ route("dokumen.export-pdf-gabung") }}';
             const csrfTokenReview = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
             function namaFileDokumenReview(labelDokumen) {
@@ -2369,14 +2432,20 @@
 
             // Export: pilih dokumen dulu (Surat Tugas tidak ditawarkan), tiap dokumen jadi PDF terpisah.
             btnReviewExport.addEventListener('click', async function () {
-                const dipilih = await DokumenPerjadin.pilihDokumenExport(reviewDocs);
-                if (!dipilih.length) return;
+                const pilihan = await DokumenPerjadin.pilihDokumenExport(reviewDocs);
+                if (!pilihan) return;
                 const labelAsli = btnReviewExport.innerHTML;
                 btnReviewExport.disabled = true;
                 btnReviewExport.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengekspor...';
                 try {
-                    for (const key of dipilih) {
-                        await eksporSatuDokumenReview(key);
+                    if (pilihan.gabung) {
+                        await DokumenPerjadin.exportGabunganPdfHd(pilihan.keys.map(function (key) {
+                            return { html: reviewDocs[key].html, paperSize: paperSizeForReview(key), extraClass: extraClassForReview(key) };
+                        }), namaFileDokumenReview('Dokumen Lengkap'), cssUrlDokumenReview, exportPdfGabungUrlReview, csrfTokenReview);
+                    } else {
+                        for (const key of pilihan.keys) {
+                            await eksporSatuDokumenReview(key);
+                        }
                     }
                 } catch (e) {
                     swalError('Gagal export PDF: ' + e.message);

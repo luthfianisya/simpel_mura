@@ -67,6 +67,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/rate', [RateController::class, 'index'])->name('rate.index');
     Route::get('/dokumen-pendukung/{key}/download', [RateController::class, 'downloadDokumenPendukung'])->name('dokumen-pendukung.download');
     Route::post('/dokumen/export-pdf', [DokumenExportController::class, 'pdf'])->name('dokumen.export-pdf');
+    Route::post('/dokumen/export-pdf-gabung', [DokumenExportController::class, 'pdfGabung'])->name('dokumen.export-pdf-gabung');
 });
 
 Route::middleware(['auth', 'role:administrator'])->group(function () {

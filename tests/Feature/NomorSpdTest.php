@@ -190,10 +190,38 @@ test('tombol simpan per step menyimpan draft lalu kembali ke form edit di step y
         'step_aktif' => 'step-rincian',
     ])->assertRedirect(route('perjalanan-dinas.edit', ['perjalananDinas' => $pd, 'step' => 'step-rincian']));
 
-    // Tanpa penanda, tetap kembali ke dashboard seperti biasa.
+    // Simpan Draft biasa juga tetap di form; baru "Selesai" yang keluar ke dashboard.
     $this->actingAs($user)->put(route('perjalanan-dinas.update', $pd), [
         'jenis_perjadin' => 'biasa',
         'status_draft' => 'draft_sesi1',
         'tanggal_spd' => '2026-11-02',
-    ])->assertRedirect(route('dashboard'));
+    ])->assertRedirect(route('perjalanan-dinas.edit', $pd))->assertSessionHas('alert_simpan');
+});
+
+test('simpan draft lewat ajax mengembalikan json tanpa redirect', function () {
+    $user = userPemohonSpd();
+
+    $respon = $this->actingAs($user)->postJson(route('perjalanan-dinas.store'), [
+        'jenis_perjadin' => 'biasa',
+        'status_draft' => 'draft_sesi1',
+        'tanggal_spd' => '2026-11-02',
+        'no_spd' => '272/62130/KU.340/2026',
+        'no_spd_sumber' => 'otomatis',
+    ])->assertOk();
+
+    $pd = PerjalananDinas::first();
+    $respon->assertJson([
+        'id' => $pd->id_perjalanan_dinas,
+        'no_spd' => '272/62130/KU.340/2026',
+        'update_url' => route('perjalanan-dinas.update', $pd),
+    ]);
+
+    // Simpan berikutnya (update) tidak membuat dokumen baru.
+    $this->actingAs($user)->putJson(route('perjalanan-dinas.update', $pd), [
+        'jenis_perjadin' => 'biasa',
+        'status_draft' => 'draft_sesi1',
+        'tanggal_spd' => '2026-11-02',
+        'no_spd' => '272/62130/KU.340/2026',
+    ])->assertOk();
+    expect(PerjalananDinas::count())->toBe(1);
 });

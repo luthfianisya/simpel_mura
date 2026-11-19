@@ -25,7 +25,7 @@ test('dokumentasi bisa diunggah saat simpan draft', function () {
         'jenis_perjadin' => 'biasa',
         'status_draft' => 'draft_sesi1',
         'dokumentasi' => [UploadedFile::fake()->image('foto.jpg')],
-    ])->assertRedirect(route('dashboard'));
+    ])->assertRedirect(route('perjalanan-dinas.edit', PerjalananDinas::first()));
 
     $pd = PerjalananDinas::latest('id_perjalanan_dinas')->first();
     expect($pd->dokumentasi)->toHaveCount(1);
