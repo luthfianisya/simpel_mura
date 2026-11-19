@@ -84,10 +84,40 @@
             line-height: 1;
         }
 
-        #pengeluaran-rows > div.pengeluaran-row:last-child {
-            border-bottom: none !important;
-            margin-bottom: 0 !important;
-            padding-bottom: 0 !important;
+        /* Pengeluaran Riil: tiap baris (uraian + jenis + nominal) jadi 1 kartu yang bisa
+           di-drag lewat pegangan di kirinya untuk mengubah urutan. */
+        .pengeluaran-kartu {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.75rem 0.75rem 0.75rem 0.5rem;
+            margin-bottom: 0.75rem;
+            background: #fff;
+            border: 1px solid #e3e1e8;
+            border-radius: 0.5rem;
+        }
+        .pengeluaran-kartu:last-child { margin-bottom: 0; }
+        .pengeluaran-pegangan {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            padding-top: 0.15rem;
+            color: #a5a3ae;
+            cursor: grab;
+            user-select: none;
+        }
+        .pengeluaran-pegangan:active { cursor: grabbing; }
+        .pengeluaran-nomor {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #6f6b7d;
+        }
+        .pengeluaran-isi { flex: 1 1 auto; min-width: 0; }
+        .pengeluaran-ghost {
+            opacity: 0.45;
+            border-style: dashed;
+            border-color: #1B449C;
         }
 
         /* Tombol "x" di pojok kanan atas tiap thumbnail Dokumentasi, untuk menghapus
@@ -841,12 +871,13 @@
                                         <div class="col-3"><label class="form-label mb-0 small text-muted" for="input-rincian_hari-uang_harian">Jumlah Hari</label></div>
                                         <div class="col-5"><label class="form-label mb-0 small text-muted" for="input-rincian-uang_harian">Rate per Hari/Malam (Rp)</label></div>
                                     </div>
-                                    <div class="row g-2 align-items-center mb-1">
+                                    {{-- Dalam Kota <= 8 Jam: hanya Transport (tanpa uang harian & penginapan). --}}
+                                    <div class="row g-2 align-items-center mb-1 {{ $jenis === 'dalam_kota_kurang_8_jam' ? 'd-none' : '' }}">
                                         <div class="col-4"><label class="form-label mb-0" for="input-rincian-uang_harian">Uang Harian{!! $jenis !== 'dalam_kota_kurang_8_jam' ? '<span class="required-mark">*</span>' : '' !!}</label></div>
                                         <div class="col-3"><input type="number" min="0" step="1" id="input-rincian_hari-uang_harian" name="rincian_hari[uang_harian]" class="form-control rincian-input" value="{{ old('rincian_hari.uang_harian', '') }}"></div>
                                         <div class="col-5"><input type="number" min="0" step="1000" id="input-rincian-uang_harian" name="rincian[uang_harian]" class="form-control rincian-input" value="{{ old('rincian.uang_harian', 0) }}"></div>
                                     </div>
-                                    <div class="row g-2 mb-2">
+                                    <div class="row g-2 mb-2 {{ $jenis === 'dalam_kota_kurang_8_jam' ? 'd-none' : '' }}">
                                         <div class="col-4"></div>
                                         <div class="col-8"><div id="hint-rekomendasi-uang-harian" class="form-text mb-0"></div></div>
                                     </div>
@@ -855,12 +886,12 @@
                                         <div class="col-3"><input type="number" min="0" step="1" id="input-rincian_hari-transport" name="rincian_hari[transport]" class="form-control rincian-input" value="{{ old('rincian_hari.transport', '') }}"></div>
                                         <div class="col-5"><input type="number" min="0" step="1000" id="input-rincian-transport" name="rincian[transport]" class="form-control rincian-input" value="{{ old('rincian.transport', 0) }}"></div>
                                     </div>
-                                    <div class="row g-2 align-items-center mb-0">
+                                    <div class="row g-2 align-items-center mb-0 {{ $jenis === 'dalam_kota_kurang_8_jam' ? 'd-none' : '' }}">
                                         <div class="col-4"><label class="form-label mb-0" for="input-rincian-penginapan">Penginapan</label></div>
                                         <div class="col-3"><input type="number" min="0" step="1" id="input-rincian_hari-penginapan" name="rincian_hari[penginapan]" class="form-control rincian-input" value="{{ old('rincian_hari.penginapan', '') }}"></div>
                                         <div class="col-5"><input type="number" min="0" step="1000" id="input-rincian-penginapan" name="rincian[penginapan]" class="form-control rincian-input" value="{{ old('rincian.penginapan', 0) }}"></div>
                                     </div>
-                                    <div class="row g-2">
+                                    <div class="row g-2 {{ $jenis === 'dalam_kota_kurang_8_jam' ? 'd-none' : '' }}">
                                         <div class="col-4"></div>
                                         <div class="col-8"><div id="hint-rekomendasi-akomodasi" class="form-text mb-0"></div></div>
                                     </div>
@@ -954,24 +985,32 @@
 
     {{-- Template baris berulang (dipakai oleh JS, bukan ditampilkan langsung) --}}
     <script type="text/template" id="pengeluaran-row-template">
-        <div class="row g-2 mb-3 pb-3 border-bottom pengeluaran-row">
-            <div class="col-12">
-                <label class="form-label small mb-1">Uraian</label>
-                <textarea name="pengeluaran[__INDEX__][uraian]" class="form-control pengeluaran-input pengeluaran-uraian" rows="2" placeholder="mis. Transportasi darat dari Beriwit ke Juking Supan PP"></textarea>
+        <div class="pengeluaran-kartu pengeluaran-row">
+            <div class="pengeluaran-pegangan" title="Geser untuk mengubah urutan">
+                <i class="ti ti-grip-vertical ti-sm"></i>
+                <span class="pengeluaran-nomor"></span>
             </div>
-            <div class="col-5">
-                <label class="form-label small mb-1">Jenis</label>
-                <select name="pengeluaran[__INDEX__][jenis]" class="form-select pengeluaran-input">
-                    <option value="transportasi">Biaya Transportasi</option>
-                    <option value="akomodasi">Biaya Akomodasi</option>
-                </select>
-            </div>
-            <div class="col-5">
-                <label class="form-label small mb-1">Nominal (Rp)</label>
-                <input type="number" min="0" step="1000" name="pengeluaran[__INDEX__][nominal]" class="form-control pengeluaran-input">
-            </div>
-            <div class="col-2 d-flex align-items-end">
-                <button type="button" class="btn btn-outline-danger btn-remove-row w-100 px-0" title="Hapus"><i class="ti ti-trash ti-sm"></i></button>
+            <div class="pengeluaran-isi">
+                <div class="row g-2">
+                    <div class="col-12">
+                        <label class="form-label small mb-1">Uraian</label>
+                        <textarea name="pengeluaran[__INDEX__][uraian]" class="form-control pengeluaran-input pengeluaran-uraian" rows="2" placeholder="mis. Transportasi darat dari Beriwit ke Juking Supan PP"></textarea>
+                    </div>
+                    <div class="col-5">
+                        <label class="form-label small mb-1">Jenis</label>
+                        <select name="pengeluaran[__INDEX__][jenis]" class="form-select pengeluaran-input">
+                            <option value="transportasi">Biaya Transportasi</option>
+                            <option value="akomodasi">Biaya Akomodasi</option>
+                        </select>
+                    </div>
+                    <div class="col-5">
+                        <label class="form-label small mb-1">Nominal (Rp)</label>
+                        <input type="number" min="0" step="1000" name="pengeluaran[__INDEX__][nominal]" class="form-control pengeluaran-input">
+                    </div>
+                    <div class="col-2 d-flex align-items-end">
+                        <button type="button" class="btn btn-outline-danger btn-remove-row w-100 px-0" title="Hapus"><i class="ti ti-trash ti-sm"></i></button>
+                    </div>
+                </div>
             </div>
         </div>
     </script>
@@ -2029,6 +2068,29 @@
 
             function toggleEmptyState() {
                 pengeluaranEmptyEl.classList.toggle('d-none', pengeluaranRowsEl.children.length > 0);
+                nomoriPengeluaran();
+            }
+
+            // Nomor urut di pegangan tiap kartu, mengikuti urutan tampil (yang juga urutan
+            // kirim ke server & urutan di dokumen Pengeluaran Riil).
+            function nomoriPengeluaran() {
+                Array.from(pengeluaranRowsEl.children).forEach(function (row, i) {
+                    const nomor = row.querySelector('.pengeluaran-nomor');
+                    if (nomor) nomor.textContent = i + 1;
+                });
+            }
+
+            // Drag kartu lewat pegangannya untuk mengubah urutan (SortableJS).
+            if (window.Sortable && form.dataset.mode !== 'view') {
+                Sortable.create(pengeluaranRowsEl, {
+                    handle: '.pengeluaran-pegangan',
+                    animation: 150,
+                    ghostClass: 'pengeluaran-ghost',
+                    onEnd: function () {
+                        nomoriPengeluaran();
+                        renderAllPreviews();
+                    },
+                });
             }
 
             document.getElementById('btn-add-pengeluaran').addEventListener('click', function () {

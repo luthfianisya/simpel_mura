@@ -218,6 +218,8 @@
     // perjalanan (penginapan: lama - 1 malam); diisi 0 -> totalnya 0. Dipakai bareng
     // oleh Rincian Biaya & Kuitansi supaya angkanya selalu sama.
     function hitungKomponenRincian(data) {
+        // Dalam Kota <= 8 Jam hanya Transport (+ Pengeluaran Riil): tanpa uang harian & penginapan.
+        const tanpaHarian = data.jenis_perjadin === 'dalam_kota_kurang_8_jam';
         const lama = hitungLamaHari(data.tanggal_mulai, data.tanggal_selesai);
         const malam = Math.max(lama - 1, 0);
         const hariUangHarian = hariRincian(data, 'uang_harian') ?? lama;
@@ -230,9 +232,10 @@
             lama: lama, malam: malam,
             hariUangHarian: hariUangHarian, hariTransport: hariTransport, malamPenginapan: malamPenginapan,
             rateHarian: rateHarian, rateTransport: rateTransport, rateMalam: rateMalam,
-            uangHarian: rateHarian * hariUangHarian,
+            tanpaHarian: tanpaHarian,
+            uangHarian: tanpaHarian ? 0 : rateHarian * hariUangHarian,
             transport: rateTransport * hariTransport,
-            penginapan: rateMalam * malamPenginapan,
+            penginapan: tanpaHarian ? 0 : rateMalam * malamPenginapan,
         };
     }
 
@@ -431,15 +434,15 @@
                     <td width="1%" class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td>
                     <td class="bd-l-none" style="border-top:none; border-bottom:none;">${esc(pelaksana.nama) || '...'}</td>
                     <td style="border-top:none; border-bottom:none;"></td>
-                    <td rowspan="9"></td>
+                    <td rowspan="${k.tanpaHarian ? 7 : 9}"></td>
                 </tr>
                 <tr><td class="bd-r-none" style="border-top:none; border-bottom:none;">b. Pangkat/Gol</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none;">${esc(pelaksana.pangkat) || '-'}${pelaksana.golongan ? ' / ' + esc(pelaksana.golongan) : ''}</td><td style="border-top:none; border-bottom:none;"></td></tr>
                 <tr><td class="bd-r-none" style="border-top:none; border-bottom:none;">c. Tujuan tugas</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none;">${esc(data.kabupaten_tujuan) || '...'}</td><td style="border-top:none; border-bottom:none;"></td></tr>
                 <tr><td class="bd-r-none" style="border-top:none; border-bottom:none;">d. Lamanya tugas</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none;">${terbilangHari(lama)}</td><td style="border-top:none; border-bottom:none;"></td></tr>
                 <tr><td style="border-top:none; border-bottom:none;">2</td><td class="bd-r-none" style="border-top:none; border-bottom:none;">Transport</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none;">${terbilangHari(hariTransport)}, dari ${esc(wilayahAsal(data)) || '...'} ke ${esc(formatTujuanTransport(wilayahTujuan(data)))}</td><td class="text-end" style="border-top:none; border-bottom:none;">${transport > 0 ? fmtRupiah(transport) : 'Rp. -'}</td></tr>
-                <tr><td style="border-top:none; border-bottom:none;">3</td><td class="bd-r-none" style="border-top:none; border-bottom:none;">Uang harian perjadin</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none;">${terbilangHari(hariUangHarian)} x ${fmtRupiah(rateHarian)},-</td><td class="text-end" style="border-top:none; border-bottom:none;">${uangHarian > 0 ? fmtRupiah(uangHarian) : 'Rp. -'}</td></tr>
-                <tr><td style="border-top:none; border-bottom:none;">4</td><td class="bd-r-none" style="border-top:none; border-bottom:none;">Penginapan</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none;">${malamPenginapan} (${terbilang(malamPenginapan)}) malam x ${fmtRupiah(rateMalam)},-</td><td class="text-end" style="border-top:none; border-bottom:none;">${penginapan > 0 ? fmtRupiah(penginapan) : 'Rp. -'}</td></tr>
-                <tr><td style="border-top:none; border-bottom:none;">5</td><td class="bd-r-none" style="border-top:none; border-bottom:none;">Pengeluaran Rill</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none;"></td><td class="text-end" style="border-top:none; border-bottom:none;">${pengeluaranTotal > 0 ? fmtRupiah(pengeluaranTotal) : 'Rp. -'}</td></tr>
+                ${k.tanpaHarian ? '' : `<tr><td style="border-top:none; border-bottom:none;">3</td><td class="bd-r-none" style="border-top:none; border-bottom:none;">Uang harian perjadin</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none;">${terbilangHari(hariUangHarian)} x ${fmtRupiah(rateHarian)},-</td><td class="text-end" style="border-top:none; border-bottom:none;">${uangHarian > 0 ? fmtRupiah(uangHarian) : 'Rp. -'}</td></tr>
+                <tr><td style="border-top:none; border-bottom:none;">4</td><td class="bd-r-none" style="border-top:none; border-bottom:none;">Penginapan</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none;">${malamPenginapan} (${terbilang(malamPenginapan)}) malam x ${fmtRupiah(rateMalam)},-</td><td class="text-end" style="border-top:none; border-bottom:none;">${penginapan > 0 ? fmtRupiah(penginapan) : 'Rp. -'}</td></tr>`}
+                <tr><td style="border-top:none; border-bottom:none;">${k.tanpaHarian ? 3 : 5}</td><td class="bd-r-none" style="border-top:none; border-bottom:none;">Pengeluaran Rill</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none;"></td><td class="text-end" style="border-top:none; border-bottom:none;">${pengeluaranTotal > 0 ? fmtRupiah(pengeluaranTotal) : 'Rp. -'}</td></tr>
                 <tr><td style="border-top:none;"></td><td class="bd-r-none" style="border-top:none;"></td><td class="bd-l-none bd-r-none" style="border-top:none;"></td><td class="bd-l-none fw-bold" style="border-top:none;">JUMLAH</td><td class="text-end fw-bold" style="border-top:none;">${fmtRupiah(total)}</td></tr>
                 <tr><td></td><td colspan="5" class="text-center fw-bold fst-italic">** ${terbilangRupiah(total)} **</td></tr>
                 <tr>

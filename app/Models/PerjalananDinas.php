@@ -84,7 +84,8 @@ class PerjalananDinas extends Model
 
     public function pengeluaranRiil()
     {
-        return $this->hasMany(PengeluaranRiil::class, 'id_perjalanan_dinas', 'id_perjalanan_dinas');
+        // Urut sesuai urutan simpan = urutan kartu yang diatur user (drag) di form.
+        return $this->hasMany(PengeluaranRiil::class, 'id_perjalanan_dinas', 'id_perjalanan_dinas')->orderBy('id_pengeluaran');
     }
 
     public function kuitansi()
@@ -131,7 +132,14 @@ class PerjalananDinas extends Model
             : 0;
         $malam = max($lama - 1, 0);
 
-        $totalRincian = $this->rincianBiaya->sum(function ($r) use ($lama, $malam) {
+        // Dalam Kota <= 8 Jam hanya Transport (tanpa uang harian & penginapan), sama
+        // seperti dokumen Rincian Biaya/Kuitansi (hitungKomponenRincian di dokumen-perjadin.js).
+        $tanpaHarian = $this->jenis_perjadin === 'dalam_kota_kurang_8_jam';
+
+        $totalRincian = $this->rincianBiaya->sum(function ($r) use ($lama, $malam, $tanpaHarian) {
+            if ($tanpaHarian && in_array($r->jenis_komponen, ['uang_harian', 'penginapan'], true)) {
+                return 0;
+            }
             $hari = $r->jumlah_hari ?? ($r->jenis_komponen === 'penginapan' ? $malam : $lama);
 
             return (float) $r->nominal * (int) $hari;
