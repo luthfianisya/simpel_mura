@@ -402,3 +402,12 @@
 .dokumen-preview .mt-3 { margin-top: 1rem; }
 .dokumen-preview .mt-4 { margin-top: 2rem; }
 .dokumen-preview .mt-5 { margin-top: 3.75rem; }
+
+/* Kuitansi wajib 1 lembar: dirapatkan bertahap oleh JS (kelasRapatSatuHalaman) hanya kalau
+   isinya kepanjangan. Tiga kelas (lebih spesifik dari .dokumen-preview.dokumen-a4) supaya
+   juga mengalahkan padding di @media print. */
+.dokumen-preview.rapat-1 .spasi-opsional { display: none; }
+.dokumen-preview.dokumen-a4.rapat-2 { padding-top: 1.5cm; }
+.dokumen-preview.dokumen-a4.rapat-3 { padding-bottom: 1.5cm; }
+.dokumen-preview.rapat-4 .mt-5 { margin-top: 1.75rem !important; }
+.dokumen-preview.dokumen-a4.rapat-4 { padding-top: 1.2cm; padding-bottom: 1.2cm; }

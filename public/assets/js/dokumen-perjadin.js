@@ -110,6 +110,13 @@
 
     // "Melakukan Pendataan" -> "melakukan Pendataan" saat disambung di tengah kalimat;
     // singkatan seperti "BPS ..." / "SE2026" dibiarkan (huruf kedua bukan huruf kecil).
+    // Dokumen sudah menulis sendiri "... perjalanan dinas dalam rangka" sebelum perihal, jadi
+    // kalau perihal yang diisi user kebetulan sudah diawali kalimat itu, awalannya dibuang
+    // supaya tidak tertulis dobel ("dalam rangka Perjalanan dinas dalam rangka ...").
+    function perihalTanpaAwalan(str) {
+        return String(str || '').replace(/^\s*(biaya\s+)?perjalanan\s+dinas\s+dalam\s+rangka\s+/i, '');
+    }
+
     function hurufAwalKecil(str) {
         str = String(str || '');
         return /^[A-Z][a-z]/.test(str) ? str.charAt(0).toLowerCase() + str.slice(1) : str;
@@ -307,7 +314,7 @@
                 <tr>
                     <td>Untuk</td>
                     <td>:</td>
-                    <td style="text-align:justify;">Perjalanan dinas dalam rangka ${esc(hurufAwalKecil(data.perihal)) || '...........................'}${wilayahTujuan(data) ? ' di ' + esc(wilayahTujuan(data)) : ''}, tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}</td>
+                    <td style="text-align:justify;">Perjalanan dinas dalam rangka ${esc(hurufAwalKecil(perihalTanpaAwalan(data.perihal))) || '...........................'}${wilayahTujuan(data) ? ' di ' + esc(wilayahTujuan(data)) : ''}, tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}</td>
                 </tr>
                 <tr>
                     <td>Pembebanan</td>
@@ -574,7 +581,7 @@
         const total = k.uangHarian + k.transport + k.penginapan + jumlahPengeluaran(data);
         const tahun = (data.tanggal_mulai || '').slice(0, 4) || '.....';
         return `
-            <div style="font-family:Arial, sans-serif;">
+            <div style="font-family:Arial, sans-serif;" data-satu-halaman>
             <table style="width:45%; margin-left:auto; font-size:0.75rem; margin-bottom:1rem; border-collapse:collapse;">
                 <tr><td style="width:30%; padding-right:6px; vertical-align:top; white-space:nowrap;">Tahun Anggaran</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td>${tahun}</td></tr>
                 <tr><td style="width:30%; padding-right:6px; vertical-align:top; white-space:nowrap;">Nomor Bukti</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td></td></tr>
@@ -587,7 +594,7 @@
                 <tr><td width="20%" style="vertical-align:top;">Sudah terima dari</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td>Pejabat Pembuat Komitmen BPS Kabupaten Murung Raya</td></tr>
                 <tr><td style="vertical-align:top;">Jumlah Uang</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td><strong>${fmtRupiah(total)},-</strong></td></tr>
                 <tr><td style="vertical-align:top;">Terbilang</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td><span class="fw-bold fst-italic">** ${terbilangRupiah(total)} **</span></td></tr>
-                <tr><td style="vertical-align:top;">Untuk pembayaran</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td style="text-align:justify;">Biaya perjalanan dinas dalam rangka ${esc(data.perihal) || '...........................'}${wilayahTujuan(data) ? ' di ' + esc(wilayahTujuan(data)) : ''}, tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}, sesuai dengan:<br><br>
+                <tr><td style="vertical-align:top;">Untuk pembayaran</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td style="text-align:justify;">Biaya perjalanan dinas dalam rangka ${esc(perihalTanpaAwalan(data.perihal)) || '...........................'}${wilayahTujuan(data) ? ' di ' + esc(wilayahTujuan(data)) : ''}, tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}, sesuai dengan:<br><span class="spasi-opsional"><br></span>
                     Surat Tugas Nomor: ${esc(data.no_surat_tugas) || '...........................'} tanggal ${fmtTanggalPanjang(data.tanggal_surat_tugas)}<br>
                     ${data.no_spd ? 'SPD Nomor: ' + esc(data.no_spd) + ' tanggal ' + fmtTanggalPanjang(data.tanggal_spd) : ''}
                 </td></tr>
@@ -670,7 +677,7 @@
                     <tr><td>Satuan Kerja</td><td>: BPS Kabupaten Murung Raya</td></tr>
                     <tr><td>Jabatan</td><td>: ${esc(pelaksana.jabatan) || '-'}</td></tr>
                 </table>
-                <p>Menerangkan bahwa selama melaksanakan perjalanan dinas dalam rangka ${esc(data.perihal) || '...........................'}${wilayahTujuan(data) ? ' di ' + esc(wilayahTujuan(data)) : ''} pada tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}, saya benar-benar tidak menginap di hotel atau jasa akomodasi komersial lainnya.</p>
+                <p>Menerangkan bahwa selama melaksanakan perjalanan dinas dalam rangka ${esc(perihalTanpaAwalan(data.perihal)) || '...........................'}${wilayahTujuan(data) ? ' di ' + esc(wilayahTujuan(data)) : ''} pada tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}, saya benar-benar tidak menginap di hotel atau jasa akomodasi komersial lainnya.</p>
                 <p>Demikian pernyataan ini saya buat dengan sebenar-benarnya untuk dipergunakan sebagaimana mestinya. Apabila terdapat kekeliruan dalam pertanggung jawaban SPD dan mengakibatkan kerugian negara, saya bersedia dituntut sesuai peraturan yang berlaku dan mengembalikan biaya kompensasi menginap di hotel atau jasa akomodasi komersial lainnya yang sudah terlanjur saya terima ke kas negara.</p>
                 <div class="ttd-block">
                     <div>Puruk Cahu, ${tglTtd}</div>
@@ -849,7 +856,7 @@
             <div class="dokumen-title">LAPORAN HASIL PERJALANAN DINAS</div>
             <table class="dokumen-table mt-3">
                 <tr><td width="16%" style="vertical-align:top;">Kepada Yth</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td>Kepala Badan Pusat Statistik Kabupaten Murung Raya</td></tr>
-                <tr><td style="vertical-align:top;">Perihal</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="text-align:justify;">Laporan Perjalanan Dinas dalam rangka ${esc(data.perihal) || '...........................'}</td></tr>
+                <tr><td style="vertical-align:top;">Perihal</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="text-align:justify;">Laporan Perjalanan Dinas dalam rangka ${esc(perihalTanpaAwalan(data.perihal)) || '...........................'}</td></tr>
             </table>
             <table class="dokumen-table mt-3">
                 <tr><td width="4%" style="vertical-align:top;">I.</td><td width="27%" style="vertical-align:top;">Pelaksana Perjalanan</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="vertical-align:top;">
@@ -1310,13 +1317,38 @@
 
     // Pecah dokumen jadi 1 <div> per halaman: dokumen ber-[data-alir-halaman] (Laporan)
     // dialirkan per tinggi kertas (alirkanHalaman), sisanya per halaman LOGIS saja.
+    // Dokumen ber-[data-satu-halaman] (Kuitansi) wajib muat 1 lembar. Kalau isinya
+    // kepanjangan (mis. uraian "Untuk pembayaran" panjang), dirapatkan bertahap sampai
+    // muat: 1) buang baris kosong opsional (.spasi-opsional), 2) margin atas dipendekkan,
+    // 3) margin bawah ikut dipendekkan, 4) (uraian sangat panjang) jarak ttd dirapatkan.
+    // Kelas yang dipakai ikut terbawa ke PDF/Word.
+    const TINGKAT_RAPAT = ['', 'rapat-1', 'rapat-1 rapat-2', 'rapat-1 rapat-2 rapat-3', 'rapat-1 rapat-2 rapat-3 rapat-4'];
+    function kelasRapatSatuHalaman(html, paperClass) {
+        if (html.indexOf('data-satu-halaman') === -1 || !document.body) return '';
+        const isF4 = paperClass.indexOf('dokumen-f4') !== -1;
+        const tinggiKertas = (isF4 ? 330 : 297) / MM_PER_PX * CADANGAN_TINGGI_HALAMAN;
+        const ukur = document.createElement('div');
+        ukur.innerHTML = html;
+        ukur.style.cssText = 'position:fixed;top:-99999px;left:-99999px;visibility:hidden;'
+            + 'width:' + (isF4 ? 215 : 210) + 'mm;max-width:none;min-height:0;';
+        document.body.appendChild(ukur);
+        let hasil = TINGKAT_RAPAT[TINGKAT_RAPAT.length - 1];
+        for (let i = 0; i < TINGKAT_RAPAT.length; i++) {
+            ukur.className = 'dokumen-preview alir-ukur ' + paperClass + ' ' + TINGKAT_RAPAT[i];
+            if (ukur.offsetHeight <= tinggiKertas) { hasil = TINGKAT_RAPAT[i]; break; }
+        }
+        document.body.removeChild(ukur);
+        return hasil;
+    }
+
     function renderPaginated(html, paperClass) {
+        const rapat = kelasRapatSatuHalaman(html, paperClass);
         const pages = html.indexOf('data-alir-halaman') !== -1
             ? alirkanHalaman(html, paperClass)
             : splitLogicalPages(html);
         return pages.map(function (page) {
             const pageWrap = document.createElement('div');
-            pageWrap.className = 'dokumen-preview ' + paperClass;
+            pageWrap.className = 'dokumen-preview ' + paperClass + (rapat ? ' ' + rapat : '');
             const inner = document.createElement('div');
             if (page.style) inner.setAttribute('style', page.style);
             page.nodes.forEach(function (node) { inner.appendChild(node); });
