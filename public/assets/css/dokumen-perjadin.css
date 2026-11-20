@@ -411,3 +411,12 @@
 .dokumen-preview.dokumen-a4.rapat-3 { padding-bottom: 1.5cm; }
 .dokumen-preview.rapat-4 .mt-5 { margin-top: 1.75rem !important; }
 .dokumen-preview.dokumen-a4.rapat-4 { padding-top: 1.2cm; padding-bottom: 1.2cm; }
+
+/* Rincian Biaya (margin dasar 1,27 cm) punya tingkat rapat sendiri: margin atas/bawah
+   dipersempit ke 0,8 cm lalu jarak tanda tangan dirapatkan. Empat kelas = lebih spesifik
+   dari aturan .dokumen-a4.rapat-N di atas. */
+.dokumen-preview.dokumen-a4.dokumen-rincian-biaya.rapat-2 { padding-top: 0.8cm; }
+.dokumen-preview.dokumen-a4.dokumen-rincian-biaya.rapat-3 { padding-bottom: 0.8cm; }
+.dokumen-preview.dokumen-a4.dokumen-rincian-biaya.rapat-4 { padding-top: 0.6cm; padding-bottom: 0.6cm; }
+.dokumen-preview.rapat-4 table.dokumen-rincian td,
+.dokumen-preview.rapat-4 table.dokumen-rincian th { padding-top: 1px; padding-bottom: 1px; }

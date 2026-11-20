@@ -419,7 +419,7 @@
         const ref = spdAtauSt(data);
 
         return `
-            <div style="font-family:Arial, sans-serif; font-size:9.5pt;">
+            <div style="font-family:Arial, sans-serif; font-size:9.5pt;" data-satu-halaman>
             <div class="dokumen-title" style="text-decoration:none; font-size:14pt; font-weight:normal;">PERINCIAN PERHITUNGAN BIAYA PERJALANAN DINAS</div>
             <table class="dokumen-table mt-3">
                 <tr><td width="28%">Lampiran ${ref.label} Nomor</td><td>: ${esc(ref.nomor)}</td></tr>
@@ -436,20 +436,20 @@
                 </thead>
                 <tbody>
                 <tr>
-                    <td rowspan="4" style="border-top:none; border-bottom:none;">1</td>
-                    <td width="27%" class="bd-r-none" style="border-top:none; border-bottom:none;">a. Nama yang bertugas</td>
-                    <td width="1%" class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td>
-                    <td class="bd-l-none" style="border-top:none; border-bottom:none;">${esc(pelaksana.nama) || '...'}</td>
-                    <td style="border-top:none; border-bottom:none;"></td>
+                    <td rowspan="4" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">1</td>
+                    <td width="27%" class="bd-r-none" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">a. Nama yang bertugas</td>
+                    <td width="1%" class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">:</td>
+                    <td class="bd-l-none" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">${esc(pelaksana.nama) || '...'}</td>
+                    <td style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;"></td>
                     <td rowspan="${k.tanpaHarian ? 7 : 9}"></td>
                 </tr>
-                <tr><td class="bd-r-none" style="border-top:none; border-bottom:none;">b. Pangkat/Gol</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none;">${esc(pelaksana.pangkat) || '-'}${pelaksana.golongan ? ' / ' + esc(pelaksana.golongan) : ''}</td><td style="border-top:none; border-bottom:none;"></td></tr>
-                <tr><td class="bd-r-none" style="border-top:none; border-bottom:none;">c. Tujuan tugas</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none;">${esc(data.kabupaten_tujuan) || '...'}</td><td style="border-top:none; border-bottom:none;"></td></tr>
-                <tr><td class="bd-r-none" style="border-top:none; border-bottom:none;">d. Lamanya tugas</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none;">${terbilangHari(lama)}</td><td style="border-top:none; border-bottom:none;"></td></tr>
-                <tr><td style="border-top:none; border-bottom:none;">2</td><td class="bd-r-none" style="border-top:none; border-bottom:none;">Transport</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none;">${terbilangHari(hariTransport)}, dari ${esc(wilayahAsal(data)) || '...'} ke ${esc(formatTujuanTransport(wilayahTujuan(data)))}</td><td class="text-end" style="border-top:none; border-bottom:none;">${transport > 0 ? fmtRupiah(transport) : 'Rp. -'}</td></tr>
-                ${k.tanpaHarian ? '' : `<tr><td style="border-top:none; border-bottom:none;">3</td><td class="bd-r-none" style="border-top:none; border-bottom:none;">Uang harian perjadin</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none;">${terbilangHari(hariUangHarian)} x ${fmtRupiah(rateHarian)},-</td><td class="text-end" style="border-top:none; border-bottom:none;">${uangHarian > 0 ? fmtRupiah(uangHarian) : 'Rp. -'}</td></tr>
-                <tr><td style="border-top:none; border-bottom:none;">4</td><td class="bd-r-none" style="border-top:none; border-bottom:none;">Penginapan</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none;">${malamPenginapan} (${terbilang(malamPenginapan)}) malam x ${fmtRupiah(rateMalam)},-</td><td class="text-end" style="border-top:none; border-bottom:none;">${penginapan > 0 ? fmtRupiah(penginapan) : 'Rp. -'}</td></tr>`}
-                <tr><td style="border-top:none; border-bottom:none;">${k.tanpaHarian ? 3 : 5}</td><td class="bd-r-none" style="border-top:none; border-bottom:none;">Pengeluaran Rill</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none;"></td><td class="text-end" style="border-top:none; border-bottom:none;">${pengeluaranTotal > 0 ? fmtRupiah(pengeluaranTotal) : 'Rp. -'}</td></tr>
+                <tr><td class="bd-r-none" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">b. Pangkat/Gol</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">${esc(pelaksana.pangkat) || '-'}${pelaksana.golongan ? ' / ' + esc(pelaksana.golongan) : ''}</td><td style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;"></td></tr>
+                <tr><td class="bd-r-none" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">c. Tujuan tugas</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">${esc(data.kabupaten_tujuan) || '...'}</td><td style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;"></td></tr>
+                <tr><td class="bd-r-none" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">d. Lamanya tugas</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">${terbilangHari(lama)}</td><td style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;"></td></tr>
+                <tr><td style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">2</td><td class="bd-r-none" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">Transport</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">${terbilangHari(hariTransport)}, dari ${esc(wilayahAsal(data)) || '...'} ke ${esc(formatTujuanTransport(wilayahTujuan(data)))}</td><td class="text-end" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">${transport > 0 ? fmtRupiah(transport) : 'Rp. -'}</td></tr>
+                ${k.tanpaHarian ? '' : `<tr><td style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">3</td><td class="bd-r-none" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">Uang harian perjadin</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">${terbilangHari(hariUangHarian)} x ${fmtRupiah(rateHarian)},-</td><td class="text-end" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">${uangHarian > 0 ? fmtRupiah(uangHarian) : 'Rp. -'}</td></tr>
+                <tr><td style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">4</td><td class="bd-r-none" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">Penginapan</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">${malamPenginapan} (${terbilang(malamPenginapan)}) malam x ${fmtRupiah(rateMalam)},-</td><td class="text-end" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">${penginapan > 0 ? fmtRupiah(penginapan) : 'Rp. -'}</td></tr>`}
+                <tr><td style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">${k.tanpaHarian ? 3 : 5}</td><td class="bd-r-none" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">Pengeluaran Rill</td><td class="bd-l-none bd-r-none" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">:</td><td class="bd-l-none" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;"></td><td class="text-end" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">${pengeluaranTotal > 0 ? fmtRupiah(pengeluaranTotal) : 'Rp. -'}</td></tr>
                 <tr><td style="border-top:none;"></td><td class="bd-r-none" style="border-top:none;"></td><td class="bd-l-none bd-r-none" style="border-top:none;"></td><td class="bd-l-none fw-bold" style="border-top:none;">JUMLAH</td><td class="text-end fw-bold" style="border-top:none;">${fmtRupiah(total)}</td></tr>
                 <tr><td></td><td colspan="5" class="text-center fw-bold fst-italic">** ${terbilangRupiah(total)} **</td></tr>
                 <tr>
@@ -475,7 +475,7 @@
                         </div>
                     </td>
                 </tr>
-                <tr><td colspan="6" class="text-center fw-bold" style="border-top:none; border-bottom:none;">PERHITUNGAN SPD RAMPUNG</td></tr>
+                <tr><td colspan="6" class="text-center fw-bold" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">PERHITUNGAN SPD RAMPUNG</td></tr>
                 <tr>
                     <td colspan="3" style="border-right:none; border-top:none; border-bottom:none;">
                         <span style="display:inline-block; width:170px;">Ditetapkan sejumlah</span>:<br>
@@ -1432,7 +1432,9 @@
         // meluber dari 1 halaman fisik — kalau iya, splitOverflowingTable menyisipkan
         // penanda .dokumen-page-break sendiri di titik potong barisnya (lihat komentar
         // di fungsi itu) sebelum di-render jadi div per halaman lewat renderPaginated.
-        const splitHtml = paper ? splitOverflowingTable(html, paperClass) : html;
+        // Dokumen ber-[data-satu-halaman] (Kuitansi, Rincian Biaya) dirapatkan supaya muat
+        // 1 lembar (kelasRapatSatuHalaman), jadi tidak dipecah per baris tabel.
+        const splitHtml = (paper && html.indexOf('data-satu-halaman') === -1) ? splitOverflowingTable(html, paperClass) : html;
         const bodyHtml = paper ? renderPaginated(splitHtml, paperClass) : ('<div class="dokumen-preview">' + html + '</div>');
         // <style> di atas sudah berisi salinan LENGKAP dokumen-perjadin.css (lihat
         // getDokumenCss/cssOverride) — <link> di sini cuma cadangan buat jendela print
@@ -1528,8 +1530,10 @@
     function pilihDokumenExport(docs) {
         const keys = urutkanBerkas(Object.keys(docs).filter(function (k) { return k !== 'surat-tugas'; }));
         const daftar = keys.map(function (k) {
-            return '<label class="pde-baris"><input class="form-check-input pde-cek" type="checkbox" value="' + k + '" checked>'
-                + '<span>' + esc(docs[k].label) + '</span></label>';
+            return '<label class="pde-baris" data-key="' + k + '"><input class="form-check-input pde-cek" type="checkbox" value="' + k + '" checked>'
+                + '<span>' + esc(docs[k].label) + '</span>'
+                + (k === 'spd' ? '<span class="pde-catatan-spd ms-auto small text-muted d-none">tidak ikut digabung</span>' : '')
+                + '</label>';
         }).join('');
 
         const gaya = '<style>'
@@ -1591,16 +1595,29 @@
                     sinkron();
                 });
                 satuan.forEach(function (c) { c.addEventListener('change', sinkron); });
+                // Mode "Gabung jadi 1 PDF": baris SPD diredupkan + diberi keterangan.
+                const barisSpd = popup.querySelector('.pde-baris[data-key="spd"]');
+                popup.querySelectorAll('input[name="pde-mode"]').forEach(function (r) {
+                    r.addEventListener('change', function () {
+                        if (!barisSpd) return;
+                        const gabung = popup.querySelector('input[name="pde-mode"]:checked').value === 'gabung';
+                        barisSpd.style.opacity = gabung ? '0.5' : '';
+                        barisSpd.querySelector('.pde-catatan-spd').classList.toggle('d-none', !gabung);
+                    });
+                });
                 sinkron();
             },
             preConfirm: function () {
                 const popup = Swal.getPopup();
-                const dipilih = Array.from(popup.querySelectorAll('.pde-cek:checked')).map(function (c) { return c.value; });
+                const gabung = popup.querySelector('input[name="pde-mode"]:checked').value === 'gabung';
+                // Saat digabung jadi 1 PDF, SPD tidak ikut (seperti Surat Tugas).
+                const dipilih = Array.from(popup.querySelectorAll('.pde-cek:checked')).map(function (c) { return c.value; })
+                    .filter(function (k) { return !gabung || k !== 'spd'; });
                 if (!dipilih.length) {
-                    Swal.showValidationMessage('Pilih minimal satu dokumen.');
+                    Swal.showValidationMessage(gabung ? 'Pilih minimal satu dokumen selain SPD untuk digabung.' : 'Pilih minimal satu dokumen.');
                     return false;
                 }
-                return { keys: dipilih, gabung: popup.querySelector('input[name="pde-mode"]:checked').value === 'gabung' };
+                return { keys: dipilih, gabung: gabung };
             },
         }).then(function (hasil) {
             return hasil.isConfirmed ? hasil.value : null;

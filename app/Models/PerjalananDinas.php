@@ -288,7 +288,9 @@ class PerjalananDinas extends Model
         return [
             'nama' => $pegawai->nama,
             'nip' => $pegawai->nip,
-            'jabatan' => $pegawai->jabatan,
+            // Di semua dokumen, mitra (apa pun jabatannya: Mitra Pendataan, Mitra
+            // Pengolahan, dst) ditulis seragam "Mitra Statistik".
+            'jabatan' => $pegawai->status_kepegawaian === 'mitra' ? 'Mitra Statistik' : $pegawai->jabatan,
             'pangkat' => $pegawai->pangkat,
             'golongan' => $pegawai->golongan,
         ];

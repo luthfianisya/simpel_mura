@@ -451,7 +451,7 @@
                                                     <option value="">Pilih mitra</option>
                                                     @foreach ($mitraList as $pm)
                                                         <option value="{{ $pm->id_pegawai_mitra }}"
-                                                            data-nip="{{ $pm->nip }}" data-jabatan="{{ $pm->jabatan }}" data-pangkat="{{ $pm->pangkat }}" data-golongan="{{ $pm->golongan }}"
+                                                            data-nip="{{ $pm->nip }}" data-jabatan="Mitra Statistik" data-pangkat="{{ $pm->pangkat }}" data-golongan="{{ $pm->golongan }}"
                                                             {{ $jenisPelaksanaLama === 'mitra' && $idPelaksanaLama == $pm->id_pegawai_mitra ? 'selected' : '' }}>
                                                             {{ $pm->nama }}
                                                         </option>
