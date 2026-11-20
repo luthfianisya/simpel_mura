@@ -612,7 +612,6 @@
             const btnExportPdf = document.getElementById('btn-export-pdf');
             const cssUrlDokumen = '{{ asset("assets/css/dokumen-perjadin.css") }}?v={{ filemtime(public_path("assets/css/dokumen-perjadin.css")) }}';
             const exportPdfUrl = '{{ route("dokumen.export-pdf") }}';
-            const exportPdfGabungUrl = '{{ route("dokumen.export-pdf-gabung") }}';
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
             async function eksporSatuDokumen(key) {
@@ -637,7 +636,7 @@
                     if (pilihan.gabung) {
                         await DokumenPerjadin.exportGabunganPdfHd(pilihan.keys.map(function (key) {
                             return { html: currentDocs[key].html, paperSize: paperSizeFor(key), extraClass: extraClassFor(key) };
-                        }), namaFileDokumen('Dokumen Lengkap'), cssUrlDokumen, exportPdfGabungUrl, csrfToken);
+                        }), namaFileDokumen('Dokumen Lengkap'), cssUrlDokumen, exportPdfUrl, csrfToken);
                     } else {
                         for (const key of pilihan.keys) {
                             await eksporSatuDokumen(key);

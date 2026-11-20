@@ -2519,7 +2519,6 @@
             // di-render (sama seperti preview di atas), bukan id record dari database. -----
             const cssUrlDokumenReview = '{{ asset("assets/css/dokumen-perjadin.css") }}?v={{ filemtime(public_path("assets/css/dokumen-perjadin.css")) }}';
             const exportPdfUrlReview = '{{ route("dokumen.export-pdf") }}';
-            const exportPdfGabungUrlReview = '{{ route("dokumen.export-pdf-gabung") }}';
             const csrfTokenReview = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
             function namaFileDokumenReview(labelDokumen) {
@@ -2550,7 +2549,7 @@
                     if (pilihan.gabung) {
                         await DokumenPerjadin.exportGabunganPdfHd(pilihan.keys.map(function (key) {
                             return { html: reviewDocs[key].html, paperSize: paperSizeForReview(key), extraClass: extraClassForReview(key) };
-                        }), namaFileDokumenReview('Dokumen Lengkap'), cssUrlDokumenReview, exportPdfGabungUrlReview, csrfTokenReview);
+                        }), namaFileDokumenReview('Dokumen Lengkap'), cssUrlDokumenReview, exportPdfUrlReview, csrfTokenReview);
                     } else {
                         for (const key of pilihan.keys) {
                             await eksporSatuDokumenReview(key);

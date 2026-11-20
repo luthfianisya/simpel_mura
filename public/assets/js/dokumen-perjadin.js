@@ -1607,10 +1607,31 @@
         });
     }
 
-    // Beberapa dokumen jadi SATU PDF (lihat DokumenExportController::pdfGabung): tiap
-    // dokumen dibangun lengkap dengan ukuran kertasnya sendiri, server yang menyatukan.
+    // pdf-lib (menggabungkan beberapa PDF jadi 1) dimuat dari CDN hanya saat dibutuhkan.
+    let janjiPdfLib = null;
+    function muatPdfLib() {
+        if (window.PDFLib) return Promise.resolve(window.PDFLib);
+        if (!janjiPdfLib) {
+            janjiPdfLib = new Promise(function (resolve, reject) {
+                const skrip = document.createElement('script');
+                skrip.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
+                skrip.onload = function () { resolve(window.PDFLib); };
+                skrip.onerror = function () {
+                    janjiPdfLib = null;
+                    reject(new Error('Gagal memuat penggabung PDF. Periksa koneksi internet lalu coba lagi.'));
+                };
+                document.head.appendChild(skrip);
+            });
+        }
+        return janjiPdfLib;
+    }
+
+    // Beberapa dokumen jadi SATU PDF: tiap dokumen tetap dibuat server satu per satu
+    // (endpoint export biasa, ukuran kertasnya masing-masing: SPD F4, lainnya A4), lalu
+    // DIGABUNG DI BROWSER dengan pdf-lib — server/hosting tidak perlu library tambahan.
     // items = [{ html, paperSize, extraClass }] sesuai urutan halaman.
     async function exportGabunganPdfHd(items, title, cssUrl, exportUrl, csrfToken) {
+        const pdfLib = await muatPdfLib();
         let cssOverride = null;
         try {
             const cssRes = await fetch(cssUrl);
@@ -1618,25 +1639,32 @@
         } catch (e) {
             // fallback ke getDokumenCss() di buildDokumenHtmlDocument
         }
-        const dokumen = items.map(function (it) {
-            return buildDokumenHtmlDocument(it.html, title, cssUrl, it.paperSize, it.extraClass, true, cssOverride);
-        });
-        const response = await fetch(exportUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
-            body: JSON.stringify({ dokumen: dokumen, filename: title }),
-        });
-        if (!response.ok) {
-            let message = 'Gagal membuat PDF gabungan (status ' + response.status + ').';
-            try {
-                const data = await response.json();
-                if (data.message) message = data.message;
-            } catch (e) {
-                // bukan JSON
+
+        const gabungan = await pdfLib.PDFDocument.create();
+        for (const it of items) {
+            const fullHtml = buildDokumenHtmlDocument(it.html, title, cssUrl, it.paperSize, it.extraClass, true, cssOverride);
+            const response = await fetch(exportUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                body: JSON.stringify({ html: fullHtml, filename: title }),
+            });
+            if (!response.ok) {
+                let message = 'Gagal membuat PDF (status ' + response.status + ').';
+                try {
+                    const data = await response.json();
+                    if (data.message) message = data.message;
+                } catch (e) {
+                    // bukan JSON
+                }
+                throw new Error(message);
             }
-            throw new Error(message);
+            const sumber = await pdfLib.PDFDocument.load(await response.arrayBuffer());
+            const halaman = await gabungan.copyPages(sumber, sumber.getPageIndices());
+            halaman.forEach(function (h) { gabungan.addPage(h); });
         }
-        downloadBlob(await response.blob(), title + '.pdf');
+
+        const bytes = await gabungan.save();
+        downloadBlob(new Blob([bytes], { type: 'application/pdf' }), title + '.pdf');
     }
 
     window.DokumenPerjadin = {
