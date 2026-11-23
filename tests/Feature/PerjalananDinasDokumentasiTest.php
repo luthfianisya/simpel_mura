@@ -120,3 +120,39 @@ test('tanpa urutan dari wizard, foto baru ditaruh di belakang foto lama', functi
 
     expect($pd->fresh()->dokumentasi->pluck('nama_file')->all())->toBe(['a.jpg', 'b.jpg']);
 });
+
+test('foto dokumentasi tersimpan bisa diganti hasil atur foto (crop) tanpa mengubah caption', function () {
+    Storage::fake('public');
+    $user = buatUserDenganPegawai();
+
+    $this->actingAs($user)->post(route('perjalanan-dinas.store'), [
+        'jenis_perjadin' => 'biasa',
+        'status_draft' => 'draft_sesi1',
+        'dokumentasi' => [UploadedFile::fake()->image('foto.jpg', 800, 600)],
+        'dokumentasi_caption' => ['Rapat koordinasi'],
+    ]);
+
+    $pd = PerjalananDinas::latest('id_perjalanan_dinas')->first();
+    $dokumentasi = $pd->dokumentasi->first();
+    $pathLama = $dokumentasi->path_file;
+
+    $this->actingAs($user)
+        ->post(route('perjalanan-dinas.dokumentasi.file', [$pd, $dokumentasi]), [
+            'file' => UploadedFile::fake()->image('foto.jpg', 400, 400),
+        ], ['Accept' => 'application/json'])
+        ->assertOk()
+        ->assertJsonStructure(['url']);
+
+    $dokumentasi->refresh();
+    expect($dokumentasi->path_file)->not->toBe($pathLama)
+        ->and($dokumentasi->caption)->toBe('Rapat koordinasi');
+    Storage::disk('public')->assertExists($dokumentasi->path_file);
+    Storage::disk('public')->assertMissing($pathLama);
+
+    // User lain tidak boleh mengganti foto ini.
+    $this->actingAs(buatUserDenganPegawai())
+        ->post(route('perjalanan-dinas.dokumentasi.file', [$pd, $dokumentasi]), [
+            'file' => UploadedFile::fake()->image('lain.jpg'),
+        ], ['Accept' => 'application/json'])
+        ->assertForbidden();
+});

@@ -180,6 +180,50 @@
             line-height: 20px;
         }
 
+        /* Tombol "Atur foto" (crop/zoom/putar) di bawah thumbnail foto Dokumentasi. */
+        .dokumentasi-atur {
+            display: block;
+            width: 100%;
+            margin-top: 4px;
+            padding: 1px 4px;
+            font-size: 0.7rem;
+            line-height: 1.4;
+            border: 1px solid #2563eb;
+            border-radius: 4px;
+            background: #fff;
+            color: #2563eb;
+            cursor: pointer;
+        }
+
+        .dokumentasi-atur:hover {
+            background: rgba(37, 99, 235, 0.08);
+        }
+
+        /* Jendela Atur Foto (Cropper.js). */
+        .atur-foto-wadah {
+            height: 60vh;
+            background: #f1f1f3;
+        }
+
+        .atur-foto-wadah img {
+            display: block;
+            max-width: 100%;
+        }
+
+        .atur-foto-alat {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            justify-content: center;
+            margin-top: 0.75rem;
+        }
+
+        .atur-foto-alat .btn.active {
+            background: #1B449C !important;
+            border-color: #1B449C !important;
+            color: #fff !important;
+        }
+
         .dokumentasi-ghost {
             opacity: 0.4;
             border: 1px dashed #2563eb !important;
@@ -418,7 +462,7 @@
                                         <div class="col-md-12">
                                             <label class="form-label">Perihal<span class="required-mark">*</span></label>
                                             <textarea id="input-perihal" name="perihal" class="form-control" rows="3" maxlength="2000" required>{{ old('perihal') }}</textarea>
-                                            <div class="form-text">Huruf miring: blok teksnya lalu tekan <kbd>Ctrl</kbd>+<kbd>I</kbd>, atau apit dengan garis bawah, mis. <code>_Survei Pertanian_</code>. Berlaku di semua isian uraian.</div>
+                                            <div class="form-text"><kbd>Ctrl</kbd>+<kbd>I</kbd> untuk italic text</div>
                                             <div class="field-error" id="err-input-perihal">Perihal wajib diisi.</div>
                                         </div>
                                         {{-- <div class="col-md-12">
@@ -1136,6 +1180,7 @@
 
                     dokumentasiDestroyUrlTemplate = data.dokumentasi_destroy_url;
                     dokumentasiCaptionUrlTemplate = data.dokumentasi_caption_url;
+                    dokumentasiFileUrlTemplate = data.dokumentasi_file_url;
                     daftarDokumentasi = (data.dokumentasi || []).map(function (d) {
                         return { lama: true, id: d.id, nama_file: d.nama_file, url: d.url, caption: d.caption };
                     });
@@ -2183,6 +2228,9 @@
             let dokumentasiCaptionUrlTemplate = @json($perjalananDinas
                 ? route('perjalanan-dinas.dokumentasi.caption', [$perjalananDinas, '__ID__'])
                 : null);
+            let dokumentasiFileUrlTemplate = @json($perjalananDinas
+                ? route('perjalanan-dinas.dokumentasi.file', [$perjalananDinas, '__ID__'])
+                : null);
 
             // Semua foto (yang sudah tersimpan maupun yang baru dipilih) ada di satu daftar
             // berurutan supaya bisa diatur ulang dengan drag. Tiap item:
@@ -2232,7 +2280,7 @@
                 });
             }
 
-            function boksDokumentasi(namaFile, url, caption, onCaptionChange) {
+            function boksDokumentasi(namaFile, url, caption, onCaptionChange, onAturFoto) {
                 const box = document.createElement('div');
                 box.className = 'border rounded p-2 text-center position-relative dokumentasi-thumb';
                 box.style.width = '110px';
@@ -2251,6 +2299,15 @@
                     img.style.objectFit = 'cover';
                     img.style.borderRadius = '4px';
                     box.appendChild(img);
+                    if (onAturFoto && form.dataset.mode !== 'view') {
+                        const tombolAtur = document.createElement('button');
+                        tombolAtur.type = 'button';
+                        tombolAtur.className = 'dokumentasi-atur';
+                        tombolAtur.title = 'Potong (crop), perbesar/perkecil, atau putar foto';
+                        tombolAtur.innerHTML = '<i class="ti ti-crop" style="font-size:0.8rem;"></i> Atur foto';
+                        tombolAtur.addEventListener('click', function (e) { e.stopPropagation(); onAturFoto(); });
+                        box.appendChild(tombolAtur);
+                    }
                 } else {
                     box.insertAdjacentHTML('beforeend', '<i class="ti ti-file-text ti-lg"></i>');
                 }
@@ -2289,6 +2346,111 @@
                 renderAllPreviews();
             }
 
+            // ----- Atur foto (crop / zoom / putar) pakai Cropper.js, dimuat dari CDN saat
+            // pertama kali dibutuhkan. Hasilnya JPEG baru yang menggantikan foto aslinya. -----
+            let janjiCropper = null;
+            function muatCropper() {
+                if (window.Cropper) return Promise.resolve();
+                if (!janjiCropper) {
+                    janjiCropper = new Promise(function (resolve, reject) {
+                        const css = document.createElement('link');
+                        css.rel = 'stylesheet';
+                        css.href = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css';
+                        document.head.appendChild(css);
+                        const skrip = document.createElement('script');
+                        skrip.src = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js';
+                        skrip.onload = function () { resolve(); };
+                        skrip.onerror = function () {
+                            janjiCropper = null;
+                            reject(new Error('Gagal memuat alat pengatur foto. Periksa koneksi internet lalu coba lagi.'));
+                        };
+                        document.head.appendChild(skrip);
+                    });
+                }
+                return janjiCropper;
+            }
+
+            // Buka jendela Atur Foto untuk gambar di "url". Hasil: Blob JPEG, atau null kalau batal.
+            async function aturFoto(url) {
+                try {
+                    await muatCropper();
+                } catch (e) {
+                    swalError(e.message);
+                    return null;
+                }
+                let cropper = null;
+                const hasil = await Swal.fire({
+                    title: 'Atur Foto',
+                    width: 860,
+                    html: '<div class="atur-foto-wadah"><img id="atur-foto-img" alt=""></div>'
+                        + '<div class="atur-foto-alat">'
+                        + '<div class="btn-group btn-group-sm" role="group" aria-label="Rasio">'
+                        + '<button type="button" class="btn btn-outline-primary active" data-rasio="NaN">Bebas</button>'
+                        + '<button type="button" class="btn btn-outline-primary" data-rasio="1.3333">4:3</button>'
+                        + '<button type="button" class="btn btn-outline-primary" data-rasio="0.75">3:4</button>'
+                        + '<button type="button" class="btn btn-outline-primary" data-rasio="1">1:1</button>'
+                        + '</div>'
+                        + '<div class="btn-group btn-group-sm" role="group" aria-label="Zoom">'
+                        + '<button type="button" class="btn btn-outline-secondary" data-aksi="zoom-in" title="Perbesar"><i class="ti ti-zoom-in"></i></button>'
+                        + '<button type="button" class="btn btn-outline-secondary" data-aksi="zoom-out" title="Perkecil"><i class="ti ti-zoom-out"></i></button>'
+                        + '</div>'
+                        + '<div class="btn-group btn-group-sm" role="group" aria-label="Putar">'
+                        + '<button type="button" class="btn btn-outline-secondary" data-aksi="putar-kiri" title="Putar ke kiri"><i class="ti ti-rotate"></i></button>'
+                        + '<button type="button" class="btn btn-outline-secondary" data-aksi="putar-kanan" title="Putar ke kanan"><i class="ti ti-rotate-clockwise"></i></button>'
+                        + '</div>'
+                        + '<button type="button" class="btn btn-sm btn-outline-secondary" data-aksi="reset">Reset</button>'
+                        + '</div>'
+                        + '<div class="small text-muted mt-2">Geser sudut kotak untuk memotong, scroll / cubit untuk zoom.</div>',
+                    showCancelButton: true,
+                    confirmButtonText: 'Simpan',
+                    cancelButtonText: 'Batal',
+                    reverseButtons: true,
+                    customClass: { confirmButton: 'btn btn-primary', cancelButton: 'btn btn-label-secondary me-2' },
+                    buttonsStyling: false,
+                    didOpen: function (popup) {
+                        const img = popup.querySelector('#atur-foto-img');
+                        img.onload = function () {
+                            cropper = new Cropper(img, { viewMode: 1, autoCropArea: 1, background: false, responsive: true });
+                        };
+                        img.src = url;
+                        popup.querySelectorAll('[data-rasio]').forEach(function (btn) {
+                            btn.addEventListener('click', function () {
+                                popup.querySelectorAll('[data-rasio]').forEach(function (b) { b.classList.toggle('active', b === btn); });
+                                if (cropper) cropper.setAspectRatio(parseFloat(btn.dataset.rasio));
+                            });
+                        });
+                        popup.querySelectorAll('[data-aksi]').forEach(function (btn) {
+                            btn.addEventListener('click', function () {
+                                if (!cropper) return;
+                                const aksi = btn.dataset.aksi;
+                                if (aksi === 'zoom-in') cropper.zoom(0.1);
+                                else if (aksi === 'zoom-out') cropper.zoom(-0.1);
+                                else if (aksi === 'putar-kiri') cropper.rotate(-90);
+                                else if (aksi === 'putar-kanan') cropper.rotate(90);
+                                else if (aksi === 'reset') cropper.reset();
+                            });
+                        });
+                    },
+                    preConfirm: function () {
+                        if (!cropper) return false;
+                        const canvas = cropper.getCroppedCanvas({ maxWidth: 2400, maxHeight: 2400, fillColor: '#fff', imageSmoothingQuality: 'high' });
+                        if (!canvas) {
+                            Swal.showValidationMessage('Foto gagal diproses. Coba lagi.');
+                            return false;
+                        }
+                        return new Promise(function (resolve) { canvas.toBlob(resolve, 'image/jpeg', 0.9); });
+                    },
+                    willClose: function () {
+                        if (cropper) cropper.destroy();
+                    },
+                });
+                return hasil.isConfirmed ? hasil.value : null;
+            }
+
+            function namaFileJpg(nama) {
+                return String(nama || 'foto').replace(/\.[^.]+$/, '') + '.jpg';
+            }
+
             function renderDokumentasiList() {
                 dokumentasiList.innerHTML = '';
 
@@ -2306,6 +2468,29 @@
                                 renderAllPreviews();
                             }).catch(function () {
                                 swalError('Gagal menyimpan caption. Coba lagi.');
+                            });
+                        }, async function () {
+                            // Foto tersimpan: dibuka lewat path relatif (origin halaman ini) supaya
+                            // canvas tidak "tainted" kalau APP_URL beda domain; hasilnya langsung
+                            // menggantikan file di server.
+                            const blob = await aturFoto(new URL(item.url, window.location.href).pathname + '?t=' + Date.now());
+                            if (!blob) return;
+                            const fd = new FormData();
+                            fd.append('file', blob, namaFileJpg(item.nama_file));
+                            fetch(dokumentasiFileUrlTemplate.replace('__ID__', item.id), {
+                                method: 'POST',
+                                headers: { 'X-CSRF-TOKEN': dokumentasiCsrfToken, 'Accept': 'application/json' },
+                                body: fd,
+                            }).then(function (res) {
+                                if (!res.ok) throw new Error('gagal simpan foto');
+                                return res.json();
+                            }).then(function (data) {
+                                item.url = data.url;
+                                renderDokumentasiList();
+                                renderAllPreviews();
+                                if (typeof swalToast === 'function') swalToast('Foto diperbarui', 'success');
+                            }).catch(function () {
+                                swalError('Gagal menyimpan foto. Coba lagi.');
                             });
                         });
                         box.appendChild(tombolHapusDokumentasi(async function () {
@@ -2326,6 +2511,14 @@
                             item.caption = caption;
                             sinkronDokumentasiKeForm();
                             renderAllPreviews();
+                        }, async function () {
+                            // Foto baru (belum disimpan): hasilnya menggantikan file yang akan diunggah.
+                            const blob = await aturFoto(item.url);
+                            if (!blob) return;
+                            item.file = new File([blob], namaFileJpg(item.file.name), { type: 'image/jpeg' });
+                            item.url = '';
+                            sinkronDokumentasiKeForm();
+                            renderDokumentasiList();
                         });
                         if (item.file.type.startsWith('image/') && !item.url) {
                             const reader = new FileReader();
@@ -2350,7 +2543,7 @@
             if (window.Sortable && form.dataset.mode !== 'view') {
                 Sortable.create(dokumentasiList, {
                     animation: 150,
-                    filter: 'input, .dokumentasi-hapus',
+                    filter: 'input, .dokumentasi-hapus, .dokumentasi-atur',
                     preventOnFilter: false,
                     ghostClass: 'dokumentasi-ghost',
                     onEnd: function () {

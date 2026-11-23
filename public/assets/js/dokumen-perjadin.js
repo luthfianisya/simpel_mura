@@ -846,23 +846,28 @@
         const rows = data.dokumentasi || [];
         let dokumentasiGrid;
         if (rows.length) {
-            function dokumentasiCell(d) {
-                if (!d) return '<td class="dokumentasi-cell" width="50%"></td>';
+            // Tiap pasangan foto = 2 baris tabel dalam 1 <tbody>: baris foto (tingginya otomatis
+            // mengikuti foto TERTINGGI di pasangan itu, foto lain rata tengah) lalu baris
+            // keterangan (sejajar). Garis antar keduanya disembunyikan supaya foto +
+            // keterangan tampak 1 kotak. Saat dialirkan per halaman, 1 <tbody> tidak dipisah.
+            function selFoto(d) {
+                if (!d) return '<td class="dokumentasi-cell dokumentasi-foto" width="50%"></td>';
                 const isPdf = /\.pdf$/i.test(d.nama_file || '');
                 const inner = (!isPdf && d.url)
                     ? '<img src="' + esc(d.url) + '" alt="' + esc(d.nama_file) + '">'
                     : '<div class="dokumentasi-file"><i class="ti ti-file-text ti-lg"></i><br>' + esc(d.nama_file) + '</div>';
-                const caption = d.caption ? '<div class="dokumentasi-caption">' + esc(d.caption) + '</div>' : '';
-                // Foto ditaruh di "bingkai" setinggi tetap (tabel 1 sel, rata tengah) supaya
-                // keterangan di bawahnya sejajar antar kolom walau rasio fotonya beda.
-                return '<td class="dokumentasi-cell" width="50%"><table class="dokumentasi-bingkai"><tr><td>'
-                    + inner + '</td></tr></table>' + caption + '</td>';
+                return '<td class="dokumentasi-cell dokumentasi-foto" width="50%">' + inner + '</td>';
+            }
+            function selKeterangan(d) {
+                const caption = d && d.caption ? '<div class="dokumentasi-caption">' + esc(d.caption) + '</div>' : '';
+                return '<td class="dokumentasi-cell dokumentasi-ket" width="50%">' + caption + '</td>';
             }
             let bodyRows = '';
             for (let i = 0; i < rows.length; i += 2) {
-                bodyRows += '<tr>' + dokumentasiCell(rows[i]) + dokumentasiCell(rows[i + 1]) + '</tr>';
+                bodyRows += '<tbody><tr>' + selFoto(rows[i]) + selFoto(rows[i + 1]) + '</tr>'
+                    + '<tr>' + selKeterangan(rows[i]) + selKeterangan(rows[i + 1]) + '</tr></tbody>';
             }
-            dokumentasiGrid = '<table class="dokumen-table dokumentasi-grid alir-isi"><colgroup><col width="50%"><col width="50%"></colgroup><tbody>' + bodyRows + '</tbody></table>';
+            dokumentasiGrid = '<table class="dokumen-table dokumentasi-grid alir-isi"><colgroup><col width="50%"><col width="50%"></colgroup>' + bodyRows + '</table>';
         } else {
             dokumentasiGrid = '<p class="text-center text-muted">Belum ada dokumentasi.</p>';
         }
@@ -1327,6 +1332,15 @@
                     ol.innerHTML = '';
                     ol.setAttribute('start', dari + 1);
                     butir.slice(dari, sampai).forEach(function (li) { ol.appendChild(li.cloneNode(true)); });
+                });
+            } else if (jenis === 'tabel' && blok.querySelectorAll('.alir-isi > tbody').length > 1) {
+                // Beberapa <tbody> (mis. Dokumentasi: 1 tbody = foto + keterangannya): dipotong
+                // per <tbody> supaya isinya tidak terpisah halaman.
+                const kelompok = Array.from(blok.querySelectorAll('.alir-isi > tbody'));
+                taruhBertahap(blok, kelompok.length, function (el, dari, sampai) {
+                    const tabel = el.querySelector('.alir-isi');
+                    tabel.querySelectorAll(':scope > tbody').forEach(function (tb) { tb.remove(); });
+                    kelompok.slice(dari, sampai).forEach(function (tb) { tabel.appendChild(tb.cloneNode(true)); });
                 });
             } else if (jenis === 'tabel') {
                 const baris = Array.from(blok.querySelectorAll('.alir-isi > tbody > tr'));

@@ -16,6 +16,7 @@ use App\Http\Controllers\WilayahController;
 use App\Http\Controllers\PenomoranSpdController;
 use App\Http\Controllers\RateController;
 use App\Http\Controllers\DokumenExportController;
+use App\Http\Controllers\DevPerjalananDinasController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -42,6 +43,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/perjalanan-dinas/{perjalananDinas}', [PerjalananDinasController::class, 'destroy'])->name('perjalanan-dinas.destroy');
     Route::delete('/perjalanan-dinas/{perjalananDinas}/dokumentasi/{dokumentasi}', [PerjalananDinasController::class, 'hapusDokumentasi'])->name('perjalanan-dinas.dokumentasi.destroy');
     Route::patch('/perjalanan-dinas/{perjalananDinas}/dokumentasi/{dokumentasi}/caption', [PerjalananDinasController::class, 'updateCaptionDokumentasi'])->name('perjalanan-dinas.dokumentasi.caption');
+    Route::post('/perjalanan-dinas/{perjalananDinas}/dokumentasi/{dokumentasi}/file', [PerjalananDinasController::class, 'gantiFileDokumentasi'])->name('perjalanan-dinas.dokumentasi.file');
     Route::get('/perjalanan-dinas/{perjalananDinas}', [PerjalananDinasController::class, 'show'])->name('perjalanan-dinas.show');
     Route::get('/monitoring-spj', [MonitoringSpjController::class, 'index'])->name('monitoring-spj.index');
     Route::patch('/monitoring-spj/bulk', [MonitoringSpjController::class, 'bulkUpdate'])->name('monitoring-spj.bulk-update');
@@ -70,6 +72,10 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'role:administrator'])->group(function () {
+    // Halaman uji coba fitur baru (export Word) — hanya administrator.
+    Route::get('/dev/perjalanan-dinas', [DevPerjalananDinasController::class, 'index'])->name('dev.perjalanan-dinas.index');
+    Route::get('/dev/perjalanan-dinas/{perjalananDinas}/word/{jenis}', [DevPerjalananDinasController::class, 'word'])->name('dev.perjalanan-dinas.word');
+
     Route::get('/kelola-pegawai', [PegawaiMitraController::class, 'pegawai'])->name('pegawai-mitra.pegawai');
     Route::get('/kelola-mitra', [PegawaiMitraController::class, 'mitra'])->name('pegawai-mitra.mitra');
     Route::post('/pegawai-mitra', [PegawaiMitraController::class, 'store'])->name('pegawai-mitra.store');

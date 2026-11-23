@@ -761,6 +761,7 @@ class PerjalananDinasController extends Controller
             'edit_url' => route('perjalanan-dinas.edit', $perjalananDinas),
             'dokumentasi_destroy_url' => route('perjalanan-dinas.dokumentasi.destroy', [$perjalananDinas, '__ID__']),
             'dokumentasi_caption_url' => route('perjalanan-dinas.dokumentasi.caption', [$perjalananDinas, '__ID__']),
+            'dokumentasi_file_url' => route('perjalanan-dinas.dokumentasi.file', [$perjalananDinas, '__ID__']),
             'dokumentasi' => $perjalananDinas->dokumentasi->map(fn ($d) => [
                 'id' => $d->id_dokumentasi,
                 'nama_file' => $d->nama_file,
@@ -869,6 +870,27 @@ class PerjalananDinasController extends Controller
         $dokumentasi->delete();
 
         return response()->noContent();
+    }
+
+    /**
+     * Ganti file foto Dokumentasi yang SUDAH tersimpan dengan hasil crop/zoom dari wizard
+     * (fitur "Atur foto"). Caption & urutannya tetap; file lama dihapus.
+     */
+    public function gantiFileDokumentasi(Request $request, PerjalananDinas $perjalananDinas, Dokumentasi $dokumentasi)
+    {
+        abort_unless($perjalananDinas->bisaDiubahOleh($request->user()->id_pegawai_mitra), 403);
+        abort_unless($dokumentasi->id_perjalanan_dinas === $perjalananDinas->id_perjalanan_dinas, 404);
+
+        $request->validate([
+            'file' => 'required|file|max:10240|mimes:jpg,jpeg,png',
+        ]);
+
+        $pathLama = $dokumentasi->path_file;
+        $pathBaru = Storage::disk('public')->putFile('dokumentasi', $request->file('file'));
+        $dokumentasi->update(['path_file' => $pathBaru, 'uploaded_at' => now()]);
+        Storage::disk('public')->delete($pathLama);
+
+        return response()->json(['url' => Storage::disk('public')->url($pathBaru)]);
     }
 
     /**
