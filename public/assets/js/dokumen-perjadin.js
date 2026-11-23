@@ -534,7 +534,7 @@
             const skLabel = skPengeluaranLabel[row.jenis] || skPengeluaranLabel.transportasi;
             bodyRows += `<tr>
                 <td>${i + 1}</td>
-                <td style="text-align:justify;">${teks(row.uraian) || '-'}<br><span class="fst-italic" style="font-size:0.68rem;">${skLabel} ${tahun}</span></td>
+                <td style="text-align:justify;">${teks(row.uraian) || '-'}<br><span class="fst-italic" style="font-size:11pt;">${skLabel} ${tahun}</span></td>
                 <td class="text-end">${fmtRupiah(nominal)}</td>
             </tr>`;
         });
@@ -545,9 +545,9 @@
         // ikut di halaman yang sama selama muat, dan "Demikian ..." s.d. ttd satu blok utuh
         // yang pindah ke halaman berikutnya hanya kalau tidak muat.
         return `
-            <div style="font-family:Arial, sans-serif;" data-alir-halaman data-tanpa-nomor-halaman>
+            <div style="font-family:Arial, sans-serif; font-size:11pt;" data-alir-halaman data-tanpa-nomor-halaman>
             <div data-blok="utuh">
-            <div class="dokumen-title" style="font-size:14px;">DAFTAR PENGELUARAN RIIL</div>
+            <div class="dokumen-title" style="font-size:11pt;">DAFTAR PENGELUARAN RIIL</div>
             <p>Yang bertanda tangan dibawah ini :</p>
             <table class="dokumen-table">
                 <tr><td width="20%">Nama</td><td>: ${esc(pelaksana.nama) || '...........................'}</td></tr>
@@ -601,8 +601,8 @@
         const total = k.uangHarian + k.transport + k.penginapan + jumlahPengeluaran(data);
         const tahun = (data.tanggal_mulai || '').slice(0, 4) || '.....';
         return `
-            <div style="font-family:Arial, sans-serif;" data-satu-halaman>
-            <table style="width:45%; margin-left:auto; font-size:0.75rem; margin-bottom:1rem; border-collapse:collapse;">
+            <div style="font-family:Arial, sans-serif; font-size:11pt;" data-satu-halaman>
+            <table style="width:45%; margin-left:auto; font-size:11pt; margin-bottom:1rem; border-collapse:collapse;">
                 <tr><td style="width:30%; padding-right:6px; vertical-align:top; white-space:nowrap;">Tahun Anggaran</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td>${tahun}</td></tr>
                 <tr><td style="width:30%; padding-right:6px; vertical-align:top; white-space:nowrap;">Nomor Bukti</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td></td></tr>
                 <tr><td style="width:30%; padding-right:6px; vertical-align:top; white-space:nowrap;">Akun</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td>${esc(data.pembebanan) || '...........................'}</td></tr>
@@ -611,10 +611,10 @@
             </table>
             <div class="dokumen-title" style="font-size:16px;">Kuitansi/Bukti Pembayaran</div>
             <table class="dokumen-table mt-3">
-                <tr><td width="20%" style="vertical-align:top;">Sudah terima dari</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td>Pejabat Pembuat Komitmen BPS Kabupaten Murung Raya</td></tr>
-                <tr><td style="vertical-align:top;">Jumlah Uang</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td><strong>${fmtRupiah(total)},-</strong></td></tr>
-                <tr><td style="vertical-align:top;">Terbilang</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td><span class="fw-bold fst-italic">** ${terbilangRupiah(total)} **</span></td></tr>
-                <tr><td style="vertical-align:top;">Untuk pembayaran</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td style="text-align:justify;">Biaya perjalanan dinas dalam rangka ${teks(perihalTanpaAwalan(data.perihal)) || '...........................'}${wilayahTujuan(data) ? ' di ' + esc(wilayahTujuan(data)) : ''}, tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}, sesuai dengan:<br><span class="spasi-opsional"><br></span>
+                <tr><td width="20%" style="vertical-align:top; white-space:nowrap;">Sudah terima dari</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td>Pejabat Pembuat Komitmen BPS Kabupaten Murung Raya</td></tr>
+                <tr><td style="vertical-align:top; white-space:nowrap;">Jumlah Uang</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td><strong>${fmtRupiah(total)},-</strong></td></tr>
+                <tr><td style="vertical-align:top; white-space:nowrap;">Terbilang</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td><span class="fw-bold fst-italic">** ${terbilangRupiah(total)} **</span></td></tr>
+                <tr><td style="vertical-align:top; white-space:nowrap;">Untuk pembayaran</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td style="text-align:justify;">Biaya perjalanan dinas dalam rangka ${teks(perihalTanpaAwalan(data.perihal)) || '...........................'}${wilayahTujuan(data) ? ' di ' + esc(wilayahTujuan(data)) : ''}, tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}, sesuai dengan:<br><span class="spasi-opsional"><br></span>
                     Surat Tugas Nomor: ${esc(data.no_surat_tugas) || '...........................'} tanggal ${fmtTanggalPanjang(data.tanggal_surat_tugas)}<br>
                     ${data.no_spd ? 'SPD Nomor: ' + esc(data.no_spd) + ' tanggal ' + fmtTanggalPanjang(data.tanggal_spd) : ''}
                 </td></tr>
@@ -662,9 +662,9 @@
 
         if (kondisi === 'tidak_pakai_kendaraan_dinas') {
             return `
-                <div style="font-family:Arial, sans-serif;">
-                <div class="dokumen-title" style="font-size:14px; font-weight:700;">SURAT PERNYATAAN</div>
-                <div class="dokumen-nomor" style="font-size:14px; font-weight:700; text-decoration:underline;">TIDAK MENGGUNAKAN KENDARAAN DINAS</div>
+                <div style="font-family:Arial, sans-serif; font-size:11pt;">
+                <div class="dokumen-title" style="font-size:11pt; font-weight:700;">SURAT PERNYATAAN</div>
+                <div class="dokumen-nomor" style="font-size:11pt; font-weight:700; text-decoration:underline;">TIDAK MENGGUNAKAN KENDARAAN DINAS</div>
                 <p>Yang bertanda tangan di bawah ini:</p>
                 <table class="dokumen-table">
                     <tr><td width="22%">Nama</td><td>: ${esc(pelaksana.nama) || '...........................'}</td></tr>
@@ -686,9 +686,9 @@
 
         if (kondisi === 'tidak_menginap_hotel') {
             return `
-                <div style="font-family:Arial, sans-serif;">
-                <div class="dokumen-title" style="font-size:14px; font-weight:700;">SURAT PERNYATAAN</div>
-                <div class="dokumen-nomor" style="font-size:14px; font-weight:700; text-decoration:underline;">TIDAK MENGINAP DI HOTEL ATAU DI PENYEDIA JASA AKOMODASI LAINNYA</div>
+                <div style="font-family:Arial, sans-serif; font-size:11pt;">
+                <div class="dokumen-title" style="font-size:11pt; font-weight:700;">SURAT PERNYATAAN</div>
+                <div class="dokumen-nomor" style="font-size:11pt; font-weight:700; text-decoration:underline;">TIDAK MENGINAP DI HOTEL ATAU DI PENYEDIA JASA AKOMODASI LAINNYA</div>
                 <p>Yang bertanda tangan di bawah ini:</p>
                 <table class="dokumen-table">
                     <tr><td width="22%">Nama</td><td>: ${esc(pelaksana.nama) || '...........................'}</td></tr>
@@ -711,9 +711,9 @@
 
         if (kondisi === 'keterlambatan') {
             return `
-                <div style="font-family:Arial, sans-serif;">
-                <div class="dokumen-title" style="font-size:14px; font-weight:700;">SURAT PERNYATAAN</div>
-                <div class="dokumen-nomor" style="font-size:14px; font-weight:700; text-decoration:underline;">KETERLAMBATAN PENGAJUAN TAGIHAN</div>
+                <div style="font-family:Arial, sans-serif; font-size:11pt;">
+                <div class="dokumen-title" style="font-size:11pt; font-weight:700;">SURAT PERNYATAAN</div>
+                <div class="dokumen-nomor" style="font-size:11pt; font-weight:700; text-decoration:underline;">KETERLAMBATAN PENGAJUAN TAGIHAN</div>
                 <p>Yang bertanda tangan di bawah ini:</p>
                 <table class="dokumen-table">
                     <tr><td width="22%">Nama</td><td>: ${esc(pelaksana.nama) || '...........................'}</td></tr>
@@ -749,9 +749,9 @@
 
         if (data.jenis_perjadin === 'dalam_kota_lebih_8_jam') {
             blocks.push(`
-                <div style="font-family:Arial, sans-serif;">
-                <div class="dokumen-title" style="font-size:14px; font-weight:700;">SURAT PERNYATAAN</div>
-                <div class="dokumen-nomor" style="font-size:14px; font-weight:700; text-decoration:underline;">PERJALANAN DINAS DALAM KOTA LEBIH DARI 8 JAM</div>
+                <div style="font-family:Arial, sans-serif; font-size:11pt;">
+                <div class="dokumen-title" style="font-size:11pt; font-weight:700;">SURAT PERNYATAAN</div>
+                <div class="dokumen-nomor" style="font-size:11pt; font-weight:700; text-decoration:underline;">PERJALANAN DINAS DALAM KOTA LEBIH DARI 8 JAM</div>
                 <p>Yang bertanda tangan di bawah ini :</p>
                 <table class="dokumen-table">
                     <tr><td width="22%">Nama</td><td>: ${esc(pelaksana.nama) || '...........................'}</td></tr>
@@ -787,7 +787,7 @@
 
         if (!rows.length && !blocks.length) {
             return `
-                <div class="dokumen-title">SURAT PERNYATAAN</div>
+                <div class="dokumen-title" data-dokumen-kosong>SURAT PERNYATAAN</div>
                 <p class="text-center text-muted">Tidak ada surat pernyataan tambahan.</p>
             `;
         }
@@ -879,17 +879,17 @@
                 <tr><td style="vertical-align:top;">Perihal</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="text-align:justify;">Laporan Perjalanan Dinas dalam rangka ${teks(perihalTanpaAwalan(data.perihal)) || '...........................'}</td></tr>
             </table>
             <table class="dokumen-table mt-3">
-                <tr><td width="4%" style="vertical-align:top;">I.</td><td width="27%" style="vertical-align:top;">Pelaksana Perjalanan</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="vertical-align:top;">
+                <tr><td width="4%" style="vertical-align:top;">I.</td><td width="31%" style="vertical-align:top; white-space:nowrap;">Pelaksana Perjalanan</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="vertical-align:top;">
                     <table class="dokumen-table">
                         <tr><td width="18%">Nama</td><td>: ${esc(pelaksana.nama) || '...........................'}</td></tr>
                         <tr><td>NIP</td><td>: ${esc(fmtNip(pelaksana.nip))}</td></tr>
                         <tr><td>Jabatan</td><td>: ${esc(pelaksana.jabatan) || '-'}</td></tr>
                     </table>
                 </td></tr>
-                <tr><td style="vertical-align:top;">II.</td><td style="vertical-align:top;">Dasar Pelaksanaan</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="vertical-align:top;">${dasar}</td></tr>
-                <tr><td style="vertical-align:top;">III.</td><td style="vertical-align:top;">Tujuan Perjalanan Dinas</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="vertical-align:top; text-align:justify;">${teks(data.perihal) || '...........................'}</td></tr>
-                <tr><td style="vertical-align:top;">IV.</td><td style="vertical-align:top;">Daerah Tujuan/Instansi</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="vertical-align:top;">${data.desa_tujuan ? esc(data.desa_tujuan) + (data.kabupaten_tujuan ? ', ' + esc(data.kabupaten_tujuan) : '') : (esc(data.kabupaten_tujuan) || '...........................')}</td></tr>
-                <tr><td style="vertical-align:top;">V.</td><td style="vertical-align:top;">Waktu Pelaksanaan</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="vertical-align:top;">${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}</td></tr>
+                <tr><td style="vertical-align:top;">II.</td><td style="vertical-align:top; white-space:nowrap;">Dasar Pelaksanaan</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="vertical-align:top;">${dasar}</td></tr>
+                <tr><td style="vertical-align:top;">III.</td><td style="vertical-align:top; white-space:nowrap;">Tujuan Perjalanan Dinas</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="vertical-align:top; text-align:justify;">${teks(data.perihal) || '...........................'}</td></tr>
+                <tr><td style="vertical-align:top;">IV.</td><td style="vertical-align:top; white-space:nowrap;">Daerah Tujuan/Instansi</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="vertical-align:top;">${data.desa_tujuan ? esc(data.desa_tujuan) + (data.kabupaten_tujuan ? ', ' + esc(data.kabupaten_tujuan) : '') : (esc(data.kabupaten_tujuan) || '...........................')}</td></tr>
+                <tr><td style="vertical-align:top;">V.</td><td style="vertical-align:top; white-space:nowrap;">Waktu Pelaksanaan</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="vertical-align:top;">${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}</td></tr>
             </table>
             </div>
 
@@ -901,7 +901,7 @@
             </table>
 
             <table class="dokumen-table" data-blok="${tindakLanjutItems.length ? 'daftar' : 'utuh'}">
-                <tr><td width="4%" class="alir-label" style="vertical-align:top;">VII.</td><td width="27%" class="alir-label" style="vertical-align:top;">Tindak Lanjut</td><td style="vertical-align:top;">
+                <tr><td width="4%" class="alir-label" style="vertical-align:top;">VII.</td><td width="31%" class="alir-label" style="vertical-align:top;">Tindak Lanjut</td><td style="vertical-align:top;">
                     <span class="alir-judul">: Hal-hal yang perlu diperhatikan antara lain :</span>
                     ${tindakLanjutHtml}
                 </td></tr>
@@ -1349,7 +1349,10 @@
     // muat: 1) buang baris kosong opsional (.spasi-opsional), 2) margin atas dipendekkan,
     // 3) margin bawah ikut dipendekkan, 4) (uraian sangat panjang) jarak ttd dirapatkan.
     // Kelas yang dipakai ikut terbawa ke PDF/Word.
-    const TINGKAT_RAPAT = ['', 'rapat-1', 'rapat-1 rapat-2', 'rapat-1 rapat-2 rapat-3', 'rapat-1 rapat-2 rapat-3 rapat-4'];
+    // 5) & 6) (khusus Kuitansi, isinya 11pt) kalau masih belum muat juga, huruf diturunkan
+    // ke 10pt lalu 9pt — lebih baik sedikit lebih kecil daripada jadi 2 lembar.
+    const TINGKAT_RAPAT = ['', 'rapat-1', 'rapat-1 rapat-2', 'rapat-1 rapat-2 rapat-3', 'rapat-1 rapat-2 rapat-3 rapat-4',
+        'rapat-1 rapat-2 rapat-3 rapat-4 rapat-5', 'rapat-1 rapat-2 rapat-3 rapat-4 rapat-6'];
     function kelasRapatSatuHalaman(html, paperClass) {
         if (html.indexOf('data-satu-halaman') === -1 || !document.body) return '';
         const isF4 = paperClass.indexOf('dokumen-f4') !== -1;
@@ -1359,10 +1362,12 @@
         ukur.style.cssText = 'position:fixed;top:-99999px;left:-99999px;visibility:hidden;'
             + 'width:' + (isF4 ? 215 : 210) + 'mm;max-width:none;min-height:0;';
         document.body.appendChild(ukur);
-        let hasil = TINGKAT_RAPAT[TINGKAT_RAPAT.length - 1];
-        for (let i = 0; i < TINGKAT_RAPAT.length; i++) {
-            ukur.className = 'dokumen-preview alir-ukur ' + paperClass + ' ' + TINGKAT_RAPAT[i];
-            if (ukur.offsetHeight <= tinggiKertas) { hasil = TINGKAT_RAPAT[i]; break; }
+        // Rincian Biaya (sudah 9,5pt) tidak ikut tingkat 5 & 6 (pengecilan huruf).
+        const tingkat = paperClass.indexOf('dokumen-rincian-biaya') !== -1 ? TINGKAT_RAPAT.slice(0, 5) : TINGKAT_RAPAT;
+        let hasil = tingkat[tingkat.length - 1];
+        for (let i = 0; i < tingkat.length; i++) {
+            ukur.className = 'dokumen-preview alir-ukur ' + paperClass + ' ' + tingkat[i];
+            if (ukur.offsetHeight <= tinggiKertas) { hasil = tingkat[i]; break; }
         }
         document.body.removeChild(ukur);
         return hasil;
@@ -1558,7 +1563,11 @@
     // docs = { key: { label, html } }. Surat Tugas tidak ditawarkan (tidak diunduh).
     // Mengembalikan Promise<{ keys: [...] (sudah berurutan), gabung: bool } | null>.
     function pilihDokumenExport(docs) {
-        const keys = urutkanBerkas(Object.keys(docs).filter(function (k) { return k !== 'surat-tugas'; }));
+        // Surat Tugas tidak diunduh; dokumen kosong (mis. Surat Pernyataan tanpa satu pun
+        // pernyataan dicentang, ditandai [data-dokumen-kosong]) tidak ikut diexport.
+        const keys = urutkanBerkas(Object.keys(docs).filter(function (k) {
+            return k !== 'surat-tugas' && String(docs[k].html || '').indexOf('data-dokumen-kosong') === -1;
+        }));
         const daftar = keys.map(function (k) {
             return '<label class="pde-baris" data-key="' + k + '"><input class="form-check-input pde-cek" type="checkbox" value="' + k + '" checked>'
                 + '<span>' + esc(docs[k].label) + '</span>'

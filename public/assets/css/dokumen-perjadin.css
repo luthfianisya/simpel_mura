@@ -420,3 +420,11 @@
 .dokumen-preview.dokumen-a4.dokumen-rincian-biaya.rapat-4 { padding-top: 0.6cm; padding-bottom: 0.6cm; }
 .dokumen-preview.rapat-4 table.dokumen-rincian td,
 .dokumen-preview.rapat-4 table.dokumen-rincian th { padding-top: 1px; padding-bottom: 1px; }
+
+/* Kuitansi yang uraiannya sangat panjang (tingkat rapat 5 & 6, lihat TINGKAT_RAPAT di
+   dokumen-perjadin.js): huruf 11pt diturunkan ke 10pt / 9pt supaya tetap 1 lembar.
+   Rincian Biaya (sudah 9,5pt) tidak pernah diberi kelas ini. */
+.dokumen-preview.rapat-5 > div,
+.dokumen-preview.rapat-5 > div table { font-size: 10pt !important; }
+.dokumen-preview.rapat-6 > div,
+.dokumen-preview.rapat-6 > div table { font-size: 9pt !important; }
