@@ -1657,7 +1657,7 @@
                 + '<label><input class="form-check-input" type="radio" name="pde-mode" value="pisah" checked>'
                 + '<span><strong>File terpisah</strong><small>1 file per dokumen</small></span></label>'
                 + '<label><input class="form-check-input" type="radio" name="pde-mode" value="gabung">'
-                + '<span><strong class="pde-teks-gabung">Gabung jadi 1 PDF</strong><small>Urut sesuai kelengkapan, tanpa SPD</small></span></label>'
+                + '<span><strong class="pde-teks-gabung">Gabung jadi 1 PDF</strong><small>Urut sesuai kelengkapan</small></span></label>'
                 + '</div>',
             width: 460,
             showCancelButton: true,
