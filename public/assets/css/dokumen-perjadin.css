@@ -328,15 +328,31 @@
 
 .dokumen-preview table.dokumentasi-grid {
     margin-top: 1rem;
+    /* Dua kolom selalu sama lebar (50:50), tidak mengikuti ukuran foto. */
+    table-layout: fixed;
 }
 
 .dokumen-preview table.dokumen-table td.dokumentasi-cell {
     border: 1px solid #000;
     padding: 0.35rem;
     text-align: center;
-    /* vertical-align:middle (bukan flexbox — dompdf cuma dukung sepenuhnya
-       properti table dasar) supaya foto tetap rata tengah vertikal walau
-       tinggi foto di sel sebelahnya (1 baris = 2 sel) beda. */
+    /* Rata atas: foto ada di .dokumentasi-bingkai yang tingginya tetap, jadi foto
+       dan keterangannya sejajar dengan sel sebelahnya. */
+    vertical-align: top;
+}
+
+/* Bingkai foto setinggi tetap, foto rata tengah di dalamnya (tabel 1 sel, bukan
+   flexbox — dompdf cuma dukung sepenuhnya properti table dasar). */
+.dokumen-preview table.dokumentasi-bingkai {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+}
+.dokumen-preview table.dokumen-table table.dokumentasi-bingkai td {
+    height: 65mm;
+    padding: 0;
+    border: 0;
+    text-align: center;
     vertical-align: middle;
 }
 

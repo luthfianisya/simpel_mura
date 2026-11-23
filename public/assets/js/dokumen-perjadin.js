@@ -847,13 +847,16 @@
         let dokumentasiGrid;
         if (rows.length) {
             function dokumentasiCell(d) {
-                if (!d) return '<td class="dokumentasi-cell"></td>';
+                if (!d) return '<td class="dokumentasi-cell" width="50%"></td>';
                 const isPdf = /\.pdf$/i.test(d.nama_file || '');
                 const inner = (!isPdf && d.url)
                     ? '<img src="' + esc(d.url) + '" alt="' + esc(d.nama_file) + '">'
                     : '<div class="dokumentasi-file"><i class="ti ti-file-text ti-lg"></i><br>' + esc(d.nama_file) + '</div>';
                 const caption = d.caption ? '<div class="dokumentasi-caption">' + esc(d.caption) + '</div>' : '';
-                return '<td class="dokumentasi-cell">' + inner + caption + '</td>';
+                // Foto ditaruh di "bingkai" setinggi tetap (tabel 1 sel, rata tengah) supaya
+                // keterangan di bawahnya sejajar antar kolom walau rasio fotonya beda.
+                return '<td class="dokumentasi-cell" width="50%"><table class="dokumentasi-bingkai"><tr><td>'
+                    + inner + '</td></tr></table>' + caption + '</td>';
             }
             let bodyRows = '';
             for (let i = 0; i < rows.length; i += 2) {
