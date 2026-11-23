@@ -48,6 +48,10 @@ class DokumenWord
 
     private const BOOKMAN = 'Bookman Old Style';
 
+    // Spasi baris per dokumen (selain ini memakai bawaan 1,15).
+    // Kuitansi (wajib 1 lembar) hanya isi utamanya yang 1,5 — lihat kuitansi().
+    private const SPASI_LONGGAR = ['pernyataan' => 1.5, 'laporan' => 1.5, 'pengeluaran' => 1.5];
+
     private PhpWord $word;
 
     private array $d;
@@ -87,6 +91,7 @@ class DokumenWord
 
         $daftar = $jenis === 'semua' ? array_keys(self::jenisTersedia($pd)) : [$jenis];
         foreach ($daftar as $j) {
+            $sebelum = count($this->word->getSections());
             match ($j) {
                 'surat-tugas' => $this->suratTugas(),
                 'spd' => $this->spd(),
@@ -96,6 +101,13 @@ class DokumenWord
                 'pernyataan' => $this->pernyataan(),
                 'laporan' => $this->laporan(),
             };
+            // Dokumen berhuruf 11 pt ini diberi spasi baris 1,5 (yang lain tetap rapat
+            // supaya muat 1 lembar).
+            if (isset(self::SPASI_LONGGAR[$j])) {
+                foreach (array_slice($this->word->getSections(), $sebelum) as $section) {
+                    $this->terapkanSpasi($section, self::SPASI_LONGGAR[$j]);
+                }
+            }
         }
         $this->tutupSection();
 
@@ -412,7 +424,7 @@ class DokumenWord
 
         $s->addText('Kuitansi/Bukti Pembayaran', ['bold' => true, 'underline' => 'single', 'size' => 12], ['alignment' => Jc::CENTER, 'spaceBefore' => 200, 'spaceAfter' => 160]);
 
-        $w = $this->kolom([22, 2, 76]);
+        $w = $this->kolom([26, 2, 72]);
         $t = $this->tabel($s);
         $this->barisLabel($t, $w, 'Sudah terima dari', 'Pejabat Pembuat Komitmen BPS Kabupaten Murung Raya');
         $t->addRow();
@@ -424,21 +436,21 @@ class DokumenWord
         $t->addCell($w[1])->addText(':');
         $t->addCell($w[2])->addText('** ' . $this->terbilangRupiah($total) . ' **', ['bold' => true, 'italic' => true]);
         $untuk = 'Biaya perjalanan dinas dalam rangka ' . ($this->perihalTanpaAwalan($d['perihal']) ?: '...........................') . $this->diTujuan()
-            . ', tanggal ' . $this->rentangTanggal($d['tanggal_mulai'], $d['tanggal_selesai']) . ", sesuai dengan:\n\n"
+            . ', tanggal ' . $this->rentangTanggal($d['tanggal_mulai'], $d['tanggal_selesai']) . ", sesuai dengan:\n"
             . 'Surat Tugas Nomor: ' . ($d['no_surat_tugas'] ?: '...........................') . ' tanggal ' . $this->tanggal($d['tanggal_surat_tugas'])
             . ($d['no_spd'] ? "\nSPD Nomor: " . $d['no_spd'] . ' tanggal ' . $this->tanggal($d['tanggal_spd']) : '');
         $this->barisLabel($t, $w, 'Untuk pembayaran', $untuk, [], true);
+        $this->terapkanSpasi($t, 1.5);
 
         $s->addText('', ['size' => 6]);
         $this->ttdKanan($s, ['Puruk Cahu, ' . $this->tanggal($d['tanggal_kuitansi']), 'Yang menerima'], $pelaksana['nama'] ?? '', $pelaksana['nip'] ?? '');
         $this->garis($s);
         $this->ttdDua($s, ['An. Kuasa Pengguna Anggaran', 'Pejabat Pembuat Komitmen'], $d['ppk'], ['Lunas dibayar,', 'Bendahara Pengeluaran'], $d['bendahara']);
         $this->garis($s);
-        $s->addText('Barang/pekerjaan tersebut telah diterima/diselesaikan dengan lengkap dan baik', [], ['spaceAfter' => 200]);
-        $t = $this->tabel($s);
-        $t->addRow(null, ['cantSplit' => true]);
-        $this->blokTtd($t->addCell((int) ($this->lebar / 2)), ['Pejabat yang bertanggungjawab', 'Pejabat Pembuat Komitmen'], $d['ppk']['nama'] ?? '', $d['ppk']['nip'] ?? '');
-        $t->addCell((int) ($this->lebar / 2));
+        $s->addText('Barang/pekerjaan tersebut telah diterima/diselesaikan dengan lengkap dan baik', [], ['spaceAfter' => 80]);
+        // Paragraf di separuh kiri (bukan tabel), supaya dokumen tidak berakhir dengan tabel.
+        $this->blokTtd($s, ['Pejabat yang bertanggungjawab', 'Pejabat Pembuat Komitmen'], $d['ppk']['nama'] ?? '', $d['ppk']['nip'] ?? '', [],
+            ['indentation' => ['right' => (int) ($this->lebar / 2)]]);
     }
 
     private function pernyataan(): void
@@ -548,7 +560,7 @@ class DokumenWord
         $this->spasi($s, 1);
 
         // I. - V.: nomor | judul | : | isi
-        $w = $this->kolom([7, 28, 2, 63]);
+        $w = $this->kolom([7, 32, 2, 59]);
         $p = ['spaceAfter' => 100];
         $t = $this->tabel($s);
         $t->addRow();
@@ -685,8 +697,30 @@ class DokumenWord
     private function tutupSection(): void
     {
         if ($this->sectionAktif) {
-            $this->sectionAktif->addText('', ['size' => 1], ['spaceBefore' => 0, 'spaceAfter' => 0, 'lineHeight' => 1.0]);
+            $isi = $this->sectionAktif->getElements();
+            if (end($isi) instanceof Table) {
+                $this->sectionAktif->addText('', ['size' => 1], ['spaceBefore' => 0, 'spaceAfter' => 0, 'lineHeight' => 1.0]);
+            }
             $this->sectionAktif = null;
+        }
+    }
+
+    /** Pasang spasi baris ke semua paragraf (termasuk di dalam tabel) yang belum menentukan sendiri. */
+    private function terapkanSpasi(AbstractContainer|Table $wadah, float $spasi): void
+    {
+        foreach ($wadah instanceof Table ? [$wadah] : $wadah->getElements() as $el) {
+            if ($el instanceof Table) {
+                foreach ($el->getRows() as $row) {
+                    foreach ($row->getCells() as $cell) {
+                        $this->terapkanSpasi($cell, $spasi);
+                    }
+                }
+            } elseif ($el instanceof \PhpOffice\PhpWord\Element\Text || $el instanceof TextRun) {
+                $gaya = $el->getParagraphStyle();
+                if ($gaya instanceof \PhpOffice\PhpWord\Style\Paragraph && $gaya->getLineHeight() === null) {
+                    $gaya->setLineHeight($spasi);
+                }
+            }
         }
     }
 
