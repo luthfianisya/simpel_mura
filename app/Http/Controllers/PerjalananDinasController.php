@@ -147,7 +147,7 @@ class PerjalananDinasController extends Controller
                 ->find($request->query('from'));
             if ($sumber) {
                 // Nomor SPD, Nomor Form Permintaan & tanggal laporan tidak ikut disalin — tiap dokumen punya nomor/tanggal sendiri.
-                session()->flashInput(array_merge($sumber->toFormPrefill(), ['no_spd' => null, 'no_form_permintaan' => null, 'tanggal_laporan' => null]));
+                session()->flashInput(array_merge($sumber->toFormPrefill(), ['no_spd' => null, 'no_form_permintaan' => null, 'tanggal_laporan' => null, 'pernyataan_keterlambatan_tanggal' => null]));
             }
         }
 
@@ -554,6 +554,7 @@ class PerjalananDinasController extends Controller
             'pernyataan.tidak_menginap_hotel' => 'nullable|boolean',
             'pernyataan.keterlambatan' => 'nullable|boolean',
             'pernyataan_keterlambatan_keterangan' => 'nullable|string',
+            'pernyataan_keterlambatan_tanggal' => 'nullable|date',
 
             'kesimpulan_hasil_kegiatan' => 'nullable|string',
             'tindak_lanjut' => 'nullable|string',
@@ -648,6 +649,8 @@ class PerjalananDinasController extends Controller
                     'id_perjalanan_dinas' => $perjalananDinas->id_perjalanan_dinas,
                     'jenis_kondisi' => $jenisKondisi,
                     'keterangan' => $jenisKondisi === 'keterlambatan' ? ($validated['pernyataan_keterlambatan_keterangan'] ?? null) : null,
+                    // Kosong -> tanggal hari ini (saat disimpan).
+                    'tanggal' => $jenisKondisi === 'keterlambatan' ? ($validated['pernyataan_keterlambatan_tanggal'] ?? now()->toDateString()) : null,
                 ]);
             }
         }

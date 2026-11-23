@@ -9,7 +9,9 @@ class SuratPernyataan extends Model
     protected $table = 'surat_pernyataan';
     protected $primaryKey = 'id_pernyataan';
 
-    protected $fillable = ['id_perjalanan_dinas', 'jenis_kondisi', 'keterangan'];
+    protected $fillable = ['id_perjalanan_dinas', 'jenis_kondisi', 'keterangan', 'tanggal'];
+
+    protected $casts = ['tanggal' => 'date'];
 
     public function perjalananDinas()
     {

@@ -467,12 +467,12 @@ class DokumenWord
         $pelaksana = $d['pelaksana'];
         $blok = [];
         if ($d['jenis_perjadin'] === 'dalam_kota_lebih_8_jam') {
-            $blok[] = ['lebih8jam', null];
+            $blok[] = ['lebih8jam', null, null];
         }
         $rows = $d['pernyataan'];
         usort($rows, fn ($a, $b) => array_search($a['jenis_kondisi'], self::KONDISI) <=> array_search($b['jenis_kondisi'], self::KONDISI));
         foreach ($rows as $r) {
-            $blok[] = [$r['jenis_kondisi'], $r['keterangan']];
+            $blok[] = [$r['jenis_kondisi'], $r['keterangan'], $r['tanggal'] ?? null];
         }
         if (! $blok) {
             $s = $this->sectionA4();
@@ -486,10 +486,11 @@ class DokumenWord
         $tglSt = $this->tanggal($d['tanggal_surat_tugas']);
         $noSpd = $d['no_spd'] ?: '...........................';
         $tglSpd = $this->tanggal($d['tanggal_spd']);
-        $tglTtd = $this->tanggal($d['tanggal_kuitansi']);
+        // Surat Pernyataan ditandatangani di hari terakhir perjalanan dinas.
+        $tglTtd = $this->tanggal($d['tanggal_selesai']);
         $para = ['alignment' => Jc::BOTH, 'spaceBefore' => 120, 'spaceAfter' => 120];
 
-        foreach ($blok as [$kondisi, $keterangan]) {
+        foreach ($blok as [$kondisi, $keterangan, $tanggalSurat]) {
             $s = $this->sectionA4();
             $judul = [
                 'lebih8jam' => 'PERJALANAN DINAS DALAM KOTA LEBIH DARI 8 JAM',
@@ -549,7 +550,9 @@ class DokumenWord
                 $penutup = 'Yang menyatakan,';
             }
             $this->spasi($s, 1);
-            $this->ttdKanan($s, ['Puruk Cahu, ' . $tglTtd, $penutup], $pelaksana['nama'] ?? '', $pelaksana['nip'] ?? '');
+            // Keterlambatan memakai tanggal yang dipilih di form; lainnya hari terakhir perjalanan.
+            $tgl = $kondisi === 'keterlambatan' && $tanggalSurat ? $this->tanggal($tanggalSurat) : $tglTtd;
+            $this->ttdKanan($s, ['Puruk Cahu, ' . $tgl, $penutup], $pelaksana['nama'] ?? '', $pelaksana['nip'] ?? '');
         }
     }
 

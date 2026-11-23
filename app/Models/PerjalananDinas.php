@@ -250,6 +250,7 @@ class PerjalananDinas extends Model
             'keterlambatan' => $pernyataanByJenis->has('keterlambatan'),
         ];
         $data['pernyataan_keterlambatan_keterangan'] = optional($pernyataanByJenis->get('keterlambatan'))->keterangan;
+        $data['pernyataan_keterlambatan_tanggal'] = optional(optional($pernyataanByJenis->get('keterlambatan'))->tanggal)->format('Y-m-d');
 
         return $data;
     }
@@ -270,6 +271,8 @@ class PerjalananDinas extends Model
             'pernyataan' => $this->suratPernyataan->map(fn ($p) => [
                 'jenis_kondisi' => $p->jenis_kondisi,
                 'keterangan' => $p->keterangan,
+                // Data lama (sebelum ada kolom tanggal): pakai tanggal terakhir disimpan.
+                'tanggal' => optional($p->tanggal ?? $p->created_at)->format('Y-m-d'),
             ])->values()->all(),
             'dokumentasi' => $this->dokumentasi->map(fn ($d) => [
                 'nama_file' => $d->nama_file,

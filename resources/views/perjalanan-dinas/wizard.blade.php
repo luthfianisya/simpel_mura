@@ -845,6 +845,11 @@
                                         </label>
                                         <div id="pernyataan-keterlambatan-keterangan-wrap" class="mt-2" {{ old('pernyataan.keterlambatan') ? '' : 'hidden' }}>
                                             <textarea class="form-control" id="input-pernyataan-keterlambatan_keterangan" name="pernyataan_keterlambatan_keterangan" rows="2" placeholder="Alasan keterlambatan">{{ old('pernyataan_keterlambatan_keterangan') }}</textarea>
+                                            {{-- Tanggal tanda tangan surat ini: default hari ini (tanggal form diisi/diedit), bisa diganti. --}}
+                                            <label class="form-label mt-2 mb-1" for="input-pernyataan-keterlambatan_tanggal">Tanggal Surat Pernyataan</label>
+                                            <input type="text" class="form-control" id="input-pernyataan-keterlambatan_tanggal" name="pernyataan_keterlambatan_tanggal" autocomplete="off"
+                                                value="{{ old('pernyataan_keterlambatan_tanggal') ?: ($mode !== 'view' ? now()->format('Y-m-d') : '') }}">
+                                            <div class="form-text">Pernyataan lain bertanggal hari terakhir perjalanan dinas.</div>
                                         </div>
                                     </div>
                                 </div>
@@ -1319,6 +1324,7 @@
             pasangFlatpickrTunggal('input-tanggal_spd');
             pasangFlatpickrTunggal('input-tanggal_kuitansi');
             pasangFlatpickrTunggal('input-tanggal_laporan');
+            pasangFlatpickrTunggal('input-pernyataan-keterlambatan_tanggal');
 
             // Tanggal Mulai - Selesai: 1 kotak Flatpickr mode "range", hasilnya
             // disinkronkan ke 2 input hidden (tanggal_mulai/tanggal_selesai) yang
@@ -1982,6 +1988,7 @@
                         return {
                             jenis_kondisi: jenis,
                             keterangan: jenis === 'keterlambatan' ? val('input-pernyataan-keterlambatan_keterangan') : '',
+                            tanggal: jenis === 'keterlambatan' ? val('input-pernyataan-keterlambatan_tanggal') : '',
                         };
                     });
 
