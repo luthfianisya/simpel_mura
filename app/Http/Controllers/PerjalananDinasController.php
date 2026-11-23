@@ -195,7 +195,7 @@ class PerjalananDinasController extends Controller
 
         $idPelaksanaLama = old('id_pegawai_mitra_pelaksana');
         $jenisPelaksanaLama = $idPelaksanaLama
-            ? ($mitraList->contains('id_pegawai_mitra', $idPelaksanaLama) ? 'mitra' : 'pegawai')
+            ? (str_starts_with((string) $idPelaksanaLama, 'baru:') || $mitraList->contains('id_pegawai_mitra', $idPelaksanaLama) ? 'mitra' : 'pegawai')
             : '';
 
         // No. Surat Tugas disimpan lengkap format "B-{angka}/62130/KU.340/{tahun}",
@@ -466,6 +466,34 @@ class PerjalananDinasController extends Controller
      * dibatasi sama sekali — semua field Data Umum & SPD boleh kosong, supaya user bisa
      * menyimpan progres kapan saja. Wajib-isi hanya berlaku saat "Selesai & Simpan".
      */
+    /**
+     * Pelaksana mitra yang diketik sendiri di form (mitra baru hasil rekrutmen, belum ada
+     * di daftar) dikirim sebagai "baru:{nama}". Dicari dulu mitra dengan nama yang sama
+     * (supaya tidak dobel), kalau belum ada ditambahkan ke data mitra — lalu ID-nya yang
+     * dipakai, sehingga validasi & semua dokumen berjalan seperti mitra biasa.
+     */
+    private function siapkanMitraBaru(Request $request): void
+    {
+        $nilai = (string) $request->input('id_pegawai_mitra_pelaksana');
+        if (! str_starts_with($nilai, 'baru:')) {
+            return;
+        }
+
+        $nama = mb_substr(trim(preg_replace('/\s+/u', ' ', substr($nilai, 5))), 0, 255);
+        if ($nama === '') {
+            $request->merge(['id_pegawai_mitra_pelaksana' => null]);
+
+            return;
+        }
+
+        $mitra = PegawaiMitra::where('status_kepegawaian', 'mitra')
+            ->whereRaw('LOWER(nama) = ?', [mb_strtolower($nama)])
+            ->first()
+            ?? PegawaiMitra::create(['nama' => $nama, 'status_kepegawaian' => 'mitra']);
+
+        $request->merge(['id_pegawai_mitra_pelaksana' => $mitra->id_pegawai_mitra]);
+    }
+
     private function validationRules(bool $butuhSpd, bool $isDraft = false, string $jenisPerjadin = ''): array
     {
         $wajib = $isDraft ? 'nullable' : 'required';
@@ -689,6 +717,7 @@ class PerjalananDinasController extends Controller
         // SPD wajib untuk jenis "biasa" maupun "dalam kota > 8 jam" (diperlakukan sama).
         $butuhSpd = in_array($request->input('jenis_perjadin'), $this->jenisSpdWajib, true);
         $isDraft = $request->input('status_draft') !== 'selesai';
+        $this->siapkanMitraBaru($request);
         $validated = $request->validate($this->validationRules($butuhSpd, $isDraft, (string) $request->input('jenis_perjadin')));
 
         $perjalananDinas = DB::transaction(function () use ($validated, $request, $pemohonId) {
@@ -770,6 +799,7 @@ class PerjalananDinasController extends Controller
 
         $butuhSpd = in_array($request->input('jenis_perjadin'), $this->jenisSpdWajib, true);
         $isDraft = $request->input('status_draft') !== 'selesai';
+        $this->siapkanMitraBaru($request);
         $validated = $request->validate($this->validationRules($butuhSpd, $isDraft, (string) $request->input('jenis_perjadin')));
 
         DB::transaction(function () use ($validated, $request, $perjalananDinas) {

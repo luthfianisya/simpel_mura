@@ -103,9 +103,20 @@
         return div.innerHTML;
     }
 
+    // Huruf miring ala WhatsApp: teks isian user yang diapit garis bawah, mis. "_Survei
+    // Pertanian_", ditulis miring di dokumen (preview, PDF, Word). Dipakai SETELAH esc().
+    function miring(html) {
+        return String(html || '').replace(/(^|[^0-9A-Za-z_])_([^_\n<>]+?)_(?=[^0-9A-Za-z_]|$)/g, '$1<i>$2</i>');
+    }
+
+    // Teks isian user (perihal, uraian, keterangan, ...): di-escape + dukung huruf miring.
+    function teks(str) {
+        return miring(esc(str));
+    }
+
     // Teks dari textarea: di-escape lalu tiap Enter jadi <br> (juga kebaca di PDF & Word).
     function teksBerbaris(str) {
-        return esc(String(str || '').replace(/\r\n?/g, '\n').trim()).replace(/ *\n */g, '<br>');
+        return miring(esc(String(str || '').replace(/\r\n?/g, '\n').trim()).replace(/ *\n */g, '<br>'));
     }
 
     // "Melakukan Pendataan" -> "melakukan Pendataan" saat disambung di tengah kalimat;
@@ -314,7 +325,7 @@
                 <tr>
                     <td>Untuk</td>
                     <td>:</td>
-                    <td style="text-align:justify;">Perjalanan dinas dalam rangka ${esc(hurufAwalKecil(perihalTanpaAwalan(data.perihal))) || '...........................'}${wilayahTujuan(data) ? ' di ' + esc(wilayahTujuan(data)) : ''}, tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}</td>
+                    <td style="text-align:justify;">Perjalanan dinas dalam rangka ${teks(hurufAwalKecil(perihalTanpaAwalan(data.perihal))) || '...........................'}${wilayahTujuan(data) ? ' di ' + esc(wilayahTujuan(data)) : ''}, tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}</td>
                 </tr>
                 <tr>
                     <td>Pembebanan</td>
@@ -372,7 +383,7 @@
                     <tr><td style="${gayaSel}" rowspan="3">3</td><td style="${selAtas}">a. Pangkat/Golongan</td><td style="${selAtas}" colspan="2">${esc(pelaksana.pangkat) || '-'}${pelaksana.golongan ? ' / ' + esc(pelaksana.golongan) : ''}</td></tr>
                     <tr><td style="${selTengah}">b. Jabatan</td><td style="${selTengah}" colspan="2">${esc(pelaksana.jabatan) || '-'}</td></tr>
                     <tr><td style="${selBawah}">c. Tingkat Biaya Perjalanan Dinas</td><td style="${selBawah}" colspan="2">${esc(data.tingkat_biaya) || '-'}</td></tr>
-                    <tr><td style="${gayaSel}">4</td><td style="${gayaSel}">Maksud Perjalanan Dinas</td><td style="${gayaSel}" colspan="2">${esc(data.perihal) || '...'}</td></tr>
+                    <tr><td style="${gayaSel}">4</td><td style="${gayaSel}">Maksud Perjalanan Dinas</td><td style="${gayaSel}" colspan="2">${teks(data.perihal) || '...'}</td></tr>
                     <tr><td style="${gayaSel}">5</td><td style="${gayaSel}">Alat angkutan yang dipergunakan</td><td style="${gayaSel}" colspan="2">${esc(data.angkutan) || '...'}</td></tr>
                     <tr><td style="${gayaSel}" rowspan="2">6</td><td style="${selAtas}">a. Tempat Berangkat</td><td style="${selAtas}" colspan="2">${esc(wilayahAsal(data)) || '...'}</td></tr>
                     <tr><td style="${selBawah}">b. Tempat Tujuan</td><td style="${selBawah}" colspan="2">${esc(wilayahTujuan(data)) || '...'}</td></tr>
@@ -523,15 +534,19 @@
             const skLabel = skPengeluaranLabel[row.jenis] || skPengeluaranLabel.transportasi;
             bodyRows += `<tr>
                 <td>${i + 1}</td>
-                <td style="text-align:justify;">${esc(row.uraian) || '-'}<br><span class="fst-italic" style="font-size:0.68rem;">${skLabel} ${tahun}</span></td>
+                <td style="text-align:justify;">${teks(row.uraian) || '-'}<br><span class="fst-italic" style="font-size:0.68rem;">${skLabel} ${tahun}</span></td>
                 <td class="text-end">${fmtRupiah(nominal)}</td>
             </tr>`;
         });
         if (!bodyRows) {
             bodyRows = '<tr><td colspan="3" class="text-center text-muted">Belum ada pengeluaran riil</td></tr>';
         }
+        // Dialirkan per halaman (alirkanHalaman): baris tabel dipotong per baris, poin 2
+        // ikut di halaman yang sama selama muat, dan "Demikian ..." s.d. ttd satu blok utuh
+        // yang pindah ke halaman berikutnya hanya kalau tidak muat.
         return `
-            <div style="font-family:Arial, sans-serif;">
+            <div style="font-family:Arial, sans-serif;" data-alir-halaman data-tanpa-nomor-halaman>
+            <div data-blok="utuh">
             <div class="dokumen-title" style="font-size:14px;">DAFTAR PENGELUARAN RIIL</div>
             <p>Yang bertanda tangan dibawah ini :</p>
             <table class="dokumen-table">
@@ -540,9 +555,10 @@
                 <tr><td>Jabatan</td><td>: ${esc(pelaksana.jabatan) || '-'}</td></tr>
             </table>
             <p>Berdasarkan ${data.no_spd ? 'SPD Nomor: ' + esc(data.no_spd) + ', tanggal ' + fmtTanggalPanjang(data.tanggal_spd) : 'Surat Tugas Nomor: ' + (esc(data.no_surat_tugas) || '...........................') + ', tanggal ' + fmtTanggalPanjang(data.tanggal_surat_tugas)}. Dengan ini kami menyatakan dengan sesungguhnya bahwa:</p>
-            <ol class="dokumen-list">
-                <li>Biaya transport pegawai dan/atau biaya penginapan dibawah ini yang tidak dapat diperoleh bukti-buktinya, meliputi:
-                    <table class="dokumen-table dokumen-rincian mt-1">
+            </div>
+            <ol class="dokumen-list" data-blok="tabel">
+                <li class="alir-butir"><span class="alir-judul">Biaya transport pegawai dan/atau biaya penginapan dibawah ini yang tidak dapat diperoleh bukti-buktinya, meliputi:</span>
+                    <table class="dokumen-table dokumen-rincian mt-1 alir-isi">
                         <thead><tr><th width="5%" class="text-center">No</th><th class="text-center">Uraian</th><th width="20%" class="text-center">Jumlah</th></tr></thead>
                         <tbody>
                         ${bodyRows}
@@ -550,8 +566,11 @@
                         </tbody>
                     </table>
                 </li>
+            </ol>
+            <ol class="dokumen-list" start="2" style="margin-top:0.35rem;" data-blok="utuh">
                 <li>Jumlah uang tersebut pada angka 1 di atas benar-benar dikeluarkan untuk pelaksanaan perjalanan dinas dimaksud dan apabila dikemudian hari terdapat kelebihan atas pembayaran, kami bersedia untuk menyetorkan kelebihan tersebut ke Kas Negara.</li>
             </ol>
+            <div data-blok="utuh">
             <p>Demikian pernyataan ini kami buat dengan sebenarnya, untuk dipergunakan sebagaimana mestinya.</p>
             <div class="text-end mb-3 pe-2">Puruk Cahu, ${fmtTanggalPanjang(data.tanggal_kuitansi)}</div>
             <table class="dokumen-table">
@@ -568,6 +587,7 @@
                     </td>
                 </tr>
             </table>
+            </div>
             </div>
         `;
     }
@@ -594,7 +614,7 @@
                 <tr><td width="20%" style="vertical-align:top;">Sudah terima dari</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td>Pejabat Pembuat Komitmen BPS Kabupaten Murung Raya</td></tr>
                 <tr><td style="vertical-align:top;">Jumlah Uang</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td><strong>${fmtRupiah(total)},-</strong></td></tr>
                 <tr><td style="vertical-align:top;">Terbilang</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td><span class="fw-bold fst-italic">** ${terbilangRupiah(total)} **</span></td></tr>
-                <tr><td style="vertical-align:top;">Untuk pembayaran</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td style="text-align:justify;">Biaya perjalanan dinas dalam rangka ${esc(perihalTanpaAwalan(data.perihal)) || '...........................'}${wilayahTujuan(data) ? ' di ' + esc(wilayahTujuan(data)) : ''}, tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}, sesuai dengan:<br><span class="spasi-opsional"><br></span>
+                <tr><td style="vertical-align:top;">Untuk pembayaran</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td style="text-align:justify;">Biaya perjalanan dinas dalam rangka ${teks(perihalTanpaAwalan(data.perihal)) || '...........................'}${wilayahTujuan(data) ? ' di ' + esc(wilayahTujuan(data)) : ''}, tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}, sesuai dengan:<br><span class="spasi-opsional"><br></span>
                     Surat Tugas Nomor: ${esc(data.no_surat_tugas) || '...........................'} tanggal ${fmtTanggalPanjang(data.tanggal_surat_tugas)}<br>
                     ${data.no_spd ? 'SPD Nomor: ' + esc(data.no_spd) + ' tanggal ' + fmtTanggalPanjang(data.tanggal_spd) : ''}
                 </td></tr>
@@ -677,7 +697,7 @@
                     <tr><td>Satuan Kerja</td><td>: BPS Kabupaten Murung Raya</td></tr>
                     <tr><td>Jabatan</td><td>: ${esc(pelaksana.jabatan) || '-'}</td></tr>
                 </table>
-                <p>Menerangkan bahwa selama melaksanakan perjalanan dinas dalam rangka ${esc(perihalTanpaAwalan(data.perihal)) || '...........................'}${wilayahTujuan(data) ? ' di ' + esc(wilayahTujuan(data)) : ''} pada tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}, saya benar-benar tidak menginap di hotel atau jasa akomodasi komersial lainnya.</p>
+                <p>Menerangkan bahwa selama melaksanakan perjalanan dinas dalam rangka ${teks(perihalTanpaAwalan(data.perihal)) || '...........................'}${wilayahTujuan(data) ? ' di ' + esc(wilayahTujuan(data)) : ''} pada tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}, saya benar-benar tidak menginap di hotel atau jasa akomodasi komersial lainnya.</p>
                 <p>Demikian pernyataan ini saya buat dengan sebenar-benarnya untuk dipergunakan sebagaimana mestinya. Apabila terdapat kekeliruan dalam pertanggung jawaban SPD dan mengakibatkan kerugian negara, saya bersedia dituntut sesuai peraturan yang berlaku dan mengembalikan biaya kompensasi menginap di hotel atau jasa akomodasi komersial lainnya yang sudah terlanjur saya terima ke kas negara.</p>
                 <div class="ttd-block">
                     <div>Puruk Cahu, ${tglTtd}</div>
@@ -702,9 +722,9 @@
                 </table>
                 <p>Dengan ini menyatakan sebagai berikut:</p>
                 <ol class="dokumen-list">
-                    <li>Telah terjadi keterlambatan mengajukan hak tagihan kepada Pejabat Pembuat Komitmen (PPK) BPS Kabupaten Murung Raya atas pelaksanaan perjalanan dinas ${esc(data.perihal) || '...........................'} yang telah selesai dilaksanakan pada tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}.<br>
+                    <li>Telah terjadi keterlambatan mengajukan hak tagihan kepada Pejabat Pembuat Komitmen (PPK) BPS Kabupaten Murung Raya atas pelaksanaan perjalanan dinas ${teks(data.perihal) || '...........................'} yang telah selesai dilaksanakan pada tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}.<br>
                     Berdasarkan Surat Tugas Nomor: ${noSt} tanggal ${tglSt}${data.no_spd ? '<br>Berdasarkan SPD Nomor: ' + noSpd + ' tanggal ' + tglSpd : ''}</li>
-                    <li>Keterlambatan mengajukan hak tagihan disebabkan oleh ${esc(keterangan) || '...........................'}</li>
+                    <li>Keterlambatan mengajukan hak tagihan disebabkan oleh ${teks(keterangan) || '...........................'}</li>
                     <li>Selanjutnya saya tidak akan mengalami keterlambatan kembali dalam pengajuan hak tagihan sesuai dengan batas waktu pengajuan hak tagihan kepada Negara yang diatur dalam PMK Nomor 190/PMK.05/2012 tentang Tata Cara Pembayaran dalam Rangka Pelaksanaan Anggaran Pendapatan dan Belanja Negara.</li>
                 </ol>
                 <p>Demikian pernyataan ini dibuat dengan sebenar-benarnya.</p>
@@ -742,7 +762,7 @@
                 <table class="dokumen-table">
                     <tr><td width="26%">a. Nomor Surat Tugas</td><td width="1%">:</td><td>${esc(data.no_surat_tugas) || '...........................'}, tanggal ${fmtTanggalPanjang(data.tanggal_surat_tugas)}</td></tr>
                     <tr><td>b. Nomor SPD</td><td>:</td><td>${data.no_spd ? esc(data.no_spd) + ', tanggal ' + fmtTanggalPanjang(data.tanggal_spd) : '-'}</td></tr>
-                    <tr><td style="vertical-align:top;">c. Tujuan</td><td style="vertical-align:top;">:</td><td style="text-align:justify;">${esc(data.perihal) || '...........................'}${wilayahTujuan(data) ? ' di ' + esc(wilayahTujuan(data)) : ''} selama ${terbilangHari(hitungLamaHari(data.tanggal_mulai, data.tanggal_selesai))} pada tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}</td></tr>
+                    <tr><td style="vertical-align:top;">c. Tujuan</td><td style="vertical-align:top;">:</td><td style="text-align:justify;">${teks(data.perihal) || '...........................'}${wilayahTujuan(data) ? ' di ' + esc(wilayahTujuan(data)) : ''} selama ${terbilangHari(hitungLamaHari(data.tanggal_mulai, data.tanggal_selesai))} pada tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}</td></tr>
                 </table>
                 <p>Adalah benar dilaksanakan lebih dari 8 jam.</p>
                 <p>Demikian pernyataan ini dibuat dengan sebenar-benarnya, dan saya sanggup menerima konsekuensi jika pernyataan ini tidak benar.</p>
@@ -816,7 +836,7 @@
         const tindakLanjutHtml = tindakLanjutItems.length
             ? '<ol class="dokumen-list alir-isi">' + tindakLanjutItems.map(function (item) {
                 return item
-                    ? '<li value="' + (++nomorTindakLanjut) + '">' + esc(item) + '</li>'
+                    ? '<li value="' + (++nomorTindakLanjut) + '">' + teks(item) + '</li>'
                     : '<li style="list-style:none;">&nbsp;</li>';
             }).join('') + '</ol>'
             : '-';
@@ -851,12 +871,12 @@
         // kalau tidak pindah utuh ke halaman berikutnya. Dokumentasi selalu
         // mulai di halaman baru.
         return `
-            <div style="font-family:Arial, sans-serif;" data-alir-halaman>
+            <div style="font-family:Arial, sans-serif; font-size:11pt;" data-alir-halaman>
             <div data-blok="utuh">
             <div class="dokumen-title">LAPORAN HASIL PERJALANAN DINAS</div>
             <table class="dokumen-table mt-3">
                 <tr><td width="16%" style="vertical-align:top;">Kepada Yth</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td>Kepala Badan Pusat Statistik Kabupaten Murung Raya</td></tr>
-                <tr><td style="vertical-align:top;">Perihal</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="text-align:justify;">Laporan Perjalanan Dinas dalam rangka ${esc(perihalTanpaAwalan(data.perihal)) || '...........................'}</td></tr>
+                <tr><td style="vertical-align:top;">Perihal</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="text-align:justify;">Laporan Perjalanan Dinas dalam rangka ${teks(perihalTanpaAwalan(data.perihal)) || '...........................'}</td></tr>
             </table>
             <table class="dokumen-table mt-3">
                 <tr><td width="4%" style="vertical-align:top;">I.</td><td width="27%" style="vertical-align:top;">Pelaksana Perjalanan</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="vertical-align:top;">
@@ -867,7 +887,7 @@
                     </table>
                 </td></tr>
                 <tr><td style="vertical-align:top;">II.</td><td style="vertical-align:top;">Dasar Pelaksanaan</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="vertical-align:top;">${dasar}</td></tr>
-                <tr><td style="vertical-align:top;">III.</td><td style="vertical-align:top;">Tujuan Perjalanan Dinas</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="vertical-align:top; text-align:justify;">${esc(data.perihal) || '...........................'}</td></tr>
+                <tr><td style="vertical-align:top;">III.</td><td style="vertical-align:top;">Tujuan Perjalanan Dinas</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="vertical-align:top; text-align:justify;">${teks(data.perihal) || '...........................'}</td></tr>
                 <tr><td style="vertical-align:top;">IV.</td><td style="vertical-align:top;">Daerah Tujuan/Instansi</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="vertical-align:top;">${data.desa_tujuan ? esc(data.desa_tujuan) + (data.kabupaten_tujuan ? ', ' + esc(data.kabupaten_tujuan) : '') : (esc(data.kabupaten_tujuan) || '...........................')}</td></tr>
                 <tr><td style="vertical-align:top;">V.</td><td style="vertical-align:top;">Waktu Pelaksanaan</td><td style="width:1%;padding-right:0;vertical-align:top;">:</td><td style="vertical-align:top;">${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}</td></tr>
             </table>
@@ -1189,10 +1209,13 @@
         const root = temp.querySelector('[data-alir-halaman]');
         const rootStyle = root.getAttribute('style') || '';
 
+        // Lebar isi halaman sungguhan = lebar kertas - margin - garis tepi .dokumen-preview
+        // (1px kiri + kanan, ikut di preview & PDF). Kalau tidak dikurangi, baris teks di
+        // pengukur lebih panjang dari aslinya -> tinggi teks diremehkan -> meluber di PDF.
         const measure = document.createElement('div');
         measure.className = 'dokumen-preview alir-ukur';
         measure.style.cssText = 'position:fixed;top:-99999px;left:-99999px;visibility:hidden;'
-            + 'border:0;padding:0;min-height:0;box-sizing:content-box;width:' + size.width + 'px;';
+            + 'border:0;padding:0;min-height:0;box-sizing:content-box;width:' + (size.width - 2) + 'px;';
         document.body.appendChild(measure);
 
         const halaman = [];
@@ -1206,7 +1229,7 @@
             page.style.display = 'flow-root';
             measure.innerHTML = '';
             measure.appendChild(page);
-            if (halaman.length > 0) {
+            if (halaman.length > 0 && !root.hasAttribute('data-tanpa-nomor-halaman')) {
                 page.insertAdjacentHTML('beforeend', '<div class="dokumen-page-num">- ' + (halaman.length + 1) + ' -</div>');
             }
         }
@@ -1224,6 +1247,9 @@
         function jadikanLanjutan(el) {
             el.querySelectorAll('.alir-label').forEach(function (td) { td.innerHTML = ''; });
             el.querySelectorAll('.alir-judul').forEach(function (j) { j.remove(); });
+            // Butir daftar yang bersambung (mis. tabel poin 1 Pengeluaran Riil) tidak
+            // menampilkan nomornya lagi di halaman berikutnya.
+            el.querySelectorAll('li.alir-butir').forEach(function (li) { li.style.listStyle = 'none'; });
         }
 
         function taruhUtuh(blok) {
@@ -1283,6 +1309,7 @@
                 // terbawa saat teksnya dipotong per kata.
                 const sumber = blok.querySelector('.alir-isi').cloneNode(true);
                 sumber.querySelectorAll('br').forEach(function (br) { br.replaceWith('\n'); });
+                sumber.querySelectorAll('i').forEach(function (el) { el.replaceWith('_' + el.textContent + '_'); });
                 const kata = sumber.textContent.replace(/\r/g, '').trim().split(/[ \t]+/);
                 taruhBertahap(blok, kata.length, function (el, dari, sampai) {
                     const isiEl = el.querySelector('.alir-isi');
@@ -1434,7 +1461,10 @@
         // di fungsi itu) sebelum di-render jadi div per halaman lewat renderPaginated.
         // Dokumen ber-[data-satu-halaman] (Kuitansi, Rincian Biaya) dirapatkan supaya muat
         // 1 lembar (kelasRapatSatuHalaman), jadi tidak dipecah per baris tabel.
-        const splitHtml = (paper && html.indexOf('data-satu-halaman') === -1) ? splitOverflowingTable(html, paperClass) : html;
+        // Dokumen ber-[data-alir-halaman] (Laporan, Pengeluaran Riil) dipotong sendiri oleh
+        // alirkanHalaman.
+        const splitHtml = (paper && html.indexOf('data-satu-halaman') === -1 && html.indexOf('data-alir-halaman') === -1)
+            ? splitOverflowingTable(html, paperClass) : html;
         const bodyHtml = paper ? renderPaginated(splitHtml, paperClass) : ('<div class="dokumen-preview">' + html + '</div>');
         // <style> di atas sudah berisi salinan LENGKAP dokumen-perjadin.css (lihat
         // getDokumenCss/cssOverride) — <link> di sini cuma cadangan buat jendela print

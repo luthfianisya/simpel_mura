@@ -418,6 +418,7 @@
                                         <div class="col-md-12">
                                             <label class="form-label">Perihal<span class="required-mark">*</span></label>
                                             <textarea id="input-perihal" name="perihal" class="form-control" rows="3" maxlength="2000" required>{{ old('perihal') }}</textarea>
+                                            <div class="form-text">Huruf miring: blok teksnya lalu tekan <kbd>Ctrl</kbd>+<kbd>I</kbd>, atau apit dengan garis bawah, mis. <code>_Survei Pertanian_</code>. Berlaku di semua isian uraian.</div>
                                             <div class="field-error" id="err-input-perihal">Perihal wajib diisi.</div>
                                         </div>
                                         {{-- <div class="col-md-12">
@@ -447,8 +448,8 @@
                                                 </select>
                                             </div>
                                             <div id="wrapper-pelaksana_mitra" style="display: none;">
-                                                <select id="input-pelaksana_mitra" class="form-select select2">
-                                                    <option value="">Pilih mitra</option>
+                                                <select id="input-pelaksana_mitra" class="form-select">
+                                                    <option value="">Pilih atau ketik nama mitra</option>
                                                     @foreach ($mitraList as $pm)
                                                         <option value="{{ $pm->id_pegawai_mitra }}"
                                                             data-nip="{{ $pm->nip }}" data-jabatan="Mitra Statistik" data-pangkat="{{ $pm->pangkat }}" data-golongan="{{ $pm->golongan }}"
@@ -457,6 +458,7 @@
                                                         </option>
                                                     @endforeach
                                                 </select>
+                                                <div class="form-text">Mitra baru belum ada di daftar? Ketik namanya lalu pilih <em>"Tambah mitra baru"</em>.</div>
                                             </div>
                                             <input type="hidden" id="input-pelaksana" name="id_pegawai_mitra_pelaksana" value="{{ $idPelaksanaLama }}">
                                             <div class="field-error" id="err-input-pelaksana">Pelaksana wajib dipilih.</div>
@@ -1048,6 +1050,22 @@
                 btn.addEventListener('click', function () {
                     stepper.previous();
                 });
+            });
+
+            // Huruf miring di isian teks: Ctrl+I membungkus teks yang dipilih dengan _..._
+            // (ditulis miring di dokumen, lihat miring() di dokumen-perjadin.js).
+            form.addEventListener('keydown', function (e) {
+                const el = e.target;
+                if (!(e.ctrlKey || e.metaKey) || (e.key !== 'i' && e.key !== 'I')) return;
+                if (!(el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && el.type === 'text'))) return;
+                e.preventDefault();
+                const awal = el.selectionStart, akhir = el.selectionEnd;
+                const terpilih = el.value.slice(awal, akhir);
+                const sudahMiring = /^_.*_$/.test(terpilih) && terpilih.length > 1;
+                const ganti = sudahMiring ? terpilih.slice(1, -1) : '_' + terpilih + '_';
+                el.setRangeText(ganti, awal, akhir, 'end');
+                if (!terpilih) el.setSelectionRange(awal + 1, awal + 1);
+                el.dispatchEvent(new Event('input', { bubbles: true }));
             });
 
             // Setelah "Simpan" per step, halaman dibuka lagi di step yang sama (?step=step-xxx).
@@ -1718,7 +1736,7 @@
                     hidden.value = opt.value;
                     hidden.dataset.nama = opt.text.trim();
                     hidden.dataset.nip = opt.dataset.nip || '';
-                    hidden.dataset.jabatan = opt.dataset.jabatan || '';
+                    hidden.dataset.jabatan = opt.dataset.jabatan || (select === selectMitra ? 'Mitra Statistik' : '');
                     hidden.dataset.pangkat = opt.dataset.pangkat || '';
                     hidden.dataset.golongan = opt.dataset.golongan || '';
                     hidden.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1740,6 +1758,30 @@
                     $(selectMitra).val('').trigger('change');
                     kosongkanHidden();
                 });
+
+                // Daftar mitra bisa diketik sendiri (mitra baru hasil rekrutmen yang belum
+                // terdaftar). Nilainya "baru:{nama}" — server menambahkannya ke data mitra
+                // saat disimpan (lihat PerjalananDinasController::siapkanMitraBaru).
+                $(selectMitra).wrap('<div class="position-relative"></div>').select2({
+                    placeholder: 'Pilih atau ketik nama mitra',
+                    dropdownParent: $(selectMitra).parent(),
+                    tags: true,
+                    createTag: function (params) {
+                        const nama = $.trim(params.term).replace(/\s+/g, ' ');
+                        if (!nama) return null;
+                        return { id: 'baru:' + nama, text: nama, mitraBaru: true };
+                    },
+                    templateResult: function (item) {
+                        if (!item.mitraBaru) return item.text;
+                        return $('<span>').append($('<i class="ti ti-user-plus me-1"></i>'))
+                            .append(document.createTextNode('Tambah mitra baru: ')).append($('<strong>').text(item.text));
+                    },
+                    language: { noResults: function () { return 'Ketik nama mitra'; } },
+                });
+                // Isian lama berupa mitra baru yang belum tersimpan (mis. gagal validasi).
+                if (jenisSelect.value === 'mitra' && hidden.value.indexOf('baru:') === 0 && !selectMitra.querySelector('option[value="' + CSS.escape(hidden.value) + '"]')) {
+                    selectMitra.appendChild(new Option(hidden.value.slice(5), hidden.value, true, true));
+                }
 
                 $(selectPegawai).on('change', function () { salinDariOpsiTerpilih(selectPegawai); });
                 $(selectMitra).on('change', function () { salinDariOpsiTerpilih(selectMitra); });
@@ -2034,6 +2076,23 @@
             autoSelectByPeran('input-penandatangan_st', 'kepala_satker');
             autoSelectByPeran('input-ppk', 'ppk');
             autoSelectByPeran('input-bendahara', 'bendahara');
+
+            // Penandatangan ST, PPK & Bendahara dikunci (tampil tapi tidak bisa diubah) —
+            // nilainya dikirim lewat hidden input karena <select disabled> tidak ikut terkirim.
+            // Kalau masih kosong (peran pejabat belum diatur di Kelola Pegawai), dibiarkan
+            // bisa dipilih supaya form tidak buntu.
+            ['input-penandatangan_st', 'input-ppk', 'input-bendahara'].forEach(function (id) {
+                const select = document.getElementById(id);
+                if (!select || !select.value || !select.name) return;
+                const hiddenPejabat = document.createElement('input');
+                hiddenPejabat.type = 'hidden';
+                hiddenPejabat.name = select.name;
+                hiddenPejabat.value = select.value;
+                select.removeAttribute('name');
+                select.disabled = true;
+                select.title = 'Terisi otomatis sesuai peran pejabat di Kelola Pegawai';
+                select.after(hiddenPejabat);
+            });
 
             // ----- Pengeluaran Riil -----
             let pengeluaranIndex = 0;
