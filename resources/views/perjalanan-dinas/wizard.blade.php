@@ -1807,26 +1807,32 @@
                 // Daftar mitra bisa diketik sendiri (mitra baru hasil rekrutmen yang belum
                 // terdaftar). Nilainya "baru:{nama}" — server menambahkannya ke data mitra
                 // saat disimpan (lihat PerjalananDinasController::siapkanMitraBaru).
-                $(selectMitra).wrap('<div class="position-relative"></div>').select2({
-                    placeholder: 'Pilih atau ketik nama mitra',
-                    dropdownParent: $(selectMitra).parent(),
-                    tags: true,
-                    createTag: function (params) {
-                        const nama = $.trim(params.term).replace(/\s+/g, ' ');
-                        if (!nama) return null;
-                        return { id: 'baru:' + nama, text: nama, mitraBaru: true };
-                    },
-                    templateResult: function (item) {
-                        if (!item.mitraBaru) return item.text;
-                        return $('<span>').append($('<i class="ti ti-user-plus me-1"></i>'))
-                            .append(document.createTextNode('Tambah mitra baru: ')).append($('<strong>').text(item.text));
-                    },
-                    language: { noResults: function () { return 'Ketik nama mitra'; } },
-                });
                 // Isian lama berupa mitra baru yang belum tersimpan (mis. gagal validasi).
                 if (jenisSelect.value === 'mitra' && hidden.value.indexOf('baru:') === 0 && !selectMitra.querySelector('option[value="' + CSS.escape(hidden.value) + '"]')) {
                     selectMitra.appendChild(new Option(hidden.value.slice(5), hidden.value, true, true));
                 }
+                // Dipasang lewat $(function) supaya jalan SETELAH forms-selects.js: script tema itu
+                // memasang select2 ke semua elemen ".select2" saat jQuery ready — termasuk kotak
+                // <span class="select2 ..."> buatan select2 — jadi kalau dropdown mitra dipasang
+                // lebih dulu, kotaknya tertimpa dropdown kosong ("Select value", No results found).
+                $(function () {
+                    $(selectMitra).wrap('<div class="position-relative"></div>').select2({
+                        placeholder: 'Pilih atau ketik nama mitra',
+                        dropdownParent: $(selectMitra).parent(),
+                        tags: true,
+                        createTag: function (params) {
+                            const nama = $.trim(params.term).replace(/\s+/g, ' ');
+                            if (!nama) return null;
+                            return { id: 'baru:' + nama, text: nama, mitraBaru: true };
+                        },
+                        templateResult: function (item) {
+                            if (!item.mitraBaru) return item.text;
+                            return $('<span>').append($('<i class="ti ti-user-plus me-1"></i>'))
+                                .append(document.createTextNode('Tambah mitra baru: ')).append($('<strong>').text(item.text));
+                        },
+                        language: { noResults: function () { return 'Ketik nama mitra'; } },
+                    });
+                });
 
                 $(selectPegawai).on('change', function () { salinDariOpsiTerpilih(selectPegawai); });
                 $(selectMitra).on('change', function () { salinDariOpsiTerpilih(selectMitra); });
