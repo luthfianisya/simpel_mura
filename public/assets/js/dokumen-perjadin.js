@@ -1641,7 +1641,7 @@
         return Swal.fire({
             title: 'Export Dokumen',
             html: gaya
-                + '<div class="pde-sub">Pilih jenis file, dokumen, lalu cara unduhnya.</div>'
+                // + '<div class="pde-sub">Pilih jenis file, dokumen, lalu cara unduhnya.</div>'
                 + '<div class="pde-tab" role="tablist" aria-label="Jenis file">'
                 + '<button type="button" role="tab" class="aktif" data-format="pdf" aria-selected="true"><i class="ti ti-file-type-pdf"></i>PDF</button>'
                 + '<button type="button" role="tab" data-format="word" aria-selected="false"' + (word.bisa ? '' : ' disabled title="' + esc(word.catatan) + '"') + '><i class="ti ti-file-word"></i>Word</button>'
