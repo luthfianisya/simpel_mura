@@ -60,7 +60,7 @@
                                     <ul class="dropdown-menu dropdown-menu-end">
                                         <li>
                                             <a class="dropdown-item fw-semibold" href="{{ route('dev.perjalanan-dinas.word', [$item, 'semua']) }}">
-                                                <i class="ti ti-files ti-xs me-1"></i> Semua dokumen (1 file)
+                                                <i class="ti ti-files ti-xs me-1"></i> Gabung jadi 1 file <small class="text-muted">(tanpa Surat Tugas &amp; SPD)</small>
                                             </a>
                                         </li>
                                         <li><hr class="dropdown-divider"></li>

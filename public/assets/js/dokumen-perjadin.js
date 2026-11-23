@@ -1576,10 +1576,13 @@
         });
     }
 
-    // Popup pilih dokumen yang mau diekspor + cara unduhnya (file terpisah / digabung).
-    // docs = { key: { label, html } }. Surat Tugas tidak ditawarkan (tidak diunduh).
-    // Mengembalikan Promise<{ keys: [...] (sudah berurutan), gabung: bool } | null>.
-    function pilihDokumenExport(docs) {
+    // Popup pilih dokumen yang mau diekspor + jenis file (PDF/Word) + cara unduhnya (file
+    // terpisah / digabung). docs = { key: { label, html } }. Surat Tugas tidak ditawarkan.
+    // opsi.word = { bisa: bool, catatan: 'teks keterangan' } — Word dibuat server dari data
+    // tersimpan, jadi bisa dinonaktifkan (mis. form yang belum pernah disimpan).
+    // Mengembalikan Promise<{ keys: [...] (sudah berurutan), gabung: bool, format: 'pdf'|'word' } | null>.
+    function pilihDokumenExport(docs, opsi) {
+        const word = (opsi && opsi.word) || { bisa: false, catatan: '' };
         // Surat Tugas tidak diunduh; dokumen kosong (mis. Surat Pernyataan tanpa satu pun
         // pernyataan dicentang, ditandai [data-dokumen-kosong]) tidak ikut diexport.
         const keys = urutkanBerkas(Object.keys(docs).filter(function (k) {
@@ -1607,6 +1610,8 @@
             + '.pde-mode label{flex:1;display:flex;align-items:center;gap:.5rem;padding:.55rem .8rem;margin:0;border:1px solid #e6e6e8;border-radius:8px;cursor:pointer;}'
             + '.pde-mode label:has(input:checked){border-color:#1B449C;background:#f4f7fc;}'
             + '.pde-mode .form-check-input{margin:0;}'
+            + '.pde-mode label.pde-mati{opacity:.5;cursor:not-allowed;}'
+            + '.pde-catatan{font-size:.8125rem;color:#8a8d93;margin-top:.35rem;}'
             + '.pde-popup .swal2-actions{width:100%;justify-content:flex-end;gap:.5rem;margin-top:1.25rem;}'
             + '.pde-popup .swal2-actions .btn{margin:0;}'
             + '</style>';
@@ -1619,10 +1624,16 @@
                 + '<label class="pde-baris pde-semua"><input class="form-check-input" type="checkbox" id="pde-semua" checked><span>Pilih semua</span></label>'
                 + daftar
                 + '</div>'
-                + '<div class="pde-label">Format unduhan</div>'
+                + '<div class="pde-label">Jenis file</div>'
+                + '<div class="pde-mode">'
+                + '<label><input class="form-check-input" type="radio" name="pde-format" value="pdf" checked><i class="ti ti-file-type-pdf text-danger"></i><span>PDF</span></label>'
+                + '<label class="' + (word.bisa ? '' : 'pde-mati') + '"><input class="form-check-input" type="radio" name="pde-format" value="word"' + (word.bisa ? '' : ' disabled') + '><i class="ti ti-file-word text-primary"></i><span>Word</span></label>'
+                + '</div>'
+                + (word.catatan ? '<div class="pde-catatan">' + esc(word.catatan) + '</div>' : '')
+                + '<div class="pde-label mt-3">Cara unduh</div>'
                 + '<div class="pde-mode">'
                 + '<label><input class="form-check-input" type="radio" name="pde-mode" value="pisah" checked><span>File terpisah</span></label>'
-                + '<label><input class="form-check-input" type="radio" name="pde-mode" value="gabung"><span>Gabung jadi 1 PDF</span></label>'
+                + '<label><input class="form-check-input" type="radio" name="pde-mode" value="gabung"><span class="pde-teks-gabung">Gabung jadi 1 PDF</span></label>'
                 + '</div>',
             width: 440,
             showCancelButton: true,
@@ -1661,10 +1672,18 @@
                         barisSpd.querySelector('.pde-catatan-spd').classList.toggle('d-none', !gabung);
                     });
                 });
+                // Teks "Gabung jadi 1 PDF/Word" mengikuti jenis file yang dipilih.
+                const teksGabung = popup.querySelector('.pde-teks-gabung');
+                popup.querySelectorAll('input[name="pde-format"]').forEach(function (r) {
+                    r.addEventListener('change', function () {
+                        teksGabung.textContent = 'Gabung jadi 1 ' + (r.value === 'word' ? 'Word' : 'PDF');
+                    });
+                });
                 sinkron();
             },
             preConfirm: function () {
                 const popup = Swal.getPopup();
+                const format = popup.querySelector('input[name="pde-format"]:checked').value;
                 const gabung = popup.querySelector('input[name="pde-mode"]:checked').value === 'gabung';
                 // Saat digabung jadi 1 PDF, SPD tidak ikut (seperti Surat Tugas).
                 const dipilih = Array.from(popup.querySelectorAll('.pde-cek:checked')).map(function (c) { return c.value; })
@@ -1673,11 +1692,23 @@
                     Swal.showValidationMessage(gabung ? 'Pilih minimal satu dokumen selain SPD untuk digabung.' : 'Pilih minimal satu dokumen.');
                     return false;
                 }
-                return { keys: dipilih, gabung: gabung };
+                return { keys: dipilih, gabung: gabung, format: format };
             },
         }).then(function (hasil) {
             return hasil.isConfirmed ? hasil.value : null;
         });
+    }
+
+    // Unduh dokumen Word (.docx) buatan server (lihat DokumenWordController). keys = 1 dokumen,
+    // atau beberapa dokumen kalau digabung jadi 1 file (urutan dipertahankan).
+    async function exportWord(urlWord, keys, filename) {
+        const response = await fetch(urlWord + '?dokumen=' + encodeURIComponent(keys.join(',')), {
+            headers: { 'Accept': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
+        });
+        if (!response.ok) {
+            throw new Error('Gagal membuat file Word (status ' + response.status + ').');
+        }
+        downloadBlob(await response.blob(), filename + '.docx');
     }
 
     // pdf-lib (menggabungkan beberapa PDF jadi 1) dimuat dari CDN hanya saat dibutuhkan.
@@ -1767,6 +1798,7 @@
         exportAsPdf: exportAsPdf,
         exportAsPdfHd: exportAsPdfHd,
         pilihDokumenExport: pilihDokumenExport,
+        exportWord: exportWord,
         exportGabunganPdfHd: exportGabunganPdfHd,
     };
 })(window);

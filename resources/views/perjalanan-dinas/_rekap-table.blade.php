@@ -481,6 +481,8 @@
             let currentDocs = {};
             let currentActiveKey = null;
             let currentData = null;
+            let currentId = null;
+            const urlWordTemplate = '{{ route("perjalanan-dinas.word", "__ID__") }}';
 
             // Nama file export: "{nomor surat tugas}-{nama pelaksana}-{nama dokumen}",
             // mis. "1122-Luthfiani Nur Aisyah, S.Tr.Stat.-Kuitansi". Nomornya diambil
@@ -545,6 +547,7 @@
                 const data = window.dokumenDataByRow[id];
                 if (!data) return;
                 currentData = data;
+                currentId = id;
 
                 const butuhSpd = data.jenis_perjadin === 'biasa' || data.jenis_perjadin === 'dalam_kota_lebih_8_jam';
 
@@ -627,13 +630,22 @@
             // tiap dokumen yang dicentang diekspor satu-satu (berurutan, biar server tidak
             // kebanjiran) sebagai PDF terpisah, TANPA dibundel jadi zip.
             btnExportPdf.addEventListener('click', async function () {
-                const pilihan = await DokumenPerjadin.pilihDokumenExport(currentDocs);
+                const pilihan = await DokumenPerjadin.pilihDokumenExport(currentDocs, { word: { bisa: !!currentId } });
                 if (!pilihan) return;
                 const labelAsli = btnExportPdf.innerHTML;
                 btnExportPdf.disabled = true;
                 btnExportPdf.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengekspor...';
                 try {
-                    if (pilihan.gabung) {
+                    if (pilihan.format === 'word') {
+                        const urlWord = urlWordTemplate.replace('__ID__', currentId);
+                        if (pilihan.gabung) {
+                            await DokumenPerjadin.exportWord(urlWord, pilihan.keys, namaFileDokumen('Dokumen Lengkap'));
+                        } else {
+                            for (const key of pilihan.keys) {
+                                await DokumenPerjadin.exportWord(urlWord, [key], namaFileDokumen(currentDocs[key].label));
+                            }
+                        }
+                    } else if (pilihan.gabung) {
                         await DokumenPerjadin.exportGabunganPdfHd(pilihan.keys.map(function (key) {
                             return { html: currentDocs[key].html, paperSize: paperSizeFor(key), extraClass: extraClassFor(key) };
                         }), namaFileDokumen('Dokumen Lengkap'), cssUrlDokumen, exportPdfUrl, csrfToken);
@@ -643,7 +655,7 @@
                         }
                     }
                 } catch (e) {
-                    swalError('Gagal export PDF: ' + e.message);
+                    swalError('Gagal export ' + (pilihan.format === 'word' ? 'Word' : 'PDF') + ': ' + e.message);
                 } finally {
                     btnExportPdf.disabled = false;
                     btnExportPdf.innerHTML = labelAsli;

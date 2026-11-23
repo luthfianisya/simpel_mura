@@ -35,6 +35,9 @@ class DokumenWord
         'spd' => 'SPD',
     ];
 
+    // Dokumen yang tidak ikut saat beberapa dokumen digabung jadi 1 file.
+    public const TIDAK_DIGABUNG = ['surat-tugas', 'spd'];
+
     private const SATKER = '668650 - Badan Pusat Statistik Kabupaten Murung Raya';
 
     private const BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -78,7 +81,7 @@ class DokumenWord
      * Buat file .docx untuk satu jenis dokumen, atau 'semua' (semua dokumen jadi 1 file,
      * tiap dokumen di section/halaman sendiri). Mengembalikan path file sementara.
      */
-    public function buat(PerjalananDinas $pd, string $jenis): string
+    public function buat(PerjalananDinas $pd, string|array $jenis): string
     {
         $this->pd = $pd->loadMissing(['pelaksana', 'penandatanganSt', 'ppk', 'bendahara', 'kuitansi', 'laporan', 'rincianBiaya', 'pengeluaranRiil', 'suratPernyataan', 'dokumentasi']);
         $this->d = $pd->toPreviewData();
@@ -89,7 +92,12 @@ class DokumenWord
         $this->word->setDefaultParagraphStyle(['spaceBefore' => 0, 'spaceAfter' => 0, 'spacing' => 0, 'lineHeight' => 1.15]);
         $this->word->getSettings()->setThemeFontLang(new \PhpOffice\PhpWord\Style\Language('id-ID'));
 
-        $daftar = $jenis === 'semua' ? array_keys(self::jenisTersedia($pd)) : [$jenis];
+        // 'semua' = semua dokumen yang ikut digabung; array = dokumen pilihan sesuai urutan array.
+        // Saat digabung (lebih dari 1 dokumen), Surat Tugas & SPD tidak ikut — sama seperti gabung PDF.
+        $daftar = $jenis === 'semua' ? array_keys(self::jenisTersedia($pd)) : (array) $jenis;
+        if (count($daftar) > 1) {
+            $daftar = array_values(array_diff($daftar, self::TIDAK_DIGABUNG));
+        }
         foreach ($daftar as $j) {
             $sebelum = count($this->word->getSections());
             match ($j) {
@@ -489,7 +497,7 @@ class DokumenWord
                 'tidak_menginap_hotel' => 'TIDAK MENGINAP DI HOTEL ATAU DI PENYEDIA JASA AKOMODASI LAINNYA',
                 'keterlambatan' => 'KETERLAMBATAN PENGAJUAN TAGIHAN',
             ][$kondisi] ?? '';
-            $s->addText('SURAT PERNYATAAN', ['bold' => true], ['alignment' => Jc::CENTER]);
+            $s->addText('SURAT PERNYATAAN', ['bold' => true, 'underline' => 'single'], ['alignment' => Jc::CENTER]);
             $s->addText($judul, ['bold' => true, 'underline' => 'single'], ['alignment' => Jc::CENTER, 'spaceAfter' => 240]);
             $s->addText('Yang bertanda tangan di bawah ini' . ($kondisi === 'lebih8jam' ? ' :' : ':'), [], ['spaceAfter' => 120]);
 

@@ -2778,6 +2778,9 @@
             const cssUrlDokumenReview = '{{ asset("assets/css/dokumen-perjadin.css") }}?v={{ filemtime(public_path("assets/css/dokumen-perjadin.css")) }}';
             const exportPdfUrlReview = '{{ route("dokumen.export-pdf") }}';
             const csrfTokenReview = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const urlWordTemplateReview = '{{ route("perjalanan-dinas.word", "__ID__") }}';
+            // Id record yang sedang dilihat (mode Lihat); di mode buat/edit dipakai idPerjalananDinasIni.
+            const idPerjalananDinasTampil = @json($mode === 'view' ? $perjalananDinas?->id_perjalanan_dinas : null);
 
             function namaFileDokumenReview(labelDokumen) {
                 const noSuratTugas = (reviewData && reviewData.no_surat_tugas) || '';
@@ -2798,13 +2801,28 @@
 
             // Export: pilih dokumen dulu (Surat Tugas tidak ditawarkan), tiap dokumen jadi PDF terpisah.
             btnReviewExport.addEventListener('click', async function () {
-                const pilihan = await DokumenPerjadin.pilihDokumenExport(reviewDocs);
+                // Word dibuat server dari data TERSIMPAN, jadi hanya bisa setelah form pernah disimpan.
+                const idWord = idPerjalananDinasIni || idPerjalananDinasTampil;
+                const pilihan = await DokumenPerjadin.pilihDokumenExport(reviewDocs, {
+                    word: idWord
+                        ? { bisa: true, catatan: form.dataset.mode === 'view' ? '' : 'Word memakai data yang terakhir disimpan. Simpan dulu kalau ada perubahan.' }
+                        : { bisa: false, catatan: 'Word bisa dipakai setelah data disimpan (tombol Simpan).' },
+                });
                 if (!pilihan) return;
                 const labelAsli = btnReviewExport.innerHTML;
                 btnReviewExport.disabled = true;
                 btnReviewExport.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengekspor...';
                 try {
-                    if (pilihan.gabung) {
+                    if (pilihan.format === 'word') {
+                        const urlWord = urlWordTemplateReview.replace('__ID__', idWord);
+                        if (pilihan.gabung) {
+                            await DokumenPerjadin.exportWord(urlWord, pilihan.keys, namaFileDokumenReview('Dokumen Lengkap'));
+                        } else {
+                            for (const key of pilihan.keys) {
+                                await DokumenPerjadin.exportWord(urlWord, [key], namaFileDokumenReview(reviewDocs[key].label));
+                            }
+                        }
+                    } else if (pilihan.gabung) {
                         await DokumenPerjadin.exportGabunganPdfHd(pilihan.keys.map(function (key) {
                             return { html: reviewDocs[key].html, paperSize: paperSizeForReview(key), extraClass: extraClassForReview(key) };
                         }), namaFileDokumenReview('Dokumen Lengkap'), cssUrlDokumenReview, exportPdfUrlReview, csrfTokenReview);
@@ -2814,7 +2832,7 @@
                         }
                     }
                 } catch (e) {
-                    swalError('Gagal export PDF: ' + e.message);
+                    swalError('Gagal export ' + (pilihan.format === 'word' ? 'Word' : 'PDF') + ': ' + e.message);
                 } finally {
                     btnReviewExport.disabled = false;
                     btnReviewExport.innerHTML = labelAsli;
