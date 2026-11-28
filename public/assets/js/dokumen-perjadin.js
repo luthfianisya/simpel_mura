@@ -601,8 +601,8 @@
         const total = k.uangHarian + k.transport + k.penginapan + jumlahPengeluaran(data);
         const tahun = (data.tanggal_mulai || '').slice(0, 4) || '.....';
         return `
-            <div style="font-family:Arial, sans-serif; font-size:11pt;" data-satu-halaman>
-            <table style="width:45%; margin-left:auto; font-size:11pt; margin-bottom:1rem; border-collapse:collapse;">
+            <div style="font-family:Arial, sans-serif;" data-satu-halaman>
+            <table style="width:45%; margin-left:auto; font-size:0.75rem; margin-bottom:1rem; border-collapse:collapse;">
                 <tr><td style="width:30%; padding-right:6px; vertical-align:top; white-space:nowrap;">Tahun Anggaran</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td>${tahun}</td></tr>
                 <tr><td style="width:30%; padding-right:6px; vertical-align:top; white-space:nowrap;">Nomor Bukti</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td></td></tr>
                 <tr><td style="width:30%; padding-right:6px; vertical-align:top; white-space:nowrap;">Akun</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td>${esc(data.pembebanan) || '...........................'}</td></tr>

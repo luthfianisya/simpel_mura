@@ -1335,8 +1335,12 @@
                 const hiddenSelesai = document.getElementById('input-tanggal_selesai');
                 if (!rangeEl || !hiddenMulai || !hiddenSelesai) return;
 
+                // Nilai tersimpan formatnya Y-m-d, sedangkan dateFormat kotak ini d-m-Y —
+                // jadi harus di-parse eksplisit pakai Y-m-d. Kalau string mentah diberikan,
+                // Flatpickr membacanya dengan d-m-Y ("2026-11-11" → 20-06-2026).
                 const defaultDate = (hiddenMulai.value && hiddenSelesai.value)
-                    ? [hiddenMulai.value, hiddenSelesai.value] : undefined;
+                    ? [flatpickr.parseDate(hiddenMulai.value, 'Y-m-d'), flatpickr.parseDate(hiddenSelesai.value, 'Y-m-d')]
+                    : undefined;
 
                 flatpickr(rangeEl, {
                     mode: 'range',
