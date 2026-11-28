@@ -12,6 +12,17 @@
 
   <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
     <ul class="navbar-nav flex-row align-items-center ms-auto">
+      {{-- Pilih tema: Terang / Gelap (mode malam) / Ikuti sistem — lihat window.SimpelTema di layouts/app. --}}
+      <li class="nav-item dropdown pilih-tema me-2 me-xl-1">
+        <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown" title="Tema tampilan" aria-label="Tema tampilan">
+          <i class="ti ti-sun ti-md" id="ikon-tema"></i>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" href="javascript:void(0);" data-tema="terang"><i class="ti ti-sun me-2"></i>Terang</a></li>
+          <li><a class="dropdown-item" href="javascript:void(0);" data-tema="gelap"><i class="ti ti-moon-stars me-2"></i>Gelap (mode malam)</a></li>
+          <li><a class="dropdown-item" href="javascript:void(0);" data-tema="sistem"><i class="ti ti-device-desktop me-2"></i>Ikuti sistem</a></li>
+        </ul>
+      </li>
       <li class="nav-item navbar-dropdown dropdown-user dropdown">
         <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
           <div class="avatar avatar-online">
@@ -56,3 +67,23 @@
     </ul>
   </div>
 </nav>
+<script>
+  (function () {
+    var IKON = { terang: 'ti-sun', gelap: 'ti-moon-stars', sistem: 'ti-device-desktop' };
+    function tandai() {
+      var p = window.SimpelTema ? window.SimpelTema.pilihan() : 'terang';
+      var ikon = document.getElementById('ikon-tema');
+      if (ikon) ikon.className = 'ti ' + (IKON[p] || IKON.terang) + ' ti-md';
+      document.querySelectorAll('.pilih-tema [data-tema]').forEach(function (el) {
+        el.classList.toggle('active', el.getAttribute('data-tema') === p);
+      });
+    }
+    document.querySelectorAll('.pilih-tema [data-tema]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        if (window.SimpelTema) window.SimpelTema.setel(el.getAttribute('data-tema'));
+        tandai();
+      });
+    });
+    tandai();
+  })();
+</script>

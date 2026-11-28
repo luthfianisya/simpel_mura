@@ -302,9 +302,14 @@
                         </button>
                         <ul class="nav nav-pills mb-0" id="dokumen-tabs" role="tablist"></ul>
                     </div>
-                    <button type="button" class="btn btn-primary" id="btn-export-pdf">
-                        <i class="ti ti-file-export me-1"></i> Export
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-primary" id="btn-print-dokumen" title="Cetak dokumen yang sedang dilihat (Preview All = semua dokumen)">
+                            <i class="ti ti-printer me-1"></i> Print
+                        </button>
+                        <button type="button" class="btn btn-primary" id="btn-export-pdf">
+                            <i class="ti ti-file-export me-1"></i> Export
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="modal-body">
@@ -625,6 +630,32 @@
                     paperSizeFor(key), extraClassFor(key), exportPdfUrl, csrfToken
                 );
             }
+
+            // Print langsung — memakai PDF yang sama persis dengan hasil Export. Yang dicetak:
+            // dokumen di tab yang sedang dibuka, atau semua dokumen saat "Preview All".
+            const btnPrintRekap = document.getElementById('btn-print-dokumen');
+            btnPrintRekap.addEventListener('click', async function () {
+                const keys = DokumenPerjadin.dokumenUntukCetak(currentDocs, currentActiveKey);
+                if (!keys.length) {
+                    swalError(currentActiveKey === 'surat-tugas'
+                        ? 'Surat Tugas hanya pratinjau, tidak bisa dicetak dari sini (sama seperti Export).'
+                        : 'Tidak ada dokumen yang bisa dicetak.');
+                    return;
+                }
+                const labelAsli = btnPrintRekap.innerHTML;
+                btnPrintRekap.disabled = true;
+                btnPrintRekap.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyiapkan...';
+                try {
+                    await DokumenPerjadin.cetakPdfHd(keys.map(function (key) {
+                        return { html: currentDocs[key].html, paperSize: paperSizeFor(key), extraClass: extraClassFor(key) };
+                    }), namaFileDokumen(keys.length > 1 ? 'Dokumen Lengkap' : currentDocs[keys[0]].label), cssUrlDokumen, exportPdfUrl, csrfToken);
+                } catch (e) {
+                    swalError('Gagal menyiapkan print: ' + e.message);
+                } finally {
+                    btnPrintRekap.disabled = false;
+                    btnPrintRekap.innerHTML = labelAsli;
+                }
+            });
 
             // "Export" — buka popup pilih dokumen (Surat Tugas tidak ditawarkan), lalu
             // tiap dokumen yang dicentang diekspor satu-satu (berurutan, biar server tidak

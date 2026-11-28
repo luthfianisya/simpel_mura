@@ -114,6 +114,23 @@
             color: #6f6b7d;
         }
         .pengeluaran-isi { flex: 1 1 auto; min-width: 0; }
+        .pengeluaran-tipe .btn.active {
+            background: #1B449C !important;
+            border-color: #1B449C !important;
+            color: #fff !important;
+        }
+        /* Kalimat uraian hasil susunan (mode otomatis). */
+        .pengeluaran-hasil {
+            padding: 0.45rem 0.65rem;
+            min-height: 2.4rem;
+            background: #f6f7fb;
+            border: 1px dashed #d4d8e5;
+            border-radius: 0.375rem;
+            font-size: 0.8125rem;
+            line-height: 1.4;
+            color: #444050;
+        }
+        .pengeluaran-kartu .select2-container .select2-selection__rendered { font-size: 0.8125rem; }
         .pengeluaran-ghost {
             opacity: 0.45;
             border-style: dashed;
@@ -222,6 +239,20 @@
             background: #1B449C !important;
             border-color: #1B449C !important;
             color: #fff !important;
+        }
+
+        /* Pilihan ukuran foto di Laporan (di bawah caption tiap thumbnail). */
+        .dokumentasi-skala-label {
+            margin-top: 4px;
+            font-size: 0.68rem;
+            color: #8a8d93;
+            text-align: left;
+        }
+
+        .dokumentasi-skala {
+            padding-top: 1px;
+            padding-bottom: 1px;
+            font-size: 0.75rem;
         }
 
         .dokumentasi-ghost {
@@ -976,6 +1007,23 @@
                             <div class="alert alert-info py-2 px-3 small mb-0">
                                 <i class="ti ti-info-circle me-1"></i> Tanggal Kuitansi diisi di step Data Umum, di samping Tanggal Mulai &ndash; Selesai.
                             </div>
+                            {{-- Narasi "Untuk pembayaran": terisi otomatis dari data, boleh disunting (mis.
+                                 dipersingkat supaya Kuitansi tetap 1 lembar). Yang disimpan hanya hasil
+                                 suntingan; kosong = tetap otomatis mengikuti Perihal/tujuan/tanggal. --}}
+                            <div class="mt-4">
+                                <div class="d-flex justify-content-between align-items-end mb-1">
+                                    <label class="form-label mb-0" for="input-uraian_pembayaran">Untuk pembayaran</label>
+                                    @if ($mode !== 'view')
+                                        <button type="button" class="btn btn-link btn-sm p-0 d-none" id="btn-uraian-pembayaran-otomatis"><i class="ti ti-refresh me-1"></i>Kembalikan ke otomatis</button>
+                                    @endif
+                                </div>
+                                <textarea id="input-uraian_pembayaran" class="form-control" rows="5" maxlength="2000" @if ($mode === 'view') disabled @endif></textarea>
+                                <input type="hidden" id="input-uraian_pembayaran_simpan" name="uraian_pembayaran" value="{{ old('uraian_pembayaran') }}">
+                                <div class="form-text">Terisi otomatis dari Perihal, tujuan &amp; tanggal. Boleh disunting, mis. dipersingkat &mdash; <strong>hanya mengubah Kuitansi</strong>, dokumen lain tetap. Lanjutan &ldquo;sesuai dengan: Surat Tugas/SPD&rdquo; ditambahkan otomatis.</div>
+                                <div id="warning-uraian_pembayaran" class="alert alert-warning py-2 px-3 small mt-2 mb-0 d-none">
+                                    <i class="ti ti-alert-triangle me-1"></i> Uraian terlalu panjang &mdash; supaya Kuitansi tetap 1 lembar, ruang tanda tangan jadi mengecil. Persingkat uraian di atas.
+                                </div>
+                            </div>
                             <div class="d-flex justify-content-between mt-4">
                                 <button type="button" class="btn btn-outline-primary btn-wizard-prev"><i class="ti ti-arrow-left ti-sm me-1"></i> Kembali</button>
                                 @if ($mode !== 'view')<button type="button" class="btn btn-outline-warning btn-simpan-step" title="Simpan sebagai draft dan tetap di halaman ini"><i class="ti ti-device-floppy ti-sm me-1"></i> Simpan</button>@endif
@@ -1018,9 +1066,14 @@
                                 </button>
                                 <ul class="nav nav-pills mb-0" id="modal-review-tabs" role="tablist"></ul>
                             </div>
-                            <button type="button" class="btn btn-primary" id="btn-review-export">
-                                <i class="ti ti-file-export me-1"></i> Export
-                            </button>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-primary" id="btn-review-print" title="Cetak dokumen yang sedang dilihat (Preview All = semua dokumen)">
+                                    <i class="ti ti-printer me-1"></i> Print
+                                </button>
+                                <button type="button" class="btn btn-primary" id="btn-review-export">
+                                    <i class="ti ti-file-export me-1"></i> Export
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div id="modal-review-tab-content"></div>
@@ -1035,6 +1088,9 @@
     </div>
 
     {{-- Template baris berulang (dipakai oleh JS, bukan ditampilkan langsung) --}}
+    {{-- Kartu Pengeluaran Riil. Uraian disusun dari isian per bagian (tipe, moda, dari, ke,
+         lokasi, PP, tanggal) supaya tidak perlu mengetik kalimat yang itu-itu saja; tetap bisa
+         "Tulis sendiri". Isian per bagian disimpan sebagai JSON di [susunan]. --}}
     <script type="text/template" id="pengeluaran-row-template">
         <div class="pengeluaran-kartu pengeluaran-row">
             <div class="pengeluaran-pegangan" title="Geser untuk mengubah urutan">
@@ -1042,24 +1098,60 @@
                 <span class="pengeluaran-nomor"></span>
             </div>
             <div class="pengeluaran-isi">
-                <div class="row g-2">
-                    <div class="col-12">
-                        <label class="form-label small mb-1">Uraian</label>
-                        <textarea name="pengeluaran[__INDEX__][uraian]" class="form-control pengeluaran-input pengeluaran-uraian" rows="2" placeholder="mis. Transportasi darat dari Beriwit ke Juking Supan PP"></textarea>
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                    <div class="btn-group btn-group-sm pengeluaran-tipe" role="group" aria-label="Jenis pengeluaran">
+                        <button type="button" class="btn btn-outline-primary" data-tipe="antar">Transportasi</button>
+                        <button type="button" class="btn btn-outline-primary" data-tipe="lokal">Transport lokal</button>
+                        <button type="button" class="btn btn-outline-primary" data-tipe="akomodasi">Menginap</button>
                     </div>
-                    <div class="col-5">
-                        <label class="form-label small mb-1">Jenis</label>
-                        <select name="pengeluaran[__INDEX__][jenis]" class="form-select pengeluaran-input">
-                            <option value="transportasi">Biaya Transportasi</option>
-                            <option value="akomodasi">Biaya Akomodasi</option>
-                        </select>
+                    <div class="d-flex gap-1">
+                        <button type="button" class="btn btn-sm btn-icon btn-label-primary btn-copy-row" title="Salin jadi kartu baru di bawahnya"><i class="ti ti-copy"></i></button>
+                        <button type="button" class="btn btn-sm btn-icon btn-label-danger btn-remove-row" title="Hapus"><i class="ti ti-trash"></i></button>
                     </div>
-                    <div class="col-5">
+                </div>
+                <input type="hidden" name="pengeluaran[__INDEX__][jenis]" class="pengeluaran-jenis" value="transportasi">
+                <input type="hidden" name="pengeluaran[__INDEX__][susunan]" class="pengeluaran-susunan" value="">
+                <div class="row g-2 pengeluaran-susun">
+                    <div class="col-md-4 f-antar">
+                        <label class="form-label small mb-1">Moda</label>
+                        <select class="form-select pengeluaran-moda"></select>
+                    </div>
+                    {{-- Transport lokal / Menginap: Lokasi tampil lebih dulu (order-first). --}}
+                    <div class="col-md-8 f-di order-first">
+                        <label class="form-label small mb-1 label-di">Lokasi</label>
+                        <select class="form-select pengeluaran-di"></select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small mb-1">Tanggal</label>
+                        <input type="text" class="form-control pengeluaran-tanggal" autocomplete="off" placeholder="dd-mm-yyyy">
+                    </div>
+                    <div class="col-md-4 f-antar d-flex align-items-end">
+                        <div class="form-check mb-2">
+                            <input type="checkbox" class="form-check-input pengeluaran-pp" id="pengeluaran-pp-__INDEX__">
+                            <label class="form-check-label small" for="pengeluaran-pp-__INDEX__">Pulang-pergi (PP)</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 f-antar">
+                        <label class="form-label small mb-1">Dari</label>
+                        <select class="form-select pengeluaran-dari"></select>
+                    </div>
+                    <div class="col-md-6 f-antar">
+                        <label class="form-label small mb-1">Ke</label>
+                        <select class="form-select pengeluaran-ke"></select>
+                    </div>
+                </div>
+                <div class="row g-2 mt-1">
+                    <div class="col-md-8">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="form-label small mb-0">Uraian</span>
+                            <a href="#" class="small pengeluaran-ganti-mode">Tulis sendiri</a>
+                        </div>
+                        <div class="pengeluaran-hasil"></div>
+                        <textarea name="pengeluaran[__INDEX__][uraian]" class="form-control pengeluaran-uraian d-none" rows="2" placeholder="mis. Biaya transportasi darat dari Kelurahan Beriwit ke Desa Juking Supan (PP) tanggal 14 November 2026"></textarea>
+                    </div>
+                    <div class="col-md-4">
                         <label class="form-label small mb-1">Nominal (Rp)</label>
                         <input type="number" min="0" step="1000" name="pengeluaran[__INDEX__][nominal]" class="form-control pengeluaran-input">
-                    </div>
-                    <div class="col-2 d-flex align-items-end">
-                        <button type="button" class="btn btn-outline-danger btn-remove-row w-100 px-0" title="Hapus"><i class="ti ti-trash ti-sm"></i></button>
                     </div>
                 </div>
             </div>
@@ -1187,7 +1279,7 @@
                     dokumentasiCaptionUrlTemplate = data.dokumentasi_caption_url;
                     dokumentasiFileUrlTemplate = data.dokumentasi_file_url;
                     daftarDokumentasi = (data.dokumentasi || []).map(function (d) {
-                        return { lama: true, id: d.id, nama_file: d.nama_file, url: d.url, caption: d.caption };
+                        return { lama: true, id: d.id, nama_file: d.nama_file, url: d.url, caption: d.caption, skala: d.skala || 100, lebar: d.lebar, tinggi: d.tinggi };
                     });
                     sinkronDokumentasiKeForm();
                     renderDokumentasiList();
@@ -1670,9 +1762,9 @@
                 const batas = batasTransportTujuan();
                 let totalTransportasi = 0;
                 document.querySelectorAll('#pengeluaran-rows > div').forEach(function (row) {
-                    const select = row.querySelector('select');
+                    const jenisInput = row.querySelector('.pengeluaran-jenis');
                     const nominalInput = row.querySelector('input[type=number]');
-                    if (!select || !nominalInput || select.value !== 'transportasi') return;
+                    if (!jenisInput || !nominalInput || jenisInput.value !== 'transportasi') return;
                     totalTransportasi += parseFloat(nominalInput.value) || 0;
                 });
 
@@ -1981,7 +2073,7 @@
                 });
                 const pengeluaran = Array.from(document.querySelectorAll('#pengeluaran-rows > div')).map(function (row) {
                     return {
-                        jenis: row.querySelector('select').value,
+                        jenis: row.querySelector('.pengeluaran-jenis').value,
                         uraian: row.querySelector('.pengeluaran-uraian').value,
                         nominal: row.querySelector('input[type=number]').value,
                     };
@@ -2014,6 +2106,7 @@
                     tanggal_spd: val('input-tanggal_spd'),
                     angkutan: val('input-angkutan'),
                     tanggal_kuitansi: val('input-tanggal_kuitansi'),
+                    uraian_pembayaran: val('input-uraian_pembayaran_simpan'),
                     jenis_kegiatan_nama: selText('input-jenis_kegiatan'),
                     kesimpulan_hasil_kegiatan: val('input-kesimpulan'),
                     tindak_lanjut: val('input-tindak_lanjut'),
@@ -2162,29 +2255,202 @@
             const pengeluaranTemplate = document.getElementById('pengeluaran-row-template');
             const pengeluaranEmptyEl = document.getElementById('pengeluaran-empty');
 
-            function addPengeluaranRow(data) {
+            // Uraian Pengeluaran Riil disusun dari isian per bagian. Tiap kartu menyimpan
+            // "susunan" = { tipe: antar|lokal|akomodasi, moda, dari, ke, di, pp, tanggal }.
+            // Nilai awal diambil dari isian di depan (desa asal/tujuan, tanggal mulai) supaya
+            // user cukup mengisi nominal. Perjadin dalam kota < 8 jam tetap ditulis bebas.
+            const pengeluaranPakaiSusunan = @json($jenis !== 'dalam_kota_kurang_8_jam');
+            const wilayahMurungRaya = @json($kecamatanMurungRaya);
+            const MODA_TRANSPORTASI = ['darat', 'air', 'udara'];
+
+            function desaIsianAwal(id) {
+                return parseDaftarDenganDan(val(id));
+            }
+
+            function susunanBawaan() {
+                const asal = desaIsianAwal('input-desa_asal');
+                const tujuan = desaIsianAwal('input-desa_tujuan');
+                return {
+                    tipe: 'antar', moda: 'darat', dari: asal[0] || '', ke: tujuan[0] || '',
+                    di: tujuan[0] || asal[0] || '', pp: true, tanggal: val('input-tanggal_mulai') || '',
+                };
+            }
+
+            function kalimatPengeluaran(s) {
+                const isi = function (x) { return String(x || '').trim() || '...'; };
+                const tgl = s.tanggal ? DokumenPerjadin.fmtTanggalPanjang(s.tanggal) : '...';
+                if (s.tipe === 'lokal') return 'Biaya transportasi lokal di ' + isi(s.di) + ' tanggal ' + tgl;
+                if (s.tipe === 'akomodasi') return 'Biaya menginap non akomodasi di ' + isi(s.di) + ' tanggal ' + tgl;
+                // Moda ketikan sendiri ("Speedboat") ditulis huruf kecil di tengah kalimat.
+                let moda = String(s.moda || '').trim();
+                if (/^[A-Z][a-z]/.test(moda)) moda = moda.charAt(0).toLowerCase() + moda.slice(1);
+                return 'Biaya transportasi ' + (moda ? moda + ' ' : '') + 'dari ' + isi(s.dari) + ' ke ' + isi(s.ke)
+                    + (s.pp ? ' (PP)' : '') + ' tanggal ' + tgl;
+            }
+
+            // Pilihan desa/kelurahan se-Murung Raya; paling atas = isian di depan.
+            function opsiDesaHtml(rekomendasi) {
+                const e = DokumenPerjadin.esc;
+                const opsi = function (n) { return '<option value="' + e(n) + '">' + e(n) + '</option>'; };
+                let html = '<option value=""></option>';
+                if (rekomendasi.length) {
+                    html += '<optgroup label="Sesuai isian di depan">' + rekomendasi.map(opsi).join('') + '</optgroup>';
+                }
+                Object.keys(wilayahMurungRaya).forEach(function (kec) {
+                    const w = wilayahMurungRaya[kec];
+                    const nama = (w.kelurahan || []).map(function (n) { return 'Kelurahan ' + n; })
+                        .concat((w.desa || []).map(function (n) { return 'Desa ' + n; }))
+                        .filter(function (n) { return rekomendasi.indexOf(n) === -1; });
+                    if (!nama.length) return;
+                    html += '<optgroup label="Kec. ' + e(kec) + '">' + nama.map(opsi).join('') + '</optgroup>';
+                });
+                return html;
+            }
+
+            function unik(daftar) {
+                return daftar.filter(function (x, i) { return x && daftar.indexOf(x) === i; });
+            }
+
+            // Tanggal berikutnya (untuk kartu salinan), tidak melewati tanggal selesai.
+            function hariBerikutPerjadin(tanggal) {
+                if (!tanggal) return tanggal;
+                const d = new Date(tanggal + 'T00:00:00');
+                if (isNaN(d.getTime())) return tanggal;
+                d.setDate(d.getDate() + 1);
+                const berikut = flatpickr.formatDate(d, 'Y-m-d');
+                const selesai = val('input-tanggal_selesai');
+                return selesai && berikut > selesai ? tanggal : berikut;
+            }
+
+            function addPengeluaranRow(data, setelahEl) {
                 data = data || {};
                 const idx = pengeluaranIndex++;
                 const html = pengeluaranTemplate.innerHTML.replace(/__INDEX__/g, idx);
                 const wrapper = document.createElement('div');
                 wrapper.innerHTML = html.trim();
                 const rowEl = wrapper.firstElementChild;
-                if (data.jenis) rowEl.querySelector('select').value = data.jenis;
-                if (data.uraian) rowEl.querySelector('.pengeluaran-uraian').value = data.uraian;
-                if (data.nominal) rowEl.querySelector('input[type=number]').value = data.nominal;
-                rowEl.querySelector('input[type=number]').addEventListener('input', function () {
+                const q = function (sel) { return rowEl.querySelector(sel); };
+                const modeLihat = form.dataset.mode === 'view';
+
+                let susunan = data.susunan;
+                if (typeof susunan === 'string') {
+                    try { susunan = JSON.parse(susunan); } catch (e) { susunan = null; }
+                }
+                // Data lama / hasil import (belum punya susunan) tampil sebagai uraian bebas.
+                let manual = !susunan && (!!data.uraian || !pengeluaranPakaiSusunan);
+                const s = Object.assign(susunanBawaan(), susunan || {});
+                if (!susunan && data.jenis === 'akomodasi') s.tipe = 'akomodasi';
+
+                q('.pengeluaran-uraian').value = data.uraian || '';
+                if (data.nominal) q('input[type=number]').value = data.nominal;
+                q('.pengeluaran-pp').checked = !!s.pp;
+
+                function perbarui(render) {
+                    rowEl.querySelectorAll('.f-antar').forEach(function (el) { el.classList.toggle('d-none', s.tipe !== 'antar'); });
+                    q('.f-di').classList.toggle('d-none', s.tipe === 'antar');
+                    q('.label-di').textContent = s.tipe === 'akomodasi' ? 'Menginap di' : 'Lokasi';
+                    rowEl.querySelectorAll('.pengeluaran-tipe .btn').forEach(function (b) { b.classList.toggle('active', b.dataset.tipe === s.tipe); });
+                    q('.pengeluaran-jenis').value = s.tipe === 'akomodasi' ? 'akomodasi' : 'transportasi';
+
+                    q('.pengeluaran-susun').classList.toggle('d-none', manual);
+                    q('.pengeluaran-hasil').classList.toggle('d-none', manual);
+                    q('.pengeluaran-uraian').classList.toggle('d-none', !manual);
+                    q('.pengeluaran-ganti-mode').textContent = manual ? 'Susun otomatis' : 'Tulis sendiri';
+                    q('.pengeluaran-ganti-mode').classList.toggle('d-none', modeLihat || !pengeluaranPakaiSusunan);
+                    if (!manual) {
+                        const kalimat = kalimatPengeluaran(s);
+                        q('.pengeluaran-hasil').textContent = kalimat;
+                        q('.pengeluaran-uraian').value = kalimat;
+                        q('.pengeluaran-susunan').value = JSON.stringify(s);
+                    } else {
+                        q('.pengeluaran-susunan').value = '';
+                    }
+                    if (render) {
+                        touched['pengeluaran-total'] = true;
+                        renderAllPreviews();
+                        updateStepperStatus();
+                    }
+                }
+
+                rowEl.querySelectorAll('.pengeluaran-tipe .btn').forEach(function (b) {
+                    b.addEventListener('click', function () { s.tipe = b.dataset.tipe; perbarui(true); });
+                });
+                q('.pengeluaran-pp').addEventListener('change', function () { s.pp = q('.pengeluaran-pp').checked; perbarui(true); });
+                q('.pengeluaran-ganti-mode').addEventListener('click', function (e) {
+                    e.preventDefault();
+                    manual = !manual;
+                    // Ke "Tulis sendiri": mulai dari kalimat yang sudah tersusun.
+                    if (manual) q('.pengeluaran-uraian').value = kalimatPengeluaran(s);
+                    perbarui(true);
+                    if (manual) q('.pengeluaran-uraian').focus();
+                });
+                q('input[type=number]').addEventListener('input', function () {
                     touched['pengeluaran-total'] = true;
                     updateStepperStatus();
                 });
-                rowEl.querySelector('.btn-remove-row').addEventListener('click', function () {
+                q('.btn-remove-row').addEventListener('click', function () {
                     rowEl.remove();
                     toggleEmptyState();
                     renderAllPreviews();
                     updateStepperStatus();
                 });
-                pengeluaranRowsEl.appendChild(rowEl);
+                // Salin kartu: isian sama persis, tanggal maju 1 hari (maks. tanggal selesai).
+                q('.btn-copy-row').addEventListener('click', function () {
+                    const salinan = Object.assign({}, s, { tanggal: hariBerikutPerjadin(s.tanggal) });
+                    const baru = addPengeluaranRow({
+                        jenis: q('.pengeluaran-jenis').value,
+                        nominal: q('input[type=number]').value,
+                        uraian: manual ? q('.pengeluaran-uraian').value : '',
+                        susunan: manual ? null : salinan,
+                    }, rowEl);
+                    renderAllPreviews();
+                    baru.querySelector('input[type=number]').focus();
+                });
+
+                if (setelahEl) setelahEl.after(rowEl); else pengeluaranRowsEl.appendChild(rowEl);
+
+                // Dropdown (select2, bisa ketik sendiri — ketikan baru tidak disimpan ke daftar).
+                function pasangPilihan(sel, opsiHtml, kunci, placeholder) {
+                    const el = q(sel);
+                    el.innerHTML = opsiHtml;
+                    const nilai = s[kunci] || '';
+                    if (nilai && !Array.from(el.options).some(function (o) { return o.value === nilai; })) {
+                        el.appendChild(new Option(nilai, nilai));
+                    }
+                    el.value = nilai;
+                    if (window.jQuery && jQuery.fn.select2) {
+                        jQuery(el).select2({ tags: true, width: '100%', placeholder: placeholder });
+                        jQuery(el).on('change', function () { s[kunci] = el.value; perbarui(true); });
+                    } else {
+                        el.addEventListener('change', function () { s[kunci] = el.value; perbarui(true); });
+                    }
+                }
+                const asal = desaIsianAwal('input-desa_asal');
+                const tujuan = desaIsianAwal('input-desa_tujuan');
+                pasangPilihan('.pengeluaran-moda', MODA_TRANSPORTASI.map(function (m) {
+                    return '<option value="' + m + '">' + m.charAt(0).toUpperCase() + m.slice(1) + '</option>';
+                }).join(''), 'moda', 'Pilih / ketik moda');
+                pasangPilihan('.pengeluaran-dari', opsiDesaHtml(unik(asal.concat(tujuan))), 'dari', 'Pilih / ketik desa');
+                pasangPilihan('.pengeluaran-ke', opsiDesaHtml(unik(tujuan.concat(asal))), 'ke', 'Pilih / ketik desa');
+                pasangPilihan('.pengeluaran-di', opsiDesaHtml(unik(tujuan.concat(asal))), 'di', 'Pilih / ketik desa');
+
+                flatpickr(q('.pengeluaran-tanggal'), {
+                    locale: flatpickrLocaleId,
+                    altInput: true,
+                    altFormat: 'd-m-Y',
+                    dateFormat: 'Y-m-d',
+                    allowInput: true,
+                    defaultDate: s.tanggal || null,
+                    onChange: function (tgl) {
+                        s.tanggal = tgl.length ? flatpickr.formatDate(tgl[0], 'Y-m-d') : '';
+                        perbarui(true);
+                    },
+                });
+
+                perbarui(false);
                 toggleEmptyState();
                 updateStepperStatus();
+                return rowEl;
             }
 
             function toggleEmptyState() {
@@ -2262,7 +2528,7 @@
             // "dokumentasi_urutan[]" (token lama:{id} / baru:{index file}), lihat
             // aturUrutanDokumentasi() di controller.
             let daftarDokumentasi = (@json($existingDokumentasi ?? [])).map(function (d) {
-                return { lama: true, id: d.id, nama_file: d.nama_file, url: d.url, caption: d.caption };
+                return { lama: true, id: d.id, nama_file: d.nama_file, url: d.url, caption: d.caption, skala: d.skala || 100, lebar: d.lebar, tinggi: d.tinggi };
             });
 
             function dokumentasiBaru() {
@@ -2271,7 +2537,7 @@
 
             function dokumentasiGabungan() {
                 return daftarDokumentasi.map(function (item) {
-                    return { nama_file: item.lama ? item.nama_file : item.file.name, url: item.url || '', caption: item.caption };
+                    return { nama_file: item.lama ? item.nama_file : item.file.name, url: item.url || '', caption: item.caption, skala: item.skala || 100, lebar: item.lebar, tinggi: item.tinggi };
                 });
             }
 
@@ -2290,14 +2556,35 @@
                 baru.forEach(function (item) { dt.items.add(item.file); });
                 dokumentasiInput.files = dt.files;
 
-                form.querySelectorAll('input[name="dokumentasi_caption[]"], input[name="dokumentasi_urutan[]"]').forEach(function (el) { el.remove(); });
-                baru.forEach(function (item) { inputHiddenDokumentasi('dokumentasi_caption[]', item.caption || ''); });
+                form.querySelectorAll('input[name="dokumentasi_caption[]"], input[name="dokumentasi_skala[]"], input[name="dokumentasi_urutan[]"]').forEach(function (el) { el.remove(); });
+                baru.forEach(function (item) {
+                    inputHiddenDokumentasi('dokumentasi_caption[]', item.caption || '');
+                    inputHiddenDokumentasi('dokumentasi_skala[]', item.skala || 100);
+                });
                 daftarDokumentasi.forEach(function (item) {
                     inputHiddenDokumentasi('dokumentasi_urutan[]', item.lama ? 'lama:' + item.id : 'baru:' + baru.indexOf(item));
                 });
             }
 
-            function boksDokumentasi(namaFile, url, caption, onCaptionChange, onAturFoto) {
+            // Ukuran asli (piksel) foto dibaca dari gambarnya, untuk menghitung tinggi foto di
+            // Laporan dengan rasio terkunci (lihat gayaFoto di dokumen-perjadin.js).
+            function ukurFoto(item) {
+                // Foto tersimpan sudah membawa ukuran dari server — cukup ditandai.
+                if (item.lebar && item.tinggi && !item.urlTerukur) item.urlTerukur = item.url;
+                if (!item.url || (item.lebar && item.tinggi && item.urlTerukur === item.url)) return;
+                const url = item.url;
+                const img = new Image();
+                img.onload = function () {
+                    if (item.url !== url) return;
+                    item.lebar = img.naturalWidth;
+                    item.tinggi = img.naturalHeight;
+                    item.urlTerukur = url;
+                    renderAllPreviews();
+                };
+                img.src = url;
+            }
+
+            function boksDokumentasi(namaFile, url, caption, onCaptionChange, onAturFoto, skala, onSkalaChange) {
                 const box = document.createElement('div');
                 box.className = 'border rounded p-2 text-center position-relative dokumentasi-thumb';
                 box.style.width = '110px';
@@ -2341,6 +2628,29 @@
                 captionInput.addEventListener('click', function (e) { e.stopPropagation(); });
                 captionInput.addEventListener('change', function () { onCaptionChange(captionInput.value); });
                 box.appendChild(captionInput);
+
+                // Ukuran foto di Laporan (persen). Rasio tetap terkunci — foto hanya mengecil,
+                // tidak gepeng — jadi lebih banyak foto bisa muat di satu lembar.
+                if (onSkalaChange && url && /\.(jpe?g|png|gif|webp)$/i.test(namaFile || '')) {
+                    const labelSkala = document.createElement('div');
+                    labelSkala.className = 'dokumentasi-skala-label';
+                    labelSkala.textContent = 'Ukuran foto';
+                    box.appendChild(labelSkala);
+                    const pilihSkala = document.createElement('select');
+                    pilihSkala.className = 'form-select form-select-sm dokumentasi-skala';
+                    pilihSkala.title = 'Ukuran foto di Laporan (rasio tetap, tidak gepeng)';
+                    [100, 90, 80, 70, 60, 50, 40].forEach(function (n) {
+                        const opsi = document.createElement('option');
+                        opsi.value = n;
+                        opsi.textContent = n + '%';
+                        pilihSkala.appendChild(opsi);
+                    });
+                    pilihSkala.value = String(skala || 100);
+                    if (form.dataset.mode === 'view') pilihSkala.disabled = true;
+                    pilihSkala.addEventListener('click', function (e) { e.stopPropagation(); });
+                    pilihSkala.addEventListener('change', function () { onSkalaChange(parseInt(pilihSkala.value, 10)); });
+                    box.appendChild(pilihSkala);
+                }
 
                 return box;
             }
@@ -2509,6 +2819,22 @@
                             }).catch(function () {
                                 swalError('Gagal menyimpan foto. Coba lagi.');
                             });
+                        }, item.skala, function (skala) {
+                            const lama = item.skala;
+                            item.skala = skala;
+                            renderAllPreviews();
+                            fetch(dokumentasiCaptionUrlTemplate.replace('__ID__', item.id), {
+                                method: 'PATCH',
+                                headers: { 'X-CSRF-TOKEN': dokumentasiCsrfToken, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ skala: skala }),
+                            }).then(function (res) {
+                                if (!res.ok) throw new Error('gagal simpan ukuran');
+                            }).catch(function () {
+                                item.skala = lama;
+                                renderDokumentasiList();
+                                renderAllPreviews();
+                                swalError('Gagal menyimpan ukuran foto. Coba lagi.');
+                            });
                         });
                         box.appendChild(tombolHapusDokumentasi(async function () {
                             const ok = await swalConfirm('Hapus file "' + (item.nama_file || '') + '"? File yang sudah tersimpan akan langsung dihapus permanen.');
@@ -2536,6 +2862,10 @@
                             item.url = '';
                             sinkronDokumentasiKeForm();
                             renderDokumentasiList();
+                        }, item.skala, function (skala) {
+                            item.skala = skala;
+                            sinkronDokumentasiKeForm();
+                            renderAllPreviews();
                         });
                         if (item.file.type.startsWith('image/') && !item.url) {
                             const reader = new FileReader();
@@ -2550,6 +2880,7 @@
                     }
                     box.querySelector('.dokumentasi-nomor').textContent = posisi + 1;
                     box._itemDokumentasi = item;
+                    if (/\.(jpe?g|png|gif|webp)$/i.test(item.lama ? item.nama_file : item.file.name)) ukurFoto(item);
                     dokumentasiList.appendChild(box);
                 });
 
@@ -2560,7 +2891,7 @@
             if (window.Sortable && form.dataset.mode !== 'view') {
                 Sortable.create(dokumentasiList, {
                     animation: 150,
-                    filter: 'input, .dokumentasi-hapus, .dokumentasi-atur',
+                    filter: 'input, select, .dokumentasi-hapus, .dokumentasi-atur',
                     preventOnFilter: false,
                     ghostClass: 'dokumentasi-ghost',
                     onEnd: function () {
@@ -2579,7 +2910,7 @@
                 // File yang barusan dipilih ditambahkan ke belakang daftar. dokumentasiInput.files
                 // saat ini hanya berisi pilihan terbaru, lalu disusun ulang oleh sinkronDokumentasiKeForm().
                 Array.from(dokumentasiInput.files).forEach(function (file) {
-                    daftarDokumentasi.push({ lama: false, file: file, url: '', caption: '' });
+                    daftarDokumentasi.push({ lama: false, file: file, url: '', caption: '', skala: 100 });
                 });
                 sinkronDokumentasiKeForm();
                 touched['laporan-dokumentasi'] = true;
@@ -2645,6 +2976,38 @@
                 DokumenPerjadin.applyPageMinHeights(el);
             }
 
+            // ----- "Untuk pembayaran" Kuitansi: kotak teks menampilkan narasi otomatis selama
+            // user belum menyunting; yang dikirim ke server (input hidden) hanya suntingan. -----
+            const uraianBayarEl = document.getElementById('input-uraian_pembayaran');
+            const uraianBayarSimpan = document.getElementById('input-uraian_pembayaran_simpan');
+            const btnUraianOtomatis = document.getElementById('btn-uraian-pembayaran-otomatis');
+            if (uraianBayarSimpan.value.trim()) uraianBayarEl.value = uraianBayarSimpan.value;
+
+            function sinkronUraianPembayaran(data) {
+                const disunting = uraianBayarSimpan.value.trim() !== '';
+                // Jangan timpa saat user sedang mengetik di kotak ini.
+                if (!disunting && document.activeElement !== uraianBayarEl) {
+                    uraianBayarEl.value = DokumenPerjadin.uraianPembayaranOtomatis(data);
+                }
+                if (btnUraianOtomatis) btnUraianOtomatis.classList.toggle('d-none', !disunting);
+                // Peringatan: Kuitansi sampai harus merapatkan ruang tanda tangan supaya 1 lembar.
+                const kepanjangan = !!document.querySelector('#preview-kuitansi .dokumen-preview.rapat-4');
+                document.getElementById('warning-uraian_pembayaran').classList.toggle('d-none', !kepanjangan);
+            }
+            uraianBayarEl.addEventListener('input', function () {
+                const isi = uraianBayarEl.value.trim();
+                const otomatis = DokumenPerjadin.uraianPembayaranOtomatis(collectFormData());
+                uraianBayarSimpan.value = isi && isi !== otomatis ? uraianBayarEl.value : '';
+            });
+            uraianBayarEl.addEventListener('blur', renderAllPreviews);
+            if (btnUraianOtomatis) {
+                btnUraianOtomatis.addEventListener('click', function () {
+                    uraianBayarSimpan.value = '';
+                    uraianBayarEl.value = '';
+                    renderAllPreviews();
+                });
+            }
+
             function renderAllPreviews() {
                 const data = collectFormData();
                 setPreview('preview-surat-tugas', DokumenPerjadin.renderSuratTugas(data), 'dokumen-f4 dokumen-watermark-pratinjau');
@@ -2654,6 +3017,7 @@
                 setPreview('preview-rincian-biaya', DokumenPerjadin.renderRincianBiaya(data), 'dokumen-a4 dokumen-rincian-biaya');
                 setPreview('preview-pengeluaran-riil', DokumenPerjadin.renderPengeluaranRiil(data), 'dokumen-a4');
                 setPreview('preview-kuitansi', DokumenPerjadin.renderKuitansi(data), 'dokumen-a4');
+                sinkronUraianPembayaran(data);
                 setPreview('preview-pernyataan', DokumenPerjadin.renderPernyataan(data), 'dokumen-a4');
                 setPreview('preview-laporan', DokumenPerjadin.renderLaporan(data), 'dokumen-a4');
                 renderReview();
@@ -2809,6 +3173,32 @@
                     paperSizeForReview(key), extraClassForReview(key), exportPdfUrlReview, csrfTokenReview
                 );
             }
+
+            // Print langsung — memakai PDF yang sama persis dengan hasil Export. Yang dicetak:
+            // dokumen di tab yang sedang dibuka, atau semua dokumen saat "Preview All".
+            const btnPrintReview = document.getElementById('btn-review-print');
+            btnPrintReview.addEventListener('click', async function () {
+                const keys = DokumenPerjadin.dokumenUntukCetak(reviewDocs, reviewActiveKey);
+                if (!keys.length) {
+                    swalError(reviewActiveKey === 'surat-tugas'
+                        ? 'Surat Tugas hanya pratinjau, tidak bisa dicetak dari sini (sama seperti Export).'
+                        : 'Tidak ada dokumen yang bisa dicetak.');
+                    return;
+                }
+                const labelAsli = btnPrintReview.innerHTML;
+                btnPrintReview.disabled = true;
+                btnPrintReview.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyiapkan...';
+                try {
+                    await DokumenPerjadin.cetakPdfHd(keys.map(function (key) {
+                        return { html: reviewDocs[key].html, paperSize: paperSizeForReview(key), extraClass: extraClassForReview(key) };
+                    }), namaFileDokumenReview(keys.length > 1 ? 'Dokumen Lengkap' : reviewDocs[keys[0]].label), cssUrlDokumenReview, exportPdfUrlReview, csrfTokenReview);
+                } catch (e) {
+                    swalError('Gagal menyiapkan print: ' + e.message);
+                } finally {
+                    btnPrintReview.disabled = false;
+                    btnPrintReview.innerHTML = labelAsli;
+                }
+            });
 
             // Export: pilih dokumen dulu (Surat Tugas tidak ditawarkan), tiap dokumen jadi PDF terpisah.
             btnReviewExport.addEventListener('click', async function () {

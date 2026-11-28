@@ -9,7 +9,10 @@ class PengeluaranRiil extends Model
     protected $table = 'pengeluaran_riil';
     protected $primaryKey = 'id_pengeluaran';
 
-    protected $fillable = ['id_perjalanan_dinas', 'uraian', 'jenis', 'nominal'];
+    protected $fillable = ['id_perjalanan_dinas', 'uraian', 'susunan', 'jenis', 'nominal'];
+
+    // Isian per bagian penyusun uraian di wizard (lihat migrasi add_susunan_to_pengeluaran_riil).
+    protected $casts = ['susunan' => 'array'];
 
     public function perjalananDinas()
     {

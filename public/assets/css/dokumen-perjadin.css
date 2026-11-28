@@ -310,8 +310,10 @@
 }
 
 /* Saat mengukur tinggi halaman, foto dokumentasi bisa belum selesai dimuat (tinggi 0) —
-   dianggap setinggi maksimumnya supaya baris foto tidak kepepet melewati batas kertas. */
-.dokumen-preview.alir-ukur .dokumentasi-cell img {
+   dianggap setinggi maksimumnya supaya baris foto tidak kepepet melewati batas kertas.
+   Foto yang ukuran aslinya diketahui (.foto-terukur, lihat gayaFoto di JS) tingginya sudah
+   pasti dari lebar + aspect-ratio, jadi tidak perlu ditebak. */
+.dokumen-preview.alir-ukur .dokumentasi-cell img:not(.foto-terukur) {
     height: 65mm;
 }
 
@@ -433,9 +435,9 @@
 .dokumen-preview.rapat-4 table.dokumen-rincian th { padding-top: 1px; padding-bottom: 1px; }
 
 /* Kuitansi yang uraiannya sangat panjang (tingkat rapat 5 & 6, lihat TINGKAT_RAPAT di
-   dokumen-perjadin.js): huruf 11pt diturunkan ke 10pt / 9pt supaya tetap 1 lembar.
+   dokumen-perjadin.js): huruf diturunkan ke 9pt / 8,5pt supaya tetap 1 lembar.
    Rincian Biaya (sudah 9,5pt) tidak pernah diberi kelas ini. */
 .dokumen-preview.rapat-5 > div,
-.dokumen-preview.rapat-5 > div table { font-size: 10pt !important; }
+.dokumen-preview.rapat-5 > div table { font-size: 9pt !important; }
 .dokumen-preview.rapat-6 > div,
-.dokumen-preview.rapat-6 > div table { font-size: 9pt !important; }
+.dokumen-preview.rapat-6 > div table { font-size: 8.5pt !important; }

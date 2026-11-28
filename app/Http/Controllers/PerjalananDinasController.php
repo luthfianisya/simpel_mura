@@ -147,7 +147,7 @@ class PerjalananDinasController extends Controller
                 ->find($request->query('from'));
             if ($sumber) {
                 // Nomor SPD, Nomor Form Permintaan & tanggal laporan tidak ikut disalin — tiap dokumen punya nomor/tanggal sendiri.
-                session()->flashInput(array_merge($sumber->toFormPrefill(), ['no_spd' => null, 'no_form_permintaan' => null, 'tanggal_laporan' => null, 'pernyataan_keterlambatan_tanggal' => null]));
+                session()->flashInput(array_merge($sumber->toFormPrefill(), ['no_spd' => null, 'no_form_permintaan' => null, 'tanggal_laporan' => null, 'pernyataan_keterlambatan_tanggal' => null, 'uraian_pembayaran' => null]));
             }
         }
 
@@ -236,7 +236,7 @@ class PerjalananDinasController extends Controller
                 'nama_file' => $d->nama_file,
                 'caption' => $d->caption,
                 'url' => Storage::disk('public')->url($d->path_file),
-            ])->values()->all()
+            ] + $d->dataDokumen())->values()->all()
             : [];
 
         return compact(
@@ -546,8 +546,11 @@ class PerjalananDinasController extends Controller
             'pengeluaran.*.uraian' => 'required_with:pengeluaran|string',
             'pengeluaran.*.jenis' => 'required_with:pengeluaran|in:transportasi,akomodasi',
             'pengeluaran.*.nominal' => 'required_with:pengeluaran|numeric|min:0',
+            // JSON isian penyusun uraian (tipe, moda, dari, ke, ...) — kosong = uraian ditulis bebas.
+            'pengeluaran.*.susunan' => 'nullable|string|max:2000',
 
             'tanggal_kuitansi' => 'nullable|date',
+            'uraian_pembayaran' => 'nullable|string|max:2000',
 
             'pernyataan' => 'nullable|array',
             'pernyataan.tidak_pakai_kendaraan_dinas' => 'nullable|boolean',
@@ -566,6 +569,9 @@ class PerjalananDinasController extends Controller
             // dengan index array file "dokumentasi.*" di atas — lihat simpanDataTerkait().
             'dokumentasi_caption' => 'nullable|array',
             'dokumentasi_caption.*' => 'nullable|string|max:255',
+            // Ukuran tampil foto di Laporan (persen), sejajar index file "dokumentasi.*".
+            'dokumentasi_skala' => 'nullable|array',
+            'dokumentasi_skala.*' => 'nullable|integer|min:30|max:100',
             // Urutan foto hasil drag di wizard, isinya token "lama:{id_dokumentasi}" untuk
             // file yang sudah tersimpan dan "baru:{index dokumentasi.*}" untuk file baru.
             'dokumentasi_urutan' => 'nullable|array',
@@ -629,15 +635,17 @@ class PerjalananDinasController extends Controller
             PengeluaranRiil::create([
                 'id_perjalanan_dinas' => $perjalananDinas->id_perjalanan_dinas,
                 'uraian' => $pengeluaran['uraian'],
+                'susunan' => is_array($susunan = json_decode((string) ($pengeluaran['susunan'] ?? ''), true)) ? $susunan : null,
                 'jenis' => $pengeluaran['jenis'],
                 'nominal' => $pengeluaran['nominal'],
             ]);
         }
 
         if (!empty($validated['tanggal_kuitansi'])) {
+            // uraian_pembayaran kosong = narasi "Untuk pembayaran" dibuat otomatis dari data.
             Kuitansi::updateOrCreate(
                 ['id_perjalanan_dinas' => $perjalananDinas->id_perjalanan_dinas],
-                ['tanggal_kuitansi' => $validated['tanggal_kuitansi']]
+                ['tanggal_kuitansi' => $validated['tanggal_kuitansi'], 'uraian_pembayaran' => trim((string) ($validated['uraian_pembayaran'] ?? '')) ?: null]
             );
         } else {
             Kuitansi::where('id_perjalanan_dinas', $perjalananDinas->id_perjalanan_dinas)->delete();
@@ -671,6 +679,7 @@ class PerjalananDinasController extends Controller
         // File baru ditaruh di belakang file yang sudah ada; kalau wizard mengirim urutan
         // hasil drag (dokumentasi_urutan), urutan itu yang dipakai — lihat aturUrutanDokumentasi().
         $dokumentasiCaptions = $request->input('dokumentasi_caption', []);
+        $dokumentasiSkala = $request->input('dokumentasi_skala', []);
         $urutanTerakhir = (int) Dokumentasi::where('id_perjalanan_dinas', $perjalananDinas->id_perjalanan_dinas)->max('urutan');
         $idDokumentasiBaru = [];
         foreach ($request->file('dokumentasi', []) as $index => $file) {
@@ -679,6 +688,7 @@ class PerjalananDinasController extends Controller
                 'id_perjalanan_dinas' => $perjalananDinas->id_perjalanan_dinas,
                 'nama_file' => $file->getClientOriginalName(),
                 'caption' => $dokumentasiCaptions[$index] ?? null,
+                'skala' => min(100, max(30, (int) ($dokumentasiSkala[$index] ?? 100) ?: 100)),
                 'urutan' => $urutanTerakhir + $index + 1,
                 'path_file' => $path,
                 'uploaded_at' => now(),
@@ -770,7 +780,7 @@ class PerjalananDinasController extends Controller
                 'nama_file' => $d->nama_file,
                 'caption' => $d->caption,
                 'url' => Storage::disk('public')->url($d->path_file),
-            ])->values()->all(),
+            ] + $d->dataDokumen())->values()->all(),
         ]);
     }
 
@@ -906,11 +916,16 @@ class PerjalananDinasController extends Controller
         abort_unless($perjalananDinas->bisaDiubahOleh($request->user()->id_pegawai_mitra), 403);
         abort_unless($dokumentasi->id_perjalanan_dinas === $perjalananDinas->id_perjalanan_dinas, 404);
 
+        // Dipakai untuk caption maupun ukuran tampil foto (skala) — yang dikirim saja yang diubah.
         $validated = $request->validate([
-            'caption' => 'nullable|string|max:255',
+            'caption' => 'sometimes|nullable|string|max:255',
+            'skala' => 'sometimes|integer|min:30|max:100',
         ]);
 
-        $dokumentasi->update(['caption' => $validated['caption'] ?? null]);
+        $dokumentasi->update(array_intersect_key(
+            ['caption' => $validated['caption'] ?? null, 'skala' => $validated['skala'] ?? 100],
+            $validated
+        ));
 
         return response()->noContent();
     }

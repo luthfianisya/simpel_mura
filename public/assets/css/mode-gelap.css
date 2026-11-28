@@ -1,0 +1,156 @@
+/* Mode malam (tema gelap) — hanya berlaku saat <html> berkelas .dark-style (dipilih user
+   lewat tombol tema di navbar, lihat layouts/app.blade.php). Tema bawaan (core-dark.css +
+   theme-default-dark.css) sudah menggelapkan komponen standar; file ini menyesuaikan
+   komponen buatan sendiri yang warnanya ditulis manual di tiap halaman.
+   Lembar dokumen (.dokumen-preview) SENGAJA tetap putih seperti kertas. */
+
+.dark-style {
+    --gelap-permukaan: #2f3349;
+    --gelap-permukaan-2: #353a52;
+    --gelap-dasar: #25293c;
+    --gelap-garis: #434968;
+    --gelap-teks: #cfd3ec;
+    --gelap-teks-redup: #a0a6c8;
+    --gelap-aksen: #7ea1ff;
+}
+
+/* ----- Umum (layouts/app) ----- */
+.dark-style .dataTables_wrapper .dataTables_filter input.form-control,
+.dark-style .dataTables_wrapper .dataTables_length select.form-select,
+.dark-style .dataTables_wrapper .dataTables_filter input.form-control:focus,
+.dark-style .dataTables_wrapper .dataTables_length select.form-select:focus {
+    background-color: var(--gelap-permukaan-2);
+    color: var(--gelap-teks);
+}
+.dark-style .bg-menu-theme.menu-vertical .menu-sub > .menu-item.active > .menu-link:not(.menu-toggle),
+.dark-style .bulk-bar-info {
+    color: var(--gelap-aksen) !important;
+}
+
+/* Baris tabel rekap & monitoring (zebra + hover). */
+.dark-style #table-rekap-perjadin tbody tr:nth-child(even),
+.dark-style #table-monitoring-spj tbody tr:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.025);
+}
+.dark-style #table-rekap-perjadin tbody tr:hover,
+.dark-style #table-monitoring-spj tbody tr:hover {
+    background-color: rgba(126, 161, 255, 0.08);
+}
+.dark-style #table-monitoring-spj td { color: var(--gelap-teks); }
+.dark-style #table-monitoring-spj tbody tr.baris-gup > td { background: #2c3a63 !important; }
+.dark-style #table-monitoring-spj tbody tr.baris-gup.tanpa-gup > td { background: var(--gelap-permukaan-2) !important; }
+.dark-style .tanpa-gup .gup-kepala-isi .ikon { background: var(--gelap-garis); }
+.dark-style .gup-kepala-isi .judul,
+.dark-style .gup-kepala-isi .total { color: var(--gelap-aksen); }
+.dark-style .tanpa-gup .gup-kepala-isi .judul,
+.dark-style .tanpa-gup .gup-kepala-isi .total { color: var(--gelap-teks-redup); }
+
+/* Lencana jenis perjadin: versi transparan supaya tetap terbaca di latar gelap. */
+.dark-style .badge-jenis-biasa { background-color: rgba(15, 143, 132, 0.2); color: #5fd3c8; }
+.dark-style .badge-jenis-kurang { background-color: rgba(115, 103, 240, 0.2); }
+.dark-style .badge-jenis-lebih { background-color: rgba(194, 24, 91, 0.22); color: #f48fb1; }
+.dark-style .badge-jenis-lain { background-color: rgba(255, 255, 255, 0.08); }
+
+/* ----- Kartu & panel buatan sendiri (dashboard, monitoring, bantuan, rate, wilayah, feedback) ----- */
+.dark-style .kartu-cta,
+.dark-style .stat-jenis,
+.dark-style .kartu-alur,
+.dark-style .stat-gup,
+.dark-style .kartu-jenis-bantuan,
+.dark-style .kartu-dokumen-bantuan,
+.dark-style .kartu-dokumen,
+.dark-style .feedback-kartu,
+.dark-style .langkah-bantuan .nomor {
+    background: var(--gelap-permukaan);
+    border-color: var(--gelap-garis);
+    color: var(--gelap-teks);
+}
+.dark-style .kartu-cta:hover,
+.dark-style .stat-jenis .angka,
+.dark-style .alur-langkah .angka,
+.dark-style .stat-gup .angka,
+.dark-style .tanggal-gup,
+.dark-style .nominal,
+.dark-style .kartu-dokumen .nama {
+    color: var(--gelap-teks);
+}
+.dark-style .kartu-jenis-bantuan .kepala,
+.dark-style .daftar-cek li,
+.dark-style .judul-isian-spj { border-color: var(--gelap-garis); }
+.dark-style .info-bantuan { color: var(--gelap-teks-redup); }
+.dark-style .judul-isian-spj,
+.dark-style .feedback-kartu h3 { color: var(--gelap-aksen); }
+.dark-style .kotak-kelengkapan-spj {
+    background: var(--gelap-permukaan-2);
+    border-color: var(--gelap-garis);
+}
+.dark-style .tab-level .nav-link,
+.dark-style .tab-wilayah .nav-link {
+    background: var(--gelap-permukaan);
+    border-color: var(--gelap-garis);
+    color: var(--gelap-teks-redup);
+}
+.dark-style body:has(.feedback-wadah),
+.dark-style body:has(.feedback-wadah) .layout-wrapper,
+.dark-style body:has(.feedback-wadah) .layout-page,
+.dark-style body:has(.feedback-wadah) .content-wrapper {
+    background-color: var(--gelap-dasar) !important;
+}
+.dark-style .feedback-kartu textarea,
+.dark-style #modal-kirim-feedback textarea,
+.dark-style .feedback-kartu textarea:focus,
+.dark-style #modal-kirim-feedback textarea:focus {
+    background: var(--gelap-permukaan-2);
+    color: var(--gelap-teks);
+}
+
+/* ----- Wizard perjalanan dinas ----- */
+.dark-style #wizard-stepper .bs-stepper-header,
+.dark-style #modal-review-toolbar-sticky {
+    background: var(--gelap-permukaan);
+    border-color: var(--gelap-garis);
+}
+.dark-style .wizard-form-card { border-color: var(--gelap-garis); }
+.dark-style .pengeluaran-kartu,
+.dark-style #dokumentasi-preview-list .dokumentasi-thumb {
+    background: var(--gelap-permukaan-2);
+    border-color: var(--gelap-garis) !important;
+}
+.dark-style .pengeluaran-hasil {
+    background: var(--gelap-dasar);
+    border-color: var(--gelap-garis);
+    color: var(--gelap-teks);
+}
+.dark-style .dokumentasi-atur { background: transparent; color: var(--gelap-aksen); border-color: var(--gelap-aksen); }
+.dark-style .atur-foto-wadah { background: var(--gelap-dasar); }
+.dark-style #wizard-stepper .step.step-complete .bs-stepper-circle { background-color: rgba(40, 199, 111, 0.18) !important; }
+
+/* Latar "meja" di belakang lembar dokumen di layar; lembarnya sendiri tetap putih. */
+.dark-style .dokumen-preview-pages { background: #1c1f2e; }
+
+/* ----- Jendela pilih dokumen Export (SweetAlert, lihat pilihDokumenExport) ----- */
+.dark-style .pde-popup .swal2-title { color: var(--gelap-teks) !important; }
+.dark-style .pde-tab { background: var(--gelap-dasar); }
+.dark-style .pde-tab button { color: var(--gelap-teks-redup); }
+.dark-style .pde-tab button:hover:not(:disabled) { color: var(--gelap-teks); }
+.dark-style .pde-tab button.aktif { background: var(--gelap-permukaan-2); color: var(--gelap-aksen); }
+.dark-style .pde-daftar,
+.dark-style .pde-mode label { border-color: var(--gelap-garis); }
+.dark-style .pde-baris { border-color: var(--gelap-garis); }
+.dark-style .pde-baris:hover { background: rgba(255, 255, 255, 0.04); }
+.dark-style .pde-semua { background: rgba(255, 255, 255, 0.03); }
+.dark-style .pde-mode label:has(input:checked) { border-color: var(--gelap-aksen); background: rgba(126, 161, 255, 0.08); }
+.dark-style .pde-mode strong { color: var(--gelap-teks); }
+.dark-style .pde-lencana { background: var(--gelap-dasar); }
+
+/* ----- Tombol pilih tema di navbar ----- */
+.pilih-tema .dropdown-item.active,
+.pilih-tema .dropdown-item.active:hover {
+    background: rgba(37, 99, 235, 0.1);
+    color: #2563eb;
+}
+.dark-style .pilih-tema .dropdown-item.active,
+.dark-style .pilih-tema .dropdown-item.active:hover {
+    background: rgba(126, 161, 255, 0.12);
+    color: var(--gelap-aksen);
+}

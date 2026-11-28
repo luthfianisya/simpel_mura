@@ -25,8 +25,44 @@
   <link rel="stylesheet" href="{{ asset('assets/vendor/fonts/tabler-icons.css') }}" />
   <link rel="stylesheet" href="{{ asset('assets/vendor/fonts/flag-icons.css') }}" />
 
-  <link rel="stylesheet" href="{{ asset('assets/vendor/css/rtl/core.css') }}" class="template-customizer-core-css" />
-  <link rel="stylesheet" href="{{ asset('assets/vendor/css/rtl/theme-default.css') }}" class="template-customizer-theme-css" />
+  <link rel="stylesheet" href="{{ asset('assets/vendor/css/rtl/core.css') }}" class="template-customizer-core-css" id="css-tema-core"
+    data-terang="{{ asset('assets/vendor/css/rtl/core.css') }}" data-gelap="{{ asset('assets/vendor/css/rtl/core-dark.css') }}" />
+  <link rel="stylesheet" href="{{ asset('assets/vendor/css/rtl/theme-default.css') }}" class="template-customizer-theme-css" id="css-tema-warna"
+    data-terang="{{ asset('assets/vendor/css/rtl/theme-default.css') }}" data-gelap="{{ asset('assets/vendor/css/rtl/theme-default-dark.css') }}" />
+  <script>
+    // Mode malam: pilihan user (terang | gelap | sistem) disimpan di browser ini. Dipasang
+    // sebelum halaman tergambar supaya tidak berkedip terang dulu. Lihat juga tombol tema
+    // di components/navbar dan assets/css/mode-gelap.css.
+    window.SimpelTema = (function () {
+      var KUNCI = 'simpel-tema';
+      var media = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+      function pilihan() {
+        try { return localStorage.getItem(KUNCI) || 'terang'; } catch (e) { return 'terang'; }
+      }
+      function terapkan(p) {
+        var gelap = p === 'gelap' || (p === 'sistem' && media && media.matches);
+        var akar = document.documentElement;
+        akar.classList.toggle('dark-style', gelap);
+        akar.classList.toggle('light-style', !gelap);
+        akar.setAttribute('data-bs-theme', gelap ? 'dark' : 'light');
+        ['css-tema-core', 'css-tema-warna'].forEach(function (id) {
+          var el = document.getElementById(id);
+          var href = el && el.getAttribute(gelap ? 'data-gelap' : 'data-terang');
+          if (el && el.getAttribute('href') !== href) el.setAttribute('href', href);
+        });
+        document.dispatchEvent(new CustomEvent('simpel-tema', { detail: { pilihan: p, gelap: gelap } }));
+      }
+      function setel(p) {
+        try { localStorage.setItem(KUNCI, p); } catch (e) {}
+        terapkan(p);
+      }
+      if (media && media.addEventListener) {
+        media.addEventListener('change', function () { if (pilihan() === 'sistem') terapkan('sistem'); });
+      }
+      terapkan(pilihan());
+      return { pilihan: pilihan, setel: setel };
+    })();
+  </script>
   <link rel="stylesheet" href="{{ asset('assets/css/demo.css') }}" />
 
   <link rel="stylesheet" href="{{ asset('assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css') }}" />
@@ -213,6 +249,8 @@
   </style>
 
   @stack('page-css')
+
+  <link rel="stylesheet" href="{{ asset('assets/css/mode-gelap.css') }}?v={{ filemtime(public_path('assets/css/mode-gelap.css')) }}" />
 
   <link rel="stylesheet" href="{{ asset('assets/css/transisi.css') }}?v={{ filemtime(public_path('assets/css/transisi.css')) }}" />
   <script>

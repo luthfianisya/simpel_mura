@@ -486,7 +486,7 @@
                         </div>
                     </td>
                 </tr>
-                <tr><td colspan="6" class="text-center fw-bold" style="border-top:none; border-bottom:none; padding-top:2px; padding-bottom:2px;">PERHITUNGAN SPD RAMPUNG</td></tr>
+                <tr><td colspan="6" class="text-center fw-bold" style="border-top:1px solid #000; border-bottom:none; padding-top:2px; padding-bottom:2px;">PERHITUNGAN SPD RAMPUNG</td></tr>
                 <tr>
                     <td colspan="3" style="border-right:none; border-top:none; border-bottom:none;">
                         <span style="display:inline-block; width:170px;">Ditetapkan sejumlah</span>:<br>
@@ -501,8 +501,8 @@
                     <td colspan="2" style="border-left:none; border-top:none; border-bottom:none;"></td>
                 </tr>
                 <tr>
-                    <td colspan="3" style="border-top:none; border-right:none;"></td>
-                    <td colspan="3" style="border-top:none; border-left:none;">
+                    <td colspan="3" style="border-top:1px solid #000; border-right:none;"></td>
+                    <td colspan="3" style="border-top:1px solid #000; border-left:none;">
                         <div style="margin-left:auto; width:60%; text-align:center;">
                             <br>Pejabat Pembuat Komitmen<br>BPS Kabupaten Murung Raya<br><br><br><br>
                             <span class="fw-bold text-decoration-underline">${esc(ppk.nama) || '(...........................)'}</span><br>
@@ -532,10 +532,12 @@
             const nominal = parseFloat(row.nominal) || 0;
             total += nominal;
             const skLabel = skPengeluaranLabel[row.jenis] || skPengeluaranLabel.transportasi;
-            bodyRows += `<tr>
-                <td>${i + 1}</td>
-                <td style="text-align:justify;">${teks(row.uraian) || '-'}<br><span class="fst-italic" style="font-size:11pt;">${skLabel} ${tahun}</span></td>
-                <td class="text-end">${fmtRupiah(nominal)}</td>
+            // Isi uraian sengaja lebih kecil (9pt) dari teks lain supaya 2 uraian masih muat 1 lembar.
+            const rapat = 'padding-top:0.2rem; padding-bottom:0.2rem;';
+            bodyRows += `<tr style="font-size:9pt; line-height:1.35;">
+                <td class="text-center" style="${rapat}">${i + 1}</td>
+                <td style="text-align:justify; ${rapat}">${teks(row.uraian) || '-'}<br><span class="fst-italic">${skLabel} ${tahun}</span></td>
+                <td class="text-end" style="${rapat}">${fmtRupiah(nominal)}</td>
             </tr>`;
         });
         if (!bodyRows) {
@@ -549,7 +551,7 @@
             <div data-blok="utuh">
             <div class="dokumen-title" style="font-size:11pt;">DAFTAR PENGELUARAN RIIL</div>
             <p>Yang bertanda tangan dibawah ini :</p>
-            <table class="dokumen-table">
+            <table class="dokumen-table" style="margin-bottom:0.5rem;">
                 <tr><td width="20%">Nama</td><td>: ${esc(pelaksana.nama) || '...........................'}</td></tr>
                 <tr><td>NIP</td><td>: ${esc(fmtNip(pelaksana.nip))}</td></tr>
                 <tr><td>Jabatan</td><td>: ${esc(pelaksana.jabatan) || '-'}</td></tr>
@@ -558,8 +560,9 @@
             </div>
             <ol class="dokumen-list" data-blok="tabel">
                 <li class="alir-butir"><span class="alir-judul">Biaya transport pegawai dan/atau biaya penginapan dibawah ini yang tidak dapat diperoleh bukti-buktinya, meliputi:</span>
-                    <table class="dokumen-table dokumen-rincian mt-1 alir-isi">
-                        <thead><tr><th width="5%" class="text-center">No</th><th class="text-center">Uraian</th><th width="20%" class="text-center">Jumlah</th></tr></thead>
+                    <table class="dokumen-table dokumen-rincian mt-1 alir-isi" style="margin-bottom:0;">
+                        <thead><tr><th width="5%" class="text-center">No</th><th class="text-center">Uraian</th><th width="20%" class="text-center">Jumlah</th></tr>
+                        <tr style="font-size:9pt;"><td class="text-center" style="padding-top:1px; padding-bottom:1px;">(1)</td><td class="text-center" style="padding-top:1px; padding-bottom:1px;">(2)</td><td class="text-center" style="padding-top:1px; padding-bottom:1px;">(3)</td></tr></thead>
                         <tbody>
                         ${bodyRows}
                         <tr><td colspan="2" class="text-center fw-bold">Jumlah</td><td class="text-end fw-bold">${fmtRupiah(total)}</td></tr>
@@ -567,13 +570,13 @@
                     </table>
                 </li>
             </ol>
-            <ol class="dokumen-list" start="2" style="margin-top:0.35rem;" data-blok="utuh">
+            <ol class="dokumen-list" start="2" style="margin-top:0.5rem;" data-blok="utuh">
                 <li>Jumlah uang tersebut pada angka 1 di atas benar-benar dikeluarkan untuk pelaksanaan perjalanan dinas dimaksud dan apabila dikemudian hari terdapat kelebihan atas pembayaran, kami bersedia untuk menyetorkan kelebihan tersebut ke Kas Negara.</li>
             </ol>
             <div data-blok="utuh">
             <p>Demikian pernyataan ini kami buat dengan sebenarnya, untuk dipergunakan sebagaimana mestinya.</p>
-            <div class="text-end mb-3 pe-2">Puruk Cahu, ${fmtTanggalPanjang(data.tanggal_kuitansi)}</div>
-            <table class="dokumen-table">
+            <div class="text-end mb-2 pe-2">Puruk Cahu, ${fmtTanggalPanjang(data.tanggal_kuitansi)}</div>
+            <table class="dokumen-table" style="margin-bottom:0;">
                 <tr>
                     <td width="50%" class="text-center">
                         Mengetahui/Menyetujui<br>An. Kuasa Pengguna Anggaran<br>Pejabat Pembuat Komitmen<br>BPS Kabupaten Murung Raya<br><br><br><br>
@@ -592,7 +595,51 @@
         `;
     }
 
+    // ----- Ukuran foto dokumentasi Laporan -----
+    // Kotak foto penuh: lebar sel (~77,5 mm di A4 margin 2,54 cm) x tinggi maks 65 mm.
+    // d.skala (30–100 %) mengecilkan kotak itu; foto dimuatkan ke dalamnya dengan rasio
+    // asli (d.lebar x d.tinggi piksel) — tidak pernah gepeng. Lebarnya ditulis dalam %
+    // sel (+ aspect-ratio) supaya tinggi bisa diukur sebelum gambar selesai dimuat dan
+    // tetap proporsional kalau preview mengecil di layar sempit.
+    const LEBAR_SEL_FOTO_MM = 77.5;
+    const TINGGI_FOTO_MAKS_MM = 65;
+    function skalaFoto(d) {
+        const n = parseInt(d && d.skala, 10);
+        return isNaN(n) ? 100 : Math.min(100, Math.max(30, n));
+    }
+    function gayaFoto(d) {
+        const s = skalaFoto(d) / 100;
+        const w = parseFloat(d.lebar);
+        const h = parseFloat(d.tinggi);
+        if (!(w > 0 && h > 0)) {
+            // Ukuran asli belum diketahui: batasi kotaknya saja (rasio tetap dijaga browser).
+            return s < 1 ? ' style="max-width:' + (100 * s) + '%; max-height:' + (TINGGI_FOTO_MAKS_MM * s).toFixed(1) + 'mm;"' : '';
+        }
+        const k = Math.min(LEBAR_SEL_FOTO_MM * s / w, TINGGI_FOTO_MAKS_MM * s / h);
+        const persen = Math.min(100, (w * k) / LEBAR_SEL_FOTO_MM * 100);
+        return ' class="foto-terukur" style="width:' + persen.toFixed(2) + '%; height:auto; max-height:none; aspect-ratio:' + w + ' / ' + h + ';"';
+    }
+
     // ----- Kuitansi -----
+    // Narasi "Untuk pembayaran" otomatis dari data (Perihal, tujuan, tanggal). User bisa
+    // menggantinya di step Kuitansi (uraian_pembayaran) — hanya Kuitansi yang terdampak.
+    function uraianPembayaranOtomatis(data) {
+        const wilayah = wilayahTujuan(data);
+        return 'Biaya perjalanan dinas dalam rangka ' + (perihalTanpaAwalan(data.perihal).trim() || '...........................')
+            + (wilayah ? ' di ' + wilayah : '') + ', tanggal ' + fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai);
+    }
+    function uraianPembayaran(data) {
+        // Titik/koma di akhir dibuang karena disambung ", sesuai dengan:".
+        const sendiri = String(data.uraian_pembayaran || '').replace(/\s+/g, ' ').trim().replace(/[\s,.;:]+$/, '');
+        return sendiri || uraianPembayaranOtomatis(data);
+    }
+    // true kalau Kuitansi (wajib 1 lembar) sampai harus merapatkan ruang tanda tangan atau
+    // mengecilkan huruf supaya muat — tanda uraian "Untuk pembayaran" kepanjangan.
+    function kuitansiKepanjangan(data) {
+        const rapat = kelasRapatSatuHalaman(renderKuitansi(data), 'dokumen-a4');
+        return /rapat-4/.test(rapat);
+    }
+
     function renderKuitansi(data) {
         const pelaksana = data.pelaksana || pegawaiKosong();
         const ppk = data.ppk || pegawaiKosong();
@@ -614,7 +661,7 @@
                 <tr><td width="20%" style="vertical-align:top; white-space:nowrap;">Sudah terima dari</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td>Pejabat Pembuat Komitmen BPS Kabupaten Murung Raya</td></tr>
                 <tr><td style="vertical-align:top; white-space:nowrap;">Jumlah Uang</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td><strong>${fmtRupiah(total)},-</strong></td></tr>
                 <tr><td style="vertical-align:top; white-space:nowrap;">Terbilang</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td><span class="fw-bold fst-italic">** ${terbilangRupiah(total)} **</span></td></tr>
-                <tr><td style="vertical-align:top; white-space:nowrap;">Untuk pembayaran</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td style="text-align:justify;">Biaya perjalanan dinas dalam rangka ${teks(perihalTanpaAwalan(data.perihal)) || '...........................'}${wilayahTujuan(data) ? ' di ' + esc(wilayahTujuan(data)) : ''}, tanggal ${fmtRentangTanggal(data.tanggal_mulai, data.tanggal_selesai)}, sesuai dengan:<br><span class="spasi-opsional"><br></span>
+                <tr><td style="vertical-align:top; white-space:nowrap;">Untuk pembayaran</td><td style="width:1%; padding-right:4px; vertical-align:top;">:</td><td style="text-align:justify;">${teks(uraianPembayaran(data))}, sesuai dengan:<br><span class="spasi-opsional"><br></span>
                     Surat Tugas Nomor: ${esc(data.no_surat_tugas) || '...........................'} tanggal ${fmtTanggalPanjang(data.tanggal_surat_tugas)}<br>
                     ${data.no_spd ? 'SPD Nomor: ' + esc(data.no_spd) + ' tanggal ' + fmtTanggalPanjang(data.tanggal_spd) : ''}
                 </td></tr>
@@ -856,7 +903,7 @@
                 if (!d) return '<td class="dokumentasi-cell dokumentasi-foto" width="50%"></td>';
                 const isPdf = /\.pdf$/i.test(d.nama_file || '');
                 const inner = (!isPdf && d.url)
-                    ? '<img src="' + esc(d.url) + '" alt="' + esc(d.nama_file) + '">'
+                    ? '<img src="' + esc(d.url) + '" alt="' + esc(d.nama_file) + '"' + gayaFoto(d) + '>'
                     : '<div class="dokumentasi-file"><i class="ti ti-file-text ti-lg"></i><br>' + esc(d.nama_file) + '</div>';
                 return '<td class="dokumentasi-cell dokumentasi-foto" width="50%">' + inner + '</td>';
             }
@@ -1328,12 +1375,41 @@
                     isiEl.classList.toggle('alir-rata-penuh', sampai < kata.length);
                 });
             } else if (jenis === 'daftar') {
+                // Dipotong per KATA (bukan per butir utuh): sisa halaman diisi penuh, butir yang
+                // terpotong dilanjutkan di halaman berikutnya tanpa nomor (seperti paragraf).
+                // Nomor tiap butir memakai atribut value, jadi tetap benar setelah dipotong.
                 const butir = Array.from(blok.querySelectorAll('.alir-isi > li'));
-                taruhBertahap(blok, butir.length, function (el, dari, sampai) {
+                const unit = [];
+                butir.forEach(function (li, i) {
+                    const sumber = li.cloneNode(true);
+                    sumber.querySelectorAll('i').forEach(function (m) { m.replaceWith('_' + m.textContent + '_'); });
+                    const kata = sumber.textContent.replace(/ /g, ' ').trim().split(/\s+/).filter(Boolean);
+                    if (!kata.length) unit.push({ li: i, kata: null, awal: true }); // butir kosong (jarak)
+                    kata.forEach(function (k, j) { unit.push({ li: i, kata: k, awal: j === 0 }); });
+                });
+                taruhBertahap(blok, unit.length, function (el, dari, sampai) {
                     const ol = el.querySelector('.alir-isi');
                     ol.innerHTML = '';
-                    ol.setAttribute('start', dari + 1);
-                    butir.slice(dari, sampai).forEach(function (li) { ol.appendChild(li.cloneNode(true)); });
+                    ol.removeAttribute('start');
+                    let u = dari;
+                    while (u < sampai) {
+                        const i = unit[u].li;
+                        const liEl = butir[i].cloneNode(false);
+                        if (!unit[u].awal) {
+                            // Lanjutan butir dari halaman sebelumnya: tanpa nomor.
+                            liEl.removeAttribute('value');
+                            liEl.style.listStyle = 'none';
+                        }
+                        const kata = [];
+                        while (u < sampai && unit[u].li === i) {
+                            if (unit[u].kata !== null) kata.push(unit[u].kata);
+                            u++;
+                        }
+                        liEl.innerHTML = kata.length ? teks(kata.join(' ')) : '&nbsp;';
+                        // Butir yang masih bersambung: baris terakhirnya ikut rata kiri-kanan.
+                        if (u === sampai && sampai < unit.length && unit[sampai].li === i) liEl.classList.add('alir-rata-penuh');
+                        ol.appendChild(liEl);
+                    }
                 });
             } else if (jenis === 'tabel' && blok.querySelectorAll('.alir-isi > tbody').length > 1) {
                 // Beberapa <tbody> (mis. Dokumentasi: 1 tbody = foto + keterangannya): dipotong
@@ -1772,6 +1848,12 @@
     // DIGABUNG DI BROWSER dengan pdf-lib — server/hosting tidak perlu library tambahan.
     // items = [{ html, paperSize, extraClass }] sesuai urutan halaman.
     async function exportGabunganPdfHd(items, title, cssUrl, exportUrl, csrfToken) {
+        const bytes = await buatPdfGabunganHd(items, title, cssUrl, exportUrl, csrfToken);
+        downloadBlob(new Blob([bytes], { type: 'application/pdf' }), title + '.pdf');
+    }
+
+    // Isi PDF gabungan (bytes) — dipakai bersama oleh export (diunduh) dan print (dicetak).
+    async function buatPdfGabunganHd(items, title, cssUrl, exportUrl, csrfToken) {
         const pdfLib = await muatPdfLib();
         let cssOverride = null;
         try {
@@ -1804,8 +1886,49 @@
             halaman.forEach(function (h) { gabungan.addPage(h); });
         }
 
-        const bytes = await gabungan.save();
-        downloadBlob(new Blob([bytes], { type: 'application/pdf' }), title + '.pdf');
+        return gabungan.save();
+    }
+
+    // Dokumen yang boleh dicetak — aturannya sama dengan Export: Surat Tugas tidak, dokumen
+    // kosong (Surat Pernyataan tanpa pernyataan) tidak. activeKey = tab yang sedang dibuka;
+    // kosong (mode "Preview All") = semua dokumen, urut sesuai kelengkapan.
+    function dokumenUntukCetak(docs, activeKey) {
+        const boleh = function (k) {
+            return docs[k] && k !== 'surat-tugas' && String(docs[k].html || '').indexOf('data-dokumen-kosong') === -1;
+        };
+        if (activeKey) return boleh(activeKey) ? [activeKey] : [];
+        return urutkanBerkas(Object.keys(docs).filter(boleh));
+    }
+
+    // Print langsung: PDF yang SAMA PERSIS dengan hasil Export (dibuat server, lihat
+    // buatPdfGabunganHd) dibuka di iframe tersembunyi lalu dialog print browser dipanggil.
+    // Kalau browser menolak print dari iframe, PDF-nya dibuka di tab baru untuk dicetak.
+    async function cetakPdfHd(items, title, cssUrl, exportUrl, csrfToken) {
+        const bytes = await buatPdfGabunganHd(items, title, cssUrl, exportUrl, csrfToken);
+        const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+        const lama = document.getElementById('dokumen-cetak-frame');
+        if (lama) lama.remove();
+        const frame = document.createElement('iframe');
+        frame.id = 'dokumen-cetak-frame';
+        frame.title = title;
+        frame.style.cssText = 'position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0;pointer-events:none;';
+        await new Promise(function (resolve) {
+            frame.onload = function () {
+                setTimeout(function () {
+                    try {
+                        frame.contentWindow.focus();
+                        frame.contentWindow.print();
+                    } catch (e) {
+                        window.open(url, '_blank');
+                    }
+                    resolve();
+                }, 400);
+            };
+            frame.src = url;
+            document.body.appendChild(frame);
+        });
+        // Dibersihkan belakangan (dialog print bisa masih terbuka).
+        setTimeout(function () { frame.remove(); URL.revokeObjectURL(url); }, 10 * 60 * 1000);
     }
 
     window.DokumenPerjadin = {
@@ -1826,6 +1949,8 @@
         renderRincianBiaya: renderRincianBiaya,
         renderPengeluaranRiil: renderPengeluaranRiil,
         renderKuitansi: renderKuitansi,
+        uraianPembayaranOtomatis: uraianPembayaranOtomatis,
+        kuitansiKepanjangan: kuitansiKepanjangan,
         renderPernyataan: renderPernyataan,
         renderLaporan: renderLaporan,
         renderPaginated: renderPaginated,
@@ -1837,5 +1962,7 @@
         pilihDokumenExport: pilihDokumenExport,
         exportWord: exportWord,
         exportGabunganPdfHd: exportGabunganPdfHd,
+        dokumenUntukCetak: dokumenUntukCetak,
+        cetakPdfHd: cetakPdfHd,
     };
 })(window);

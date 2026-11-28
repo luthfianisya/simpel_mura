@@ -191,6 +191,7 @@ class PerjalananDinas extends Model
             'tanggal_spd' => optional($this->tanggal_spd)->format('Y-m-d'),
             'angkutan' => $this->angkutan,
             'tanggal_kuitansi' => optional(optional($this->kuitansi)->tanggal_kuitansi)->format('Y-m-d'),
+            'uraian_pembayaran' => optional($this->kuitansi)->uraian_pembayaran,
             'jenis_kegiatan_nama' => optional($this->jenisKegiatan)->nama_kegiatan,
             'kesimpulan_hasil_kegiatan' => optional($this->laporan)->kesimpulan_hasil_kegiatan,
             'tindak_lanjut' => optional($this->laporan)->tindak_lanjut,
@@ -230,6 +231,7 @@ class PerjalananDinas extends Model
             'tanggal_spd' => optional($this->tanggal_spd)->format('Y-m-d'),
             'angkutan' => $this->angkutan,
             'tanggal_kuitansi' => optional(optional($this->kuitansi)->tanggal_kuitansi)->format('Y-m-d'),
+            'uraian_pembayaran' => optional($this->kuitansi)->uraian_pembayaran,
             'kesimpulan_hasil_kegiatan' => optional($this->laporan)->kesimpulan_hasil_kegiatan,
             'tindak_lanjut' => optional($this->laporan)->tindak_lanjut,
             'tanggal_laporan' => optional(optional($this->laporan)->tanggal_laporan)->format('Y-m-d'),
@@ -265,6 +267,7 @@ class PerjalananDinas extends Model
             ])->values()->all(),
             'pengeluaran' => $this->pengeluaranRiil->map(fn ($p) => [
                 'uraian' => $p->uraian,
+                'susunan' => $p->susunan,
                 'jenis' => $p->jenis,
                 'nominal' => $p->nominal,
             ])->values()->all(),
@@ -278,7 +281,7 @@ class PerjalananDinas extends Model
                 'nama_file' => $d->nama_file,
                 'caption' => $d->caption,
                 'url' => Storage::disk('public')->url($d->path_file),
-            ])->values()->all(),
+            ] + $d->dataDokumen())->values()->all(),
         ];
     }
 

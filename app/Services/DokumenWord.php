@@ -342,7 +342,7 @@ class DokumenWord
         $c = $this->sel($t, $kanan, 'R', ['gridSpan' => 3]);
         $this->blokTtd($c, ['', '', 'Yang Menerima,', ''], $pelaksana['nama'] ?? '', $pelaksana['nip'] ?? '', $f, ['indentation' => ['left' => (int) ($kanan * 0.4)]]);
         $t->addRow();
-        $this->sel($t, $this->lebar, 'LR', ['gridSpan' => 6])->addText('PERHITUNGAN SPD RAMPUNG', $f + ['bold' => true], ['alignment' => Jc::CENTER, 'spaceBefore' => 120, 'spaceAfter' => 60]);
+        $this->sel($t, $this->lebar, 'TLR', ['gridSpan' => 6])->addText('PERHITUNGAN SPD RAMPUNG', $f + ['bold' => true], ['alignment' => Jc::CENTER, 'spaceBefore' => 120, 'spaceAfter' => 60]);
         foreach ([['Ditetapkan sejumlah', $this->rupiah($total), false], ['Yang telah dibayar semula', 'Rp. 0,-', false], ['Sisa kurang / lebih', $this->rupiah($total), true]] as [$label, $nilai, $garis]) {
             $t->addRow();
             $this->sel($t, $w[0], 'L');
@@ -351,8 +351,8 @@ class DokumenWord
             $this->sel($t, $w[4] + $w[5], 'R', ['gridSpan' => 2]);
         }
         $t->addRow(null, ['cantSplit' => true]);
-        $this->sel($t, $kiri, 'LB', ['gridSpan' => 3]);
-        $c = $this->sel($t, $kanan, 'RB', ['gridSpan' => 3]);
+        $this->sel($t, $kiri, 'TLB', ['gridSpan' => 3]);
+        $c = $this->sel($t, $kanan, 'TRB', ['gridSpan' => 3]);
         $this->blokTtd($c, ['', 'Pejabat Pembuat Komitmen', 'BPS Kabupaten Murung Raya'], $d['ppk']['nama'] ?? '', $d['ppk']['nip'] ?? '', $f, ['indentation' => ['left' => (int) ($kanan * 0.4)]]);
         $c->addText('', $f);
     }
@@ -382,16 +382,25 @@ class DokumenWord
         foreach (['No', 'Uraian', 'Jumlah'] as $i => $h) {
             $this->sel($t, $w[$i], 'TBLR')->addText($h, ['bold' => true], ['alignment' => Jc::CENTER] + $p);
         }
+        // Baris nomor kolom (1) (2) (3) — ikut berulang di halaman lanjutan seperti header.
+        $kecil = ['size' => 9];
+        $t->addRow(null, ['tblHeader' => true]);
+        foreach (['(1)', '(2)', '(3)'] as $i => $h) {
+            $this->sel($t, $w[$i], 'TBLR')->addText($h, $kecil, ['alignment' => Jc::CENTER, 'lineHeight' => 1.0]);
+        }
         $total = 0;
         foreach ($d['pengeluaran'] as $i => $row) {
             $nominal = (float) $row['nominal'];
             $total += $nominal;
+            // Isi uraian lebih kecil (9pt) supaya 2 uraian masih muat 1 lembar.
+            // Spasi isi tabel dibuat rapat (1,15), tidak ikut spasi 1,5 dokumen ini.
+            $pr = $p + ['lineHeight' => 1.15];
             $t->addRow(null, ['cantSplit' => true]);
-            $this->sel($t, $w[0], 'TBLR')->addText((string) ($i + 1), [], ['alignment' => Jc::CENTER] + $p);
+            $this->sel($t, $w[0], 'TBLR')->addText((string) ($i + 1), $kecil, ['alignment' => Jc::CENTER] + $pr);
             $c = $this->sel($t, $w[1], 'TBLR');
-            $this->teksBaris($c, $row['uraian'] ?: '-', [], ['alignment' => Jc::BOTH] + $p);
-            $c->addText((self::SK_PENGELUARAN[$row['jenis']] ?? self::SK_PENGELUARAN['transportasi']) . ' ' . $tahun, ['italic' => true], ['alignment' => Jc::BOTH, 'spaceAfter' => 40]);
-            $this->sel($t, $w[2], 'TBLR')->addText($this->rupiah($nominal), [], ['alignment' => Jc::END] + $p);
+            $this->teksBaris($c, $row['uraian'] ?: '-', $kecil, ['alignment' => Jc::BOTH] + $pr);
+            $c->addText((self::SK_PENGELUARAN[$row['jenis']] ?? self::SK_PENGELUARAN['transportasi']) . ' ' . $tahun, $kecil + ['italic' => true], ['alignment' => Jc::BOTH, 'spaceAfter' => 40, 'lineHeight' => 1.15]);
+            $this->sel($t, $w[2], 'TBLR')->addText($this->rupiah($nominal), $kecil, ['alignment' => Jc::END] + $pr);
         }
         if (! $d['pengeluaran']) {
             $t->addRow();
@@ -403,8 +412,8 @@ class DokumenWord
 
         $s->addText("2.\tJumlah uang tersebut pada angka 1 di atas benar-benar dikeluarkan untuk pelaksanaan perjalanan dinas dimaksud dan apabila dikemudian hari terdapat kelebihan atas pembayaran, kami bersedia untuk menyetorkan kelebihan tersebut ke Kas Negara.", [], $gayaButir + ['spaceBefore' => 120]);
 
-        $s->addText('Demikian pernyataan ini kami buat dengan sebenarnya, untuk dipergunakan sebagaimana mestinya.', [], ['alignment' => Jc::BOTH, 'spaceBefore' => 200, 'spaceAfter' => 120, 'keepNext' => true]);
-        $s->addText('Puruk Cahu, ' . $this->tanggal($d['tanggal_kuitansi']), [], ['alignment' => Jc::END, 'spaceAfter' => 200, 'keepNext' => true]);
+        $s->addText('Demikian pernyataan ini kami buat dengan sebenarnya, untuk dipergunakan sebagaimana mestinya.', [], ['alignment' => Jc::BOTH, 'spaceBefore' => 120, 'spaceAfter' => 60, 'keepNext' => true]);
+        $s->addText('Puruk Cahu, ' . $this->tanggal($d['tanggal_kuitansi']), [], ['alignment' => Jc::END, 'spaceAfter' => 120, 'keepNext' => true]);
         $this->ttdDua($s,
             ['Mengetahui/Menyetujui', 'An. Kuasa Pengguna Anggaran', 'Pejabat Pembuat Komitmen', 'BPS Kabupaten Murung Raya'], $d['ppk'],
             ['', '', 'Pejabat Negara/ Pegawai Negeri', 'Yang melakukan Perjalanan Dinas'], $pelaksana);
@@ -425,9 +434,9 @@ class DokumenWord
         $t = $this->tabel($s, ['alignment' => Jc::END]);
         foreach ([['Tahun Anggaran', $tahun], ['Nomor Bukti', ''], ['Akun', $d['pembebanan'] ?: '...........................'], ['Kepada', $pelaksana['nama'] ?: '...........................'], ['Satker', self::SATKER]] as [$a, $b]) {
             $t->addRow();
-            $t->addCell($w[0])->addText($a);
-            $t->addCell($w[1])->addText(':');
-            $t->addCell($w[2])->addText($b);
+            $t->addCell($w[0])->addText($a, ['size' => 9]);
+            $t->addCell($w[1])->addText(':', ['size' => 9]);
+            $t->addCell($w[2])->addText($b !== '' ? $b : ' ', ['size' => 9]); // spasi: sel kosong ikut tinggi 9 pt
         }
 
         $s->addText('Kuitansi/Bukti Pembayaran', ['bold' => true, 'underline' => 'single', 'size' => 12], ['alignment' => Jc::CENTER, 'spaceBefore' => 200, 'spaceAfter' => 160]);
@@ -443,8 +452,10 @@ class DokumenWord
         $t->addCell($w[0])->addText('Terbilang');
         $t->addCell($w[1])->addText(':');
         $t->addCell($w[2])->addText('** ' . $this->terbilangRupiah($total) . ' **', ['bold' => true, 'italic' => true]);
-        $untuk = 'Biaya perjalanan dinas dalam rangka ' . ($this->perihalTanpaAwalan($d['perihal']) ?: '...........................') . $this->diTujuan()
-            . ', tanggal ' . $this->rentangTanggal($d['tanggal_mulai'], $d['tanggal_selesai']) . ", sesuai dengan:\n"
+        // Narasi sunting user (step Kuitansi) kalau ada; kalau kosong dibuat otomatis dari data.
+        $sendiri = rtrim(trim((string) preg_replace('/\s+/', ' ', (string) ($d['uraian_pembayaran'] ?? ''))), ' ,.;:');
+        $untuk = ($sendiri !== '' ? $sendiri : 'Biaya perjalanan dinas dalam rangka ' . ($this->perihalTanpaAwalan($d['perihal']) ?: '...........................') . $this->diTujuan()
+            . ', tanggal ' . $this->rentangTanggal($d['tanggal_mulai'], $d['tanggal_selesai'])) . ", sesuai dengan:\n"
             . 'Surat Tugas Nomor: ' . ($d['no_surat_tugas'] ?: '...........................') . ' tanggal ' . $this->tanggal($d['tanggal_surat_tugas'])
             . ($d['no_spd'] ? "\nSPD Nomor: " . $d['no_spd'] . ' tanggal ' . $this->tanggal($d['tanggal_spd']) : '');
         $this->barisLabel($t, $w, 'Untuk pembayaran', $untuk, [], true);
@@ -459,6 +470,8 @@ class DokumenWord
         // Paragraf di separuh kiri (bukan tabel), supaya dokumen tidak berakhir dengan tabel.
         $this->blokTtd($s, ['Pejabat yang bertanggungjawab', 'Pejabat Pembuat Komitmen'], $d['ppk']['nama'] ?? '', $d['ppk']['nip'] ?? '', [],
             ['indentation' => ['right' => (int) ($this->lebar / 2)]]);
+        // Sama dengan PDF: isi Kuitansi 10 pt (kotak kanan atas 9 pt, judul 12 pt) supaya 1 lembar.
+        $this->terapkanUkuran($s, 10);
     }
 
     private function pernyataan(): void
@@ -664,7 +677,9 @@ class DokumenWord
                 $item = $pasangan[$i] ?? null;
                 $path = $item ? Storage::disk('public')->path($item->path_file) : null;
                 if ($path && is_file($path) && @getimagesize($path)) {
-                    [$lw, $lh] = $this->ukuranMuat($path, ($setengah - 240) / 20, Converter::cmToPoint(6.5));
+                    // Ukuran tampil pilihan user (skala %, rasio tetap) — sama seperti preview/PDF.
+                    $skala = min(100, max(30, (int) ($item->skala ?: 100))) / 100;
+                    [$lw, $lh] = $this->ukuranMuat($path, ($setengah - 240) / 20 * $skala, Converter::cmToPoint(6.5) * $skala);
                     $c->addImage($path, ['width' => $lw, 'height' => $lh, 'unit' => 'pt', 'alignment' => Jc::CENTER]);
                 } elseif ($item) {
                     $c->addText($item->nama_file, [], ['alignment' => Jc::CENTER]);
@@ -731,6 +746,27 @@ class DokumenWord
                 if ($gaya instanceof \PhpOffice\PhpWord\Style\Paragraph && $gaya->getLineHeight() === null) {
                     $gaya->setLineHeight($spasi);
                 }
+            }
+        }
+    }
+
+    /** Pasang ukuran huruf ke semua teks (termasuk di dalam tabel) yang belum menentukan sendiri. */
+    private function terapkanUkuran(AbstractContainer|Table $wadah, float $ukuran): void
+    {
+        foreach ($wadah instanceof Table ? [$wadah] : $wadah->getElements() as $el) {
+            if ($el instanceof Table) {
+                foreach ($el->getRows() as $row) {
+                    foreach ($row->getCells() as $cell) {
+                        $this->terapkanUkuran($cell, $ukuran);
+                    }
+                }
+            } elseif ($el instanceof \PhpOffice\PhpWord\Element\Text) {
+                $gaya = $el->getFontStyle();
+                if ($gaya instanceof \PhpOffice\PhpWord\Style\Font && $gaya->getSize() === null) {
+                    $gaya->setSize($ukuran);
+                }
+            } elseif ($el instanceof TextRun) {
+                $this->terapkanUkuran($el, $ukuran);
             }
         }
     }

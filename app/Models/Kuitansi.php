@@ -9,7 +9,7 @@ class Kuitansi extends Model
     protected $table = 'kuitansi';
     protected $primaryKey = 'id_kuitansi';
 
-    protected $fillable = ['id_perjalanan_dinas', 'tanggal_kuitansi'];
+    protected $fillable = ['id_perjalanan_dinas', 'tanggal_kuitansi', 'uraian_pembayaran'];
 
     protected $casts = ['tanggal_kuitansi' => 'date'];
 
